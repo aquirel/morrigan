@@ -1,0 +1,32 @@
+﻿POC_PROJECT_VERSION = 7.00#
+POC_PROJECT_TYPE = 3#
+POC_PROJECT_OUTPUTDIR = build_tests#
+POC_PROJECT_RESULTDIR = bin_tests#
+POC_PROJECT_ARGUMENTS = #
+POC_PROJECT_WORKPATH = .#
+POC_PROJECT_EXECUTOR = #
+CC = pocc.exe#
+AS = poasm.exe#
+RC = porc.exe#
+LINK = polink.exe#
+SIGN = posign.exe#
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi -DTESTS#
+ASFLAGS = -AIA32 -Gd #
+RCFLAGS = #
+LINKFLAGS = -debug -debugtype:both -subsystem:console -machine:x86 -map -release -verbose kernel32.lib advapi32.lib delayimp.lib#
+SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
+INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
+
+# Array tests.
+bin_tests\array.exe: \
+    build_tests\array.obj
+    mkdir bin_tests
+    $(LINK) $(LINKFLAGS) -out:"$@" $**
+    bin_tests\array.exe 2>&1 | tee bin_tests\array.log
+
+build_tests\array.obj: array.c
+    mkdir build_tests
+    $(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+.EXCLUDEDFILES:

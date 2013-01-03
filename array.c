@@ -95,7 +95,7 @@ static inline void __dynamic_array_assert(const DynamicArray *a)
     assert(a->array_capacity && "Bad array.");
 }
 
-#if defined(ARRAY_TESTS)
+#if defined(TESTS)
 #include <stdio.h>
 
 #include "testhelp.h"
@@ -107,7 +107,7 @@ int main(void)
 
     dynamic_array_destroy(a);
     test_report();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 #endif

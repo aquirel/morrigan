@@ -1,0 +1,12 @@
+Architecture.
+Port existing code.
+network server.
+cli interface.
+protocol.
+protocol parsing.
+message queue.
+game entities.
+game entities behaviour.
+merge existing todo.
+
+sdl.

@@ -102,8 +102,34 @@ static inline void __dynamic_array_assert(const DynamicArray *a)
 
 int main(void)
 {
-    DynamicArray *a = dynamic_array_create(sizeof(int), 10);
+    DynamicArray *a = dynamic_array_create(sizeof(int), 5);
     test_cond("Check array creation.", a);
+
+    int v = 0;
+    test_cond("Push 0.", dynamic_array_push(a, &v));
+    v = 1;
+    test_cond("Push 1.", dynamic_array_push(a, &v));
+    v = 2;
+    test_cond("Push 2.", dynamic_array_push(a, &v));
+    v = 3;
+    test_cond("Push 3.", dynamic_array_push(a, &v));
+    v = 4;
+    test_cond("Push 4.", dynamic_array_push(a, &v));
+    v = 5;
+    test_cond("Push 5.", dynamic_array_push(a, &v));
+    v = 6;
+    test_cond("Push 6.", dynamic_array_push(a, &v));
+    v = 7;
+    test_cond("Push 7.", dynamic_array_push(a, &v));
+    v = 8;
+    test_cond("Push 8.", dynamic_array_push(a, &v));
+
+    test_cond("Test get at 0.", 0 == *DYNAMIC_ARRAY_GET(int *, a, 0));
+    test_cond("Test get at 8.", 8 == *DYNAMIC_ARRAY_GET(int *, a, 8));
+
+    test_cond("Test pop 8.", 8 == *DYNAMIC_ARRAY_POP(int *, a));
+    test_cond("Test pop 7.", 7 == *DYNAMIC_ARRAY_POP(int *, a));
+    test_cond("Test pop 6.", 6 == *DYNAMIC_ARRAY_POP(int *, a));
 
     dynamic_array_destroy(a);
     test_report();

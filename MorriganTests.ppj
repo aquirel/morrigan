@@ -19,11 +19,11 @@ INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
 LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 
 # Array tests.
-bin_tests\array.exe: \
-    build_tests\array.obj
+bin_tests\array.exe: build_tests\array.obj
     mkdir bin_tests
     $(LINK) $(LINKFLAGS) -out:"$@" $**
     bin_tests\array.exe 2>&1 | tee bin_tests\array.log
+    pause
 
 build_tests\array.obj: array.c
     mkdir build_tests

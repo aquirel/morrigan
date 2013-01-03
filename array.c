@@ -95,3 +95,19 @@ static inline void __dynamic_array_assert(const DynamicArray *a)
     assert(a->array_capacity && "Bad array.");
 }
 
+#if defined(ARRAY_TESTS)
+#include <stdio.h>
+
+#include "testhelp.h"
+
+int main(void)
+{
+    DynamicArray *a = dynamic_array_create(sizeof(int), 10);
+    test_cond("Check array creation.", a);
+
+    dynamic_array_destroy(a);
+    test_report();
+    return 0;
+}
+
+#endif

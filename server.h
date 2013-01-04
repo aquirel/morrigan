@@ -5,7 +5,7 @@
 
 #include <winsock2.h>
 
-#include "client.h"
+#include "protocol.h"
 
 #define MAX_CLIENTS 16
 
@@ -14,6 +14,7 @@ void server_shutdown(void);
 
 Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);
+bool unregister_client(const SOCKADDR *address);
 
 void enqueue_client(const Client *c);
 

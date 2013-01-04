@@ -3,36 +3,10 @@
 #include <stdint.h>
 
 #include "protocol.h"
-#include "client.h"
 #include "server.h"
-
-typedef bool (*packet_validation_handler)(const void *packet);
-typedef void (*packet_execution_handler)(Client *c);
-
-typedef struct PacketDefinition
-{
-    uint8_t id;
-    packet_validation_handler validator;
-    packet_execution_handler executor;
-} PacketDefinition;
-
-typedef enum Requests
-{
-    req_hello = 0x00,
-    req_bye   = 0x01
-} Requests;
 
 void req_hello_executor(Client *c);
 void req_bye_executor(Client *c);
-
-typedef enum Responses
-{
-    res_hello            = 0x00,
-    res_bye              = 0x01,
-    res_too_many_clients = 0x03,
-    res_wait             = 0x04,
-    res_bad_request      = 0x80
-} Responses;
 
 static PacketDefinition RequestDefinitions[] =
 {
@@ -78,15 +52,15 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
         }
     }
 
-    if (c->has_packet)
+    if (c->current_packet_definition)
     {
         uint8_t response = res_wait;
         respond((char *) &response, 1, sender_address);
         return;
     }
 
-    memcpy(c->current_packet, packet, PACKET_BUFFER);
-    c->has_packet = true;
+    memcpy(c->current_packet_buffer, packet, PACKET_BUFFER);
+    c->current_packet_definition = packet_definition;
     enqueue_client(c);
 }
 

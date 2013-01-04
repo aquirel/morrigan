@@ -52,7 +52,7 @@ void *dynamic_array_get(const DynamicArray *a, size_t i)
     return &a->data[i * a->element_size];
 }
 
-void *dynamic_array_set(DynamicArray *a, size_t i, void *data)
+const void *dynamic_array_set(DynamicArray *a, size_t i, const void *data)
 {
     __dynamic_array_assert(a);
     assert(i >= 0 && i < a->array_capacity && "Index out of range.");
@@ -88,6 +88,27 @@ void *dynamic_array_pop(DynamicArray *a)
     assert(a->element_count && "Nothing to pop.");
 
     return &a->data[--a->element_count * a->element_size];
+}
+
+void dynamic_array_delete_at(DynamicArray *a, size_t i)
+{
+    __dynamic_array_assert(a);
+    assert(i >= 0 && i < a->element_count && "Index out of range.");
+    a->element_count--;
+    if (i == a->element_count)
+    {
+        memset(a->data + i * a->element_size, 0, a->element_size);
+        return;
+    }
+
+    memmove(a->data + i * a->element_size, a->data + (i + 1) * a->element_size, a->element_count - i);
+    memset(a->data + a->element_count * a->element_size, 0, a->element_size);
+}
+
+size_t dynamic_array_count(DynamicArray *a)
+{
+    __dynamic_array_assert(a);
+    return a->element_count;
 }
 
 static inline void __dynamic_array_assert(const DynamicArray *a)
@@ -133,6 +154,11 @@ int main(void)
     test_cond("Test pop 8.", 8 == *DYNAMIC_ARRAY_POP(int *, a));
     test_cond("Test pop 7.", 7 == *DYNAMIC_ARRAY_POP(int *, a));
     test_cond("Test pop 6.", 6 == *DYNAMIC_ARRAY_POP(int *, a));
+
+    dynamic_array_delete_at(a, 1);
+    test_cond("Test get at 1 after delete.", 2 == *DYNAMIC_ARRAY_GET(int *, a, 1));
+
+    test_cond("Test get element count.", 5 == dynamic_array_count(a));
 
     dynamic_array_destroy(a);
     test_report();

@@ -75,7 +75,6 @@ build\bstrlib.obj: \
 # 
 build\net.obj: \
 	net.c \
-	client.h \
 	debug.h \
 	net.h \
 	protocol.h \
@@ -87,7 +86,6 @@ build\net.obj: \
 # 
 build\protocol.obj: \
 	protocol.c \
-	client.h \
 	net.h \
 	protocol.h \
 	server.h
@@ -98,10 +96,11 @@ build\protocol.obj: \
 # 
 build\server.obj: \
 	server.c \
-	client.h \
 	debug.h \
 	dynamic_array.h \
 	net.h \
+	protocol.h \
+	ring_buffer.h \
 	server.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

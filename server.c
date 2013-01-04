@@ -4,7 +4,7 @@
 
 #include "server.h"
 #include "client.h"
-#include "array.h"
+#include "dynamic_array.h"
 
 static DynamicArray *clients = NULL;
 

@@ -1,8 +1,8 @@
-// array.c - dynamic arrays support.
+// dynamic_array.c - dynamic arrays support.
 
 #include <assert.h>
 
-#include "array.h"
+#include "dynamic_array.h"
 #include "debug.h"
 
 DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
@@ -23,11 +23,14 @@ DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
     return a;
 
     error:
+    if (a && a->data)
+    {
+        free(a->data);
+    }
     if (a)
     {
         free(a);
     }
-
     return NULL;
 }
 
@@ -95,7 +98,7 @@ static inline void __dynamic_array_assert(const DynamicArray *a)
     assert(a->array_capacity && "Bad array.");
 }
 
-#if defined(TESTS)
+#if defined(DYNAMIC_ARRAY_TESTS)
 #include <stdio.h>
 
 #include "testhelp.h"

@@ -37,8 +37,8 @@ typedef enum Responses
 static PacketDefinition RequestDefinitions[] =
 {
     { .id = req_hello, .validator = NULL, .executor = req_hello_executor },
-    { .id = req_bye, .validator = NULL, .executor = req_bye_executor },
-}
+    { .id = req_bye, .validator = NULL, .executor = req_bye_executor }
+};
 
 static PacketDefinition *find_packet_by_id(uint8_t id)
 {
@@ -56,12 +56,13 @@ static PacketDefinition *find_packet_by_id(uint8_t id)
 void handle_packet(const char *packet, const SOCKADDR *sender_address)
 {
     uint8_t id = packet[0];
-    PacketDefinition *packet = find_packet_by_id(id);
+    PacketDefinition *packet_definition = find_packet_by_id(id);
 
-    if (NULL == packet || (NULL != packet && NULL != packet->validator && !packet->validator(packet)))
+    if (NULL == packet_definition ||
+        (NULL != packet_definition && NULL != packet_definition->validator && !packet_definition->validator(packet)))
     {
         uint8_t response = res_bad_request;
-        respond(&response, 1, sender_address);
+        respond((char *) &response, 1, sender_address);
         return;
     }
 
@@ -72,7 +73,7 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
         if (NULL == c)
         {
             uint8_t response = res_too_many_clients;
-            respond(&response, 1, sender_address);
+            respond((char *) &response, 1, sender_address);
             return;
         }
     }
@@ -80,7 +81,7 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
     if (c->has_packet)
     {
         uint8_t response = res_wait;
-        respond(&response, 1, sender_address);
+        respond((char *) &response, 1, sender_address);
         return;
     }
 

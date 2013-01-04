@@ -1,4 +1,4 @@
-// array.h - dynamic arrays support.
+// dynamic_array.h - dynamic arrays support.
 
 #ifndef __ARRAY_H__
 #define __ARRAY_H__

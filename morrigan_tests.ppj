@@ -1,0 +1,26 @@
+﻿CC = pocc.exe#
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi#
+INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
+
+tests: \
+    dirs \
+    bin_tests\dynamic_array.exe \
+    bin_tests\ring_buffer.exe
+    echo "Running tests."
+
+dirs:
+    mkdir build_tests
+    mkdir bin_tests
+
+# dynamic_array tests.
+bin_tests\dynamic_array.exe: dynamic_array.c
+    $(CC) $(CCFLAGS) -DDYNAMIC_ARRAY_TESTS "$!" -Fo"$@"
+    bin_tests\dynamic_array.exe 2>&1 | tee bin_tests\dynamic_array.log
+    pause
+
+# ring_buffer tests.
+bin_tests\ring_buffer.exe: dynamic_array.c ring_buffer.c
+    $(CC) $(CCFLAGS) -DRING_BUFFER_TESTS "$!" -Fo"$@"
+    bin_tests\ring_buffer.exe 2>&1 | tee bin_tests\ring_buffer.log
+    pause

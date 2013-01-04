@@ -7,8 +7,10 @@
 
 #include "client.h"
 
-bool server_init();
-void server_shutdown();
+#define MAX_CLIENTS 16
+
+bool server_init(void);
+void server_shutdown(void);
 
 Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);

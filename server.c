@@ -1,10 +1,30 @@
 ﻿// server.h - server implementation.
 
+#include <stdbool.h>
+
 #include "server.h"
+#include "client.h"
 #include "array.h"
 
-bool server_init();
-void server_shutdown();
+static DynamicArray *clients = NULL;
+
+bool server_init(void)
+{
+    clients = DYNAMIC_ARRAY_CREATE(Client *, MAX_CLIENTS);
+    check_mem(clients);
+    return true;
+    error:
+    return false;
+}
+
+void server_shutdown(void)
+{
+    if (clients)
+    {
+        dynamic_array_destroy(clients);
+        clients = NULL;
+    }
+}
 
 Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);

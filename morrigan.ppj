@@ -41,10 +41,7 @@ bin\morrigan.exe: \
 # Build main.obj.
 # 
 build\main.obj: \
-	main.c \
-	bstrlib.h \
-	debug.h \
-	net.h
+	main.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -102,6 +99,7 @@ build\protocol.obj: \
 build\server.obj: \
 	server.c \
 	client.h \
+	debug.h \
 	dynamic_array.h \
 	net.h \
 	server.h

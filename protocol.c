@@ -89,3 +89,11 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
     c->has_packet = true;
     enqueue_client(c);
 }
+
+void req_hello_executor(Client *c)
+{
+}
+
+void req_bye_executor(Client *c)
+{
+}

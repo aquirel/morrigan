@@ -1,5 +1,7 @@
 ﻿// main.c - main().
 
+#if !defined(DYNAMIC_ARRAY_TESTS) && !defined(RING_BUFFER_TESTS)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -36,3 +38,5 @@ int main(int argc, const char *argv[], const char *envp[])
     error:
     return EXIT_FAILURE;
 }
+
+#endif

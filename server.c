@@ -5,6 +5,7 @@
 #include "server.h"
 #include "client.h"
 #include "dynamic_array.h"
+#include "debug.h"
 
 static DynamicArray *clients = NULL;
 
@@ -26,9 +27,22 @@ void server_shutdown(void)
     }
 }
 
-Client *find_client_by_address(const SOCKADDR *address);
-Client *register_client(const SOCKADDR *address);
+Client *find_client_by_address(const SOCKADDR *address)
+{
+    return NULL;
+}
 
-void enqueue_client(const Client *c); // TODO: Add to ringbuffer.
+Client *register_client(const SOCKADDR *address)
+{
+    return NULL;
+}
 
-void notify_shutdown(void); // TODO: Notify remaining clients about server shutdown.
+void enqueue_client(const Client *c)
+{
+    // TODO: Add to ringbuffer.
+}
+
+void notify_shutdown(void)
+{
+    // TODO: Notify remaining clients about server shutdown.
+}

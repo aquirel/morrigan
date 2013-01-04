@@ -48,14 +48,14 @@ static inline void __dynamic_array_assert(const DynamicArray *a);
 void *dynamic_array_get(const DynamicArray *a, size_t i)
 {
     __dynamic_array_assert(a);
-    assert(i >= 0 && i < a->element_count && "Index out of range.");
+    assert(i >= 0 && i < a->array_capacity && "Index out of range.");
     return &a->data[i * a->element_size];
 }
 
 void *dynamic_array_set(DynamicArray *a, size_t i, void *data)
 {
     __dynamic_array_assert(a);
-    assert(i >= 0 && i < a->element_count && "Index out of range.");
+    assert(i >= 0 && i < a->array_capacity && "Index out of range.");
     memcpy(a->data + i * a->element_size, data, a->element_size);
     return data;
 }

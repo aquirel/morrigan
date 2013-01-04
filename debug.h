@@ -1,5 +1,7 @@
-#ifndef __debug_h__
-#define __debug_h__
+// debug.h - error handling facilities.
+
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
 
 #include <stdio.h>
 #include <errno.h>

@@ -15,29 +15,35 @@ AS = poasm.exe#
 RC = porc.exe#
 LINK = polink.exe#
 SIGN = posign.exe#
-CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi #
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Ze -Gi -D_X86_ -D_M_IX86 #
 ASFLAGS = -AIA32 -Gd #
 RCFLAGS = #
-LINKFLAGS = -debug -debugtype:both -subsystem:console -machine:x86 -map -release -verbose kernel32.lib advapi32.lib delayimp.lib#
+LINKFLAGS = -debug -debugtype:both -subsystem:console -machine:x86 -map -release -verbose kernel32.lib advapi32.lib delayimp.lib WS2_32.LIB#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
 INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
 LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 
 # 
-# Build Morrigan.exe.
+# Build morrigan.exe.
 # 
-bin\Morrigan.exe: \
+bin\morrigan.exe: \
 	build\array.obj \
 	build\bstraux.obj \
 	build\bstrlib.obj \
-	build\main.obj
+	build\main.obj \
+	build\net.obj \
+	build\protocol.obj \
+	build\server.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
 # Build main.obj.
 # 
 build\main.obj: \
-	main.c
+	main.c \
+	bstrlib.h \
+	debug.h \
+	net.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -64,6 +70,40 @@ build\bstraux.obj: \
 build\bstrlib.obj: \
 	bstrlib.c \
 	bstrlib.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build net.obj.
+# 
+build\net.obj: \
+	net.c \
+	client.h \
+	debug.h \
+	net.h \
+	protocol.h \
+	server.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build protocol.obj.
+# 
+build\protocol.obj: \
+	protocol.c \
+	client.h \
+	net.h \
+	protocol.h \
+	server.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build server.obj.
+# 
+build\server.obj: \
+	server.c \
+	array.h \
+	client.h \
+	net.h \
+	server.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

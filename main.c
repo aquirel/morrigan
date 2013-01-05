@@ -1,6 +1,6 @@
 ﻿// main.c - main().
 
-#if !defined(DYNAMIC_ARRAY_TESTS) && !defined(RING_BUFFER_TESTS)
+#if !defined(TESTS)
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -1,16 +1,19 @@
 ﻿CC = pocc.exe#
-CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi#
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi -DTESTS#
 INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
 LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 
 tests: \
     dirs \
     bin_tests\dynamic_array.exe \
-    bin_tests\ring_buffer.exe
+    bin_tests\ring_buffer.exe \
+    bin_tests\vector.exe
     echo "Running tests."
     bin_tests\dynamic_array.exe 2>&1 | tee bin_tests\dynamic_array.log
     pause
     bin_tests\ring_buffer.exe 2>&1 | tee bin_tests\ring_buffer.log
+    pause
+    bin_tests\vector.exe 2>&1 | tee bin_tests\vector.log
     pause
 
 dirs:
@@ -35,3 +38,16 @@ build_tests\ring_buffer_dynamic_array.obj: dynamic_array.c
 
 build_tests\ring_buffer.obj: ring_buffer.c
     $(CC) $(CCFLAGS) -DRING_BUFFER_TESTS "$!" -Fo"$@"
+
+# vector tests.
+bin_tests\vector.exe: \
+    build_tests\vector.obj \
+    build_tests\matrix.obj
+    $(LINK) $(LINKFLAGS) -out:"$@" $**
+
+build_tests\vector.obj: vector.c
+    $(CC) $(CCFLAGS) -DVECTOR_TESTS "$!" -Fo"$@"
+
+build_tests\matrix.obj: matrix.c
+    $(CC) $(CCFLAGS) -DVECTOR_TESTS "$!" -Fo"$@"
+

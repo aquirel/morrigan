@@ -1,6 +1,8 @@
 ﻿// vector.c - vector implementation.
 
 #include <assert.h>
+#include <stdlib.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "vector.h"
@@ -137,3 +139,56 @@ static inline bool __tolerance_eq(double v1, double v2)
 {
     return fabs(v1 - v2) <= vector_eps;
 }
+
+#if defined(VECTOR_TESTS)
+#include <stdio.h>
+
+#include "testhelp.h"
+
+int main(void)
+{
+    Vector a, b, t;
+    a.x = a.y = a.z = 1;
+    b.x = 1;
+    b.y = 2;
+    b.z = 3;
+
+    vector_add(&a, &b, &t);
+    test_cond("Test add.", 2 == t.x && 3 == t.y && 4 == t.z);
+    vector_sub(&a, &b, &t);
+    test_cond("Test sub.", 0 == t.x && -1 == t.y && -2 == t.z);
+    test_cond("Test mul.", 1 + 2 + 3 == vector_mul(&a, &b));
+    vector_scale(&b, 2, &t);
+    test_cond("Test scale.", 2 == t.x && 4 == t.y && 6 == t.z);
+    test_cond("Test length.", __tolerance_eq(sqrt(3), vector_length(&a)));
+    vector_normalize(&a, &t);
+    test_cond("Test normalize.", __tolerance_eq(1, vector_length(&t)));
+    test_cond("Test distance.", __tolerance_eq(sqrt(5), vector_distance(&a, &b)));
+
+    Vector d, n;
+    d.x = d.y = -1;
+    d.z = 0;
+    n.x = n.z = 0;
+    n.y = 1;
+
+    vector_reflect(&d, &n, &t);
+    test_cond("Test reflect.", __tolerance_eq(-1, t.x) && __tolerance_eq(1, t.y));
+
+    vector_vector_mul(&a, &b, &t);
+    test_cond("Test vector mul.", __tolerance_eq(0, vector_mul(&a, &t)) && __tolerance_eq(0, vector_mul(&b, &t)));
+
+    vector_zero(&t);
+    test_cond("Test zero.", 0 == t.x && 0 == t.y && 0 == t.z);
+
+    a.x = 1;
+    a.y = a.z = 0;
+    b.x = b.y = 0;
+    b.z = 1;
+    vector_rotate(&a, &b, M_PI_2, &t);
+    test_cond("Test rotate.", __tolerance_eq(0, t.x) && __tolerance_eq(1, t.y) && __tolerance_eq(0, t.z));
+
+    test_report();
+    return EXIT_SUCCESS;
+}
+
+#endif

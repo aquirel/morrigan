@@ -9,8 +9,8 @@
 
 #define MAX_CLIENTS 16
 
-bool server_init(void);
-void server_shutdown(void);
+bool server_start(void);
+void server_stop(void);
 
 Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);

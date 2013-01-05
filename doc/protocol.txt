@@ -35,6 +35,8 @@ Client.       Server.
               Register new client. If client exists - ignore.
            <- "Hello"
 "Hello" ->
+              Acknowledge client.
+           <- "Hello"
 
 Game-related exchanges.
          <->

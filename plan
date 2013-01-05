@@ -1,10 +1,7 @@
-protocol.
-protocol parsing.
-message queue.
 game entities.
 game entities behaviour.
+Port existing code.
 
 cli interface.
-Port existing code.
 
 sdl.

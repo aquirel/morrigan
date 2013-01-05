@@ -8,15 +8,23 @@
 #include "ring_buffer.h"
 #include "debug.h"
 
+static thrd_t worker_tid;
+static atomic_bool working;
 static DynamicArray *clients = NULL;
 static RingBuffer *requests = NULL;
 
-bool server_init(void)
+static int server_worker(void *unused);
+
+bool server_start(void)
 {
     clients = DYNAMIC_ARRAY_CREATE(Client *, MAX_CLIENTS);
     check_mem(clients);
     requests = RING_BUFFER_CREATE(Client *, MAX_CLIENTS);
     check_mem(requests);
+
+    working = true;
+    check(thrd_success == thrd_create(&worker_tid, protocol_worker, NULL), "Failed to start protocol worker thread", "");
+
     return true;
     error:
     if (clients)
@@ -29,11 +37,17 @@ bool server_init(void)
         ring_buffer_destroy(requests);
     }
 
+    thrd_detach(worker_tid);
+
     return false;
 }
 
-void server_shutdown(void)
+void server_stop(void)
 {
+    working = false;
+    thrd_join(worker_tid, NULL);
+    thrd_detach(worker_tid);
+
     if (clients)
     {
         dynamic_array_destroy(clients);
@@ -125,4 +139,29 @@ void notify_shutdown(void)
         respond((char *) &response, 1, &c->address);
         free(c);
     }
+}
+
+static int server_worker(void *unused)
+{
+    while (working)
+    {
+        if (ring_buffer_is_empty(requests))
+        {
+            ring_buffer_wait_not_empty(requests);
+        }
+
+        if (ring_buffer_is_empty(requests))
+        {
+            continue;
+        }
+
+        Client *c = RING_BUFFER_READ(Client *, requests);
+        assert(c && "Bad Client pointer.");
+        assert(c->current_packet_definition && "Client doesn't have pending packet.");
+        assert(c->current_packet_definition.executor && "No executor in packet definition.");
+
+        c->current_packet_definition.executor(c);
+    }
+
+    return 0;
 }

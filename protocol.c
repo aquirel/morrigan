@@ -1,12 +1,15 @@
 ﻿// protocol.c - protocol definition.
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <threads.h>
+#include <stdatomic.h>
 
 #include "protocol.h"
 #include "server.h"
 
-void req_hello_executor(Client *c);
-void req_bye_executor(Client *c);
+static void req_hello_executor(Client *c);
+static void req_bye_executor(Client *c);
 
 static PacketDefinition RequestDefinitions[] =
 {
@@ -50,6 +53,9 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
             respond((char *) &response, 1, sender_address);
             return;
         }
+
+        uint8_t response = res_hello;
+        respond((char *) &response, 1, sender_address);
     }
 
     if (c->current_packet_definition)
@@ -66,8 +72,16 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
 
 void req_hello_executor(Client *c)
 {
+    if (cs_connected == c->state)
+    {
+        c->state = cs_acknowledged;
+    }
+
+    uint8_t response = res_hello;
+    respond((char *) &response, 1, sender_address);
 }
 
 void req_bye_executor(Client *c)
 {
+    unregister_client(&c->address);
 }

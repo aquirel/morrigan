@@ -34,7 +34,8 @@ bin\morrigan.exe: \
 	build\net.obj \
 	build\protocol.obj \
 	build\ring_buffer.obj \
-	build\server.obj
+	build\server.obj \
+	build\game.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -112,6 +113,13 @@ build\ring_buffer.obj: \
 	debug.h \
 	dynamic_array.h \
 	ring_buffer.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build game.obj.
+# 
+build\game.obj: \
+	game.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

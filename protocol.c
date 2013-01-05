@@ -1,5 +1,6 @@
 ﻿// protocol.c - protocol definition.
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <threads.h>
@@ -70,18 +71,21 @@ void handle_packet(const char *packet, const SOCKADDR *sender_address)
     enqueue_client(c);
 }
 
-void req_hello_executor(Client *c)
+static void req_hello_executor(Client *c)
 {
+    assert(c && "Bad client pointer.");
+
     if (cs_connected == c->state)
     {
         c->state = cs_acknowledged;
     }
 
     uint8_t response = res_hello;
-    respond((char *) &response, 1, sender_address);
+    respond((char *) &response, 1, &c->address);
 }
 
-void req_bye_executor(Client *c)
+static void req_bye_executor(Client *c)
 {
+    assert(c && "Bad client pointer.");
     unregister_client(&c->address);
 }

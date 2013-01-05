@@ -1,6 +1,8 @@
 ﻿// server.h - server implementation.
 
+#include <assert.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 #include "server.h"
 #include "protocol.h"
@@ -23,7 +25,7 @@ bool server_start(void)
     check_mem(requests);
 
     working = true;
-    check(thrd_success == thrd_create(&worker_tid, protocol_worker, NULL), "Failed to start protocol worker thread", "");
+    check(thrd_success == thrd_create(&worker_tid, server_worker, NULL), "Failed to start server worker thread", "");
 
     return true;
     error:
@@ -158,9 +160,9 @@ static int server_worker(void *unused)
         Client *c = RING_BUFFER_READ(Client *, requests);
         assert(c && "Bad Client pointer.");
         assert(c->current_packet_definition && "Client doesn't have pending packet.");
-        assert(c->current_packet_definition.executor && "No executor in packet definition.");
+        assert(c->current_packet_definition->executor && "No executor in packet definition.");
 
-        c->current_packet_definition.executor(c);
+        c->current_packet_definition->executor(c);
     }
 
     return 0;

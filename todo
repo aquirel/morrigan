@@ -4,7 +4,6 @@ signal handling.
 --
 Real sizes and phys. values.
 
---
 Disable moving on steep hills.
     Move up slower;
     Move down quicker;

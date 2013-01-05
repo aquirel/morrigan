@@ -10,6 +10,7 @@
 
 #include "net.h"
 #include "protocol.h"
+#include "server.h"
 #include "debug.h"
 
 int main(int argc, const char *argv[], const char *envp[])
@@ -17,7 +18,7 @@ int main(int argc, const char *argv[], const char *envp[])
     puts("Starting morrigan.");
 
     check(net_start(), "Failed to start network interface.", "");
-    check(protocol_start(), "Failed to start game.", "");
+    check(server_start(), "Failed to start server.", "");
 
     do
     {
@@ -35,13 +36,13 @@ int main(int argc, const char *argv[], const char *envp[])
     puts("Stopping morrigan.\n");
 
     net_stop();
-    protocol_stop();
+    server_stop();
 
     return EXIT_SUCCESS;
 
     error:
     net_stop();
-    protocol_stop();
+    server_stop();
     return EXIT_FAILURE;
 }
 

@@ -31,15 +31,12 @@ bool net_start(void)
     working = true;
     check(thrd_success == thrd_create(&worker_tid, net_worker, NULL), "Failed to start network worker thread", "");
 
-    check(server_init(), "Failed to initialize server.", "");
-
     return true;
 
     error:
     WSACleanup();
     closesocket(s);
     thrd_detach(worker_tid);
-    server_shutdown();
     return false;
 }
 
@@ -82,7 +79,6 @@ void net_stop(void)
     closesocket(s);
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
-    server_shutdown();
     WSACleanup();
 }
 

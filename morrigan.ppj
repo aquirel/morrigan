@@ -37,7 +37,8 @@ bin\morrigan.exe: \
 	build\ring_buffer.obj \
 	build\server.obj \
 	build\vector.obj \
-	build\matrix.obj
+	build\matrix.obj \
+	build\landscape.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -139,6 +140,16 @@ build\vector.obj: \
 build\matrix.obj: \
 	matrix.c \
 	matrix.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build landscape.obj.
+# 
+build\landscape.obj: \
+	landscape.c \
+	debug.h \
+	landscape.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

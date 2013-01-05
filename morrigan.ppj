@@ -30,12 +30,14 @@ bin\morrigan.exe: \
 	build\bstraux.obj \
 	build\bstrlib.obj \
 	build\dynamic_array.obj \
+	build\game.obj \
 	build\main.obj \
 	build\net.obj \
 	build\protocol.obj \
 	build\ring_buffer.obj \
 	build\server.obj \
-	build\game.obj
+	build\vector.obj \
+	build\matrix.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -120,6 +122,24 @@ build\ring_buffer.obj: \
 # 
 build\game.obj: \
 	game.c
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build vector.obj.
+# 
+build\vector.obj: \
+	vector.c \
+	matrix.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build matrix.obj.
+# 
+build\matrix.obj: \
+	matrix.c \
+	matrix.h \
+	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

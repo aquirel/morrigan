@@ -31,14 +31,15 @@ bin\morrigan.exe: \
 	build\bstrlib.obj \
 	build\dynamic_array.obj \
 	build\game.obj \
+	build\landscape.obj \
 	build\main.obj \
+	build\matrix.obj \
 	build\net.obj \
 	build\protocol.obj \
 	build\ring_buffer.obj \
 	build\server.obj \
 	build\vector.obj \
-	build\matrix.obj \
-	build\landscape.obj
+	build\bounding.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -148,6 +149,17 @@ build\matrix.obj: \
 # 
 build\landscape.obj: \
 	landscape.c \
+	debug.h \
+	landscape.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build bounding.obj.
+# 
+build\bounding.obj: \
+	bounding.c \
+	bounding.h \
 	debug.h \
 	landscape.h \
 	vector.h

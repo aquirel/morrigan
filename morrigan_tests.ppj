@@ -8,7 +8,8 @@ tests: \
     bin_tests\dynamic_array.exe \
     bin_tests\ring_buffer.exe \
     bin_tests\vector.exe \
-    bin_tests\landscape.exe
+    bin_tests\landscape.exe \
+    bin_tests\bounding.exe
     echo "Running tests."
     bin_tests\dynamic_array.exe 2>&1 | tee bin_tests\dynamic_array.log
     pause
@@ -17,6 +18,8 @@ tests: \
     bin_tests\vector.exe 2>&1 | tee bin_tests\vector.log
     pause
     bin_tests\landscape.exe 2>&1 | tee bin_tests\landscape.log
+    pause
+    bin_tests\bounding.exe 2>&1 | tee bin_tests\bounding.log
     pause
 
 dirs:
@@ -69,3 +72,23 @@ build_tests\landscape_vector.obj: vector.c
 
 build_tests\landscape_matrix.obj: matrix.c
     $(CC) $(CCFLAGS) -DLANDSCAPE_TESTS "$!" -Fo"$@"
+
+# bounding tests.
+bin_tests\bounding.exe: \
+    build_tests\bounding.obj \
+    build_tests\bounding_landscape.obj \
+    build_tests\bounding_vector.obj \
+    build_tests\bounding_matrix.obj
+    $(LINK) $(LINKFLAGS) -out:"$@" $**
+
+build_tests\bounding.obj: bounding.c
+    $(CC) $(CCFLAGS) -DBOUNDING_TESTS "$!" -Fo"$@"
+
+build_tests\bounding_landscape.obj: landscape.c
+    $(CC) $(CCFLAGS) -DBOUNDING_TESTS "$!" -Fo"$@"
+
+build_tests\bounding_vector.obj: vector.c
+    $(CC) $(CCFLAGS) -DBOUNDING_TESTS "$!" -Fo"$@"
+
+build_tests\bounding_matrix.obj: matrix.c
+    $(CC) $(CCFLAGS) -DBOUNDING_TESTS "$!" -Fo"$@"

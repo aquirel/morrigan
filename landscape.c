@@ -9,7 +9,6 @@
 static inline void __get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y);
 static inline void __validate_location(const Landscape *l, size_t x, size_t y);
 static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
-static inline double __get_height_at(const Landscape *l, size_t x, size_t y);
 
 Landscape *landscape_create(size_t landscape_size, size_t tile_size)
 {
@@ -48,6 +47,18 @@ void landscape_destroy(Landscape *l)
     free(l);
 }
 
+double landscape_get_height_at_node(const Landscape *l, size_t y, size_t x)
+{
+    __validate_location(l, x, y);
+    return l->height_map[y * l->landscape_size + x];
+}
+
+void landscape_set_height_at_node(const Landscape *l, size_t y, size_t x, double h)
+{
+    __validate_location(l, x, y);
+    l->height_map[y * l->landscape_size + x] = h;
+}
+
 double landscape_get_height_at(const Landscape *l, double x, double y)
 {
     assert(l && "Bad landscape pointer.");
@@ -55,15 +66,15 @@ double landscape_get_height_at(const Landscape *l, double x, double y)
 
     Vector a, b, c;
     __get_location_triangle(l, x, y, &a, &b, &c);
-    size_t t_x, t_y;
-    __get_tile(l, x, y, &t_x, &t_y);
 
     double plane_a = -(c.y * b.z - a.y * b.z - c.y * a.z + a.z * b.y + c.z * a.y - b.y * c.z);
     double plane_b = (a.y * c.x + b.y * a.x + c.y * b.x - b.y * c.x - a.y * b.x - c.y * a.x);
     double plane_c = (b.z * c.x + a.z * b.x + c.z * a.x - a.z * c.x - b.z * a.x - b.x * c.z);
     double plane_d = -plane_a * a.x - plane_b * a.z - plane_c * a.y;
 
-    return -(plane_a * t_x + plane_c * t_y + plane_d) / plane_b;
+    x /= l->tile_size;
+    y /= l->tile_size;
+    return -(plane_a * x + plane_c * y + plane_d) / plane_b;
 }
 
 Vector *landscape_get_normal_at(const Landscape *l, double x, double y, Vector *result)
@@ -117,21 +128,59 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
 
     a->x = t_x + 1;
     a->y = t_y;
-    a->z = __get_height_at(l, (size_t) a->y, (size_t) a->x);
+    a->z = landscape_get_height_at_node(l, (size_t) a->y, (size_t) a->x);
 
     b->x = t_x;
     b->y = t_y + 1;
-    b->z = __get_height_at(l, (size_t) b->y, (size_t) b->x);
+    b->z = landscape_get_height_at_node(l, (size_t) b->y, (size_t) b->x);
 
     Vector c1 = { .x = t_x + 1, .y = t_y + 1, .z = 0 },
            c2 = { .x = t_x, .y = t_y, .z = 0 };
 
     *c = x - trunc(x) + y - trunc(y) < 1.0 ? c2 : c1;
-    c->z = __get_height_at(l, (size_t) c->y, (size_t) c->x);
+    c->z = landscape_get_height_at_node(l, (size_t) c->y, (size_t) c->x);
 }
 
-static inline double __get_height_at(const Landscape *l, size_t y, size_t x)
+#if defined(LANDSCAPE_TESTS)
+#include <stdio.h>
+
+#include "vector.h"
+#include "testhelp.h"
+
+int main(void)
 {
-    __validate_location(l, x, y);
-    return l->height_map[y * l->landscape_size + x];
+    Landscape *l = landscape_create(2, 4);
+    test_cond("Crete landscape.", l);
+
+    landscape_set_height_at_node(l, 0, 0, 0.1);
+    landscape_set_height_at_node(l, 0, 1, 0.2);
+    landscape_set_height_at_node(l, 1, 0, 0.1);
+    landscape_set_height_at_node(l, 1, 1, 0.2);
+
+    test_cond("Get height 1.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 0)));
+    test_cond("Get height 2.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 4 - vector_eps)));
+    test_cond("Get height 3.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 4 - vector_eps, 0)));
+    test_cond("Get height 4.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 4 - vector_eps, 4 - vector_eps)));
+    test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 2 - vector_eps, 0)));
+
+    landscape_destroy(l);
+    l = landscape_create(2, 4);
+    landscape_set_height_at_node(l, 0, 0, 0.0);
+    landscape_set_height_at_node(l, 0, 1, 1.0);
+    landscape_set_height_at_node(l, 1, 0, 0.0);
+    landscape_set_height_at_node(l, 1, 1, 1.0);
+
+    Vector n, v = { .x = -1, .y = 0, .z = 1 };
+    VECTOR_NORMALIZE(&v);
+
+    landscape_get_normal_at(l, 0.5, 0.5, &n);
+    test_cond("Get normal 1.", vector_eq(&n, &v));
+    landscape_get_normal_at(l, 0, 0, &n);
+    test_cond("Get normal 1.", vector_eq(&n, &v));
+
+    landscape_destroy(l);
+    test_report();
+    return EXIT_SUCCESS;
 }
+
+#endif

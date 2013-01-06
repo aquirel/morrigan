@@ -12,6 +12,7 @@ typedef struct Vector
     double x, y, z;
 } Vector;
 
+bool vector_tolerance_eq(double v1, double v2);
 bool vector_eq(const Vector *v1, const Vector *v2);
 bool vector2_eq(const Vector *v1, const Vector *v2);
 

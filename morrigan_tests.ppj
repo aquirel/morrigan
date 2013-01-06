@@ -7,13 +7,16 @@ tests: \
     dirs \
     bin_tests\dynamic_array.exe \
     bin_tests\ring_buffer.exe \
-    bin_tests\vector.exe
+    bin_tests\vector.exe \
+    bin_tests\landscape.exe
     echo "Running tests."
     bin_tests\dynamic_array.exe 2>&1 | tee bin_tests\dynamic_array.log
     pause
     bin_tests\ring_buffer.exe 2>&1 | tee bin_tests\ring_buffer.log
     pause
     bin_tests\vector.exe 2>&1 | tee bin_tests\vector.log
+    pause
+    bin_tests\landscape.exe 2>&1 | tee bin_tests\landscape.log
     pause
 
 dirs:
@@ -51,3 +54,18 @@ build_tests\vector.obj: vector.c
 build_tests\matrix.obj: matrix.c
     $(CC) $(CCFLAGS) -DVECTOR_TESTS "$!" -Fo"$@"
 
+# landscape tests.
+bin_tests\landscape.exe: \
+    build_tests\landscape.obj \
+    build_tests\landscape_vector.obj \
+    build_tests\landscape_matrix.obj
+    $(LINK) $(LINKFLAGS) -out:"$@" $**
+
+build_tests\landscape.obj: landscape.c
+    $(CC) $(CCFLAGS) -DLANDSCAPE_TESTS "$!" -Fo"$@"
+
+build_tests\landscape_vector.obj: vector.c
+    $(CC) $(CCFLAGS) -DLANDSCAPE_TESTS "$!" -Fo"$@"
+
+build_tests\landscape_matrix.obj: matrix.c
+    $(CC) $(CCFLAGS) -DLANDSCAPE_TESTS "$!" -Fo"$@"

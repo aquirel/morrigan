@@ -8,23 +8,26 @@
 #include "vector.h"
 #include "matrix.h"
 
-double vector_eps = 1e-10;
+double vector_eps = 1e-5;
 
-static inline bool __tolerance_eq(double v1, double v2);
+bool vector_tolerance_eq(double v1, double v2)
+{
+    return fabs(v1 - v2) <= vector_eps;
+}
 
 bool vector_eq(const Vector *v1, const Vector *v2)
 {
     assert(v1 && v2 && "Bad vector pointers.");
-    return __tolerance_eq(v1->x, v2->x) &&
-           __tolerance_eq(v1->y, v2->y) &&
-           __tolerance_eq(v1->z, v2->z);
+    return vector_tolerance_eq(v1->x, v2->x) &&
+           vector_tolerance_eq(v1->y, v2->y) &&
+           vector_tolerance_eq(v1->z, v2->z);
 }
 
 bool vector2_eq(const Vector *v1, const Vector *v2)
 {
     assert(v1 && v2 && "Bad vector pointers.");
-    return __tolerance_eq(v1->x, v2->x) &&
-           __tolerance_eq(v1->y, v2->y);
+    return vector_tolerance_eq(v1->x, v2->x) &&
+           vector_tolerance_eq(v1->y, v2->y);
 }
 
 Vector *vector_add(const Vector *v1, const Vector *v2, Vector *result)
@@ -135,11 +138,6 @@ double vector_angle(const Vector *v1, const Vector *v2)
     return vector_mul(v1, v2) / (vector_length(v1) * vector_length(v2));
 }
 
-static inline bool __tolerance_eq(double v1, double v2)
-{
-    return fabs(v1 - v2) <= vector_eps;
-}
-
 #if defined(VECTOR_TESTS)
 #include <stdio.h>
 
@@ -160,10 +158,10 @@ int main(void)
     test_cond("Test mul.", 1 + 2 + 3 == vector_mul(&a, &b));
     vector_scale(&b, 2, &t);
     test_cond("Test scale.", 2 == t.x && 4 == t.y && 6 == t.z);
-    test_cond("Test length.", __tolerance_eq(sqrt(3), vector_length(&a)));
+    test_cond("Test length.", vector_tolerance_eq(sqrt(3), vector_length(&a)));
     vector_normalize(&a, &t);
-    test_cond("Test normalize.", __tolerance_eq(1, vector_length(&t)));
-    test_cond("Test distance.", __tolerance_eq(sqrt(5), vector_distance(&a, &b)));
+    test_cond("Test normalize.", vector_tolerance_eq(1, vector_length(&t)));
+    test_cond("Test distance.", vector_tolerance_eq(sqrt(5), vector_distance(&a, &b)));
 
     Vector d, n;
     d.x = d.y = -1;
@@ -172,10 +170,10 @@ int main(void)
     n.y = 1;
 
     vector_reflect(&d, &n, &t);
-    test_cond("Test reflect.", __tolerance_eq(-1, t.x) && __tolerance_eq(1, t.y));
+    test_cond("Test reflect.", vector_tolerance_eq(-1, t.x) && vector_tolerance_eq(1, t.y));
 
     vector_vector_mul(&a, &b, &t);
-    test_cond("Test vector mul.", __tolerance_eq(0, vector_mul(&a, &t)) && __tolerance_eq(0, vector_mul(&b, &t)));
+    test_cond("Test vector mul.", vector_tolerance_eq(0, vector_mul(&a, &t)) && vector_tolerance_eq(0, vector_mul(&b, &t)));
 
     vector_zero(&t);
     test_cond("Test zero.", 0 == t.x && 0 == t.y && 0 == t.z);
@@ -185,7 +183,7 @@ int main(void)
     b.x = b.y = 0;
     b.z = 1;
     vector_rotate(&a, &b, M_PI_2, &t);
-    test_cond("Test rotate.", __tolerance_eq(0, t.x) && __tolerance_eq(1, t.y) && __tolerance_eq(0, t.z));
+    test_cond("Test rotate.", vector_tolerance_eq(0, t.x) && vector_tolerance_eq(1, t.y) && vector_tolerance_eq(0, t.z));
 
     test_report();
     return EXIT_SUCCESS;

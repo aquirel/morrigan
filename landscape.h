@@ -19,6 +19,9 @@ typedef struct Landscape
 Landscape *landscape_create(size_t landscape_size, size_t tile_size);
 void landscape_destroy(Landscape *l);
 
+double landscape_get_height_at_node(const Landscape *l, size_t y, size_t x);
+void landscape_set_height_at_node(const Landscape *l, size_t y, size_t x, double h);
+
 double landscape_get_height_at(const Landscape *l, double x, double y);
 #define LANDSCAPE_GET_HEIGHT_AT(l, v) landscape_get_height_at((l), (v)->x, (v)->y)
 

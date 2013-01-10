@@ -9,6 +9,7 @@
 #include <winsock2.h>
 
 #include "net.h"
+#include "tank.h"
 
 typedef enum Requests
 {
@@ -48,7 +49,7 @@ typedef struct Client
 {
     ClientState state;
     SOCKADDR address;
-    //tank.
+    Tank tank;
     char current_packet_buffer[PACKET_BUFFER];
     PacketDefinition *current_packet_definition;
 } Client;

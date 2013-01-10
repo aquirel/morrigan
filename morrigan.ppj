@@ -27,6 +27,7 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 # Build morrigan.exe.
 # 
 bin\morrigan.exe: \
+	build\bounding.obj \
 	build\bstraux.obj \
 	build\bstrlib.obj \
 	build\dynamic_array.obj \
@@ -38,8 +39,8 @@ bin\morrigan.exe: \
 	build\protocol.obj \
 	build\ring_buffer.obj \
 	build\server.obj \
-	build\vector.obj \
-	build\bounding.obj
+	build\tank.obj \
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -91,9 +92,13 @@ build\net.obj: \
 # 
 build\protocol.obj: \
 	protocol.c \
+	bounding.h \
+	landscape.h \
 	net.h \
 	protocol.h \
-	server.h
+	server.h \
+	tank.h \
+	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -162,6 +167,17 @@ build\bounding.obj: \
 	bounding.h \
 	debug.h \
 	landscape.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build tank.obj.
+# 
+build\tank.obj: \
+	tank.c \
+	bounding.h \
+	landscape.h \
+	tank.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

@@ -163,6 +163,7 @@ static int server_worker(void *unused)
         assert(c->current_packet_definition->executor && "No executor in packet definition.");
 
         c->current_packet_definition->executor(c);
+        c->current_packet_definition = NULL;
     }
 
     return 0;

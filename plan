@@ -1,8 +1,8 @@
-game.
-game entities.
-game entities behaviour.
-Port existing code.
-
+game worker.
 cli interface.
+
+game entities (shell).
+game entities behaviour (shell).
+Port existing code (shell).
 
 sdl.

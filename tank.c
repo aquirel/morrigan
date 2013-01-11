@@ -52,7 +52,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
             .direction = &tank->direction,
             .offset = { .x = 0, .y = 0, .z = 0 },
             .bounding_type = bounding_composite,
-            .data.composite_data = 
+            .data.composite_data =
             {
                 .children = tank->bounding_primitives,
                 .children_count = TANK_BOUNDING_PRIMITIVES

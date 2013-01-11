@@ -1,14 +1,14 @@
 /*
  * This source file is part of the bstring string library.  This code was
- * written by Paul Hsieh in 2002-2010, and is covered by either the 3-clause 
- * BSD open source license or GPL v2.0. Refer to the accompanying documentation 
+ * written by Paul Hsieh in 2002-2010, and is covered by either the 3-clause
+ * BSD open source license or GPL v2.0. Refer to the accompanying documentation
  * for details on usage and license.
  */
 
 /*
  * bstrlib.h
  *
- * This file is the header file for the core module for implementing the 
+ * This file is the header file for the core module for implementing the
  * bstring functions.
  */
 
@@ -114,11 +114,11 @@ extern struct bstrList * bsplits (const_bstring str, const_bstring splitStr);
 extern struct bstrList * bsplitstr (const_bstring str, const_bstring splitStr);
 extern bstring bjoin (const struct bstrList * bl, const_bstring sep);
 extern int bsplitcb (const_bstring str, unsigned char splitChar, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
+    int (* cb) (void * parm, int ofs, int len), void * parm);
 extern int bsplitscb (const_bstring str, const_bstring splitStr, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
+    int (* cb) (void * parm, int ofs, int len), void * parm);
 extern int bsplitstrcb (const_bstring str, const_bstring splitStr, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
+    int (* cb) (void * parm, int ofs, int len), void * parm);
 
 /* Miscellaneous functions */
 extern int bpattern (bstring b, int len);
@@ -139,21 +139,21 @@ extern int bvcformata (bstring b, int count, const char * fmt, va_list arglist);
 bstring bstrtmp_b = (b); \
 const char * bstrtmp_fmt = (fmt); \
 int bstrtmp_r = BSTR_ERR, bstrtmp_sz = 16; \
-	for (;;) { \
-		va_list bstrtmp_arglist; \
-		va_start (bstrtmp_arglist, lastarg); \
-		bstrtmp_r = bvcformata (bstrtmp_b, bstrtmp_sz, bstrtmp_fmt, bstrtmp_arglist); \
-		va_end (bstrtmp_arglist); \
-		if (bstrtmp_r >= 0) { /* Everything went ok */ \
-			bstrtmp_r = BSTR_OK; \
-			break; \
-		} else if (-bstrtmp_r <= bstrtmp_sz) { /* A real error? */ \
-			bstrtmp_r = BSTR_ERR; \
-			break; \
-		} \
-		bstrtmp_sz = -bstrtmp_r; /* Doubled or target size */ \
-	} \
-	ret = bstrtmp_r; \
+    for (;;) { \
+        va_list bstrtmp_arglist; \
+        va_start (bstrtmp_arglist, lastarg); \
+        bstrtmp_r = bvcformata (bstrtmp_b, bstrtmp_sz, bstrtmp_fmt, bstrtmp_arglist); \
+        va_end (bstrtmp_arglist); \
+        if (bstrtmp_r >= 0) { /* Everything went ok */ \
+            bstrtmp_r = BSTR_OK; \
+            break; \
+        } else if (-bstrtmp_r <= bstrtmp_sz) { /* A real error? */ \
+            bstrtmp_r = BSTR_ERR; \
+            break; \
+        } \
+        bstrtmp_sz = -bstrtmp_r; /* Doubled or target size */ \
+    } \
+    ret = bstrtmp_r; \
 }
 
 #endif
@@ -180,16 +180,16 @@ extern int bsreadlnsa (bstring r, struct bStream * s, const_bstring term);
 extern int bsreada (bstring b, struct bStream * s, int n);
 extern int bsunread (struct bStream * s, const_bstring b);
 extern int bspeek (bstring r, const struct bStream * s);
-extern int bssplitscb (struct bStream * s, const_bstring splitStr, 
-	int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
-extern int bssplitstrcb (struct bStream * s, const_bstring splitStr, 
-	int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
+extern int bssplitscb (struct bStream * s, const_bstring splitStr,
+    int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
+extern int bssplitstrcb (struct bStream * s, const_bstring splitStr,
+    int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
 extern int bseof (const struct bStream * s);
 
 struct tagbstring {
-	int mlen;
-	int slen;
-	unsigned char * data;
+    int mlen;
+    int slen;
+    unsigned char * data;
 };
 
 /* Accessor macros */

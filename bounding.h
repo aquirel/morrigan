@@ -58,6 +58,6 @@ void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projectio
 bool projections_are_intersecting(double projection1_start, double projection1_end, double projection2_start, double projection2_end);
 
 bool intersection_test(const Bounding *b1, const Bounding *b2);
-void intersection_solve(const Bounding *b1, const Bounding *b2);
+void intersection_resolve(const Bounding *b1, const Bounding *b2);
 
 #endif /* __BOUNDING_H__ */

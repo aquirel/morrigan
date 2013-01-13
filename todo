@@ -1,7 +1,3 @@
-call tank_initialize.
-set initial tank position, orientation, direction.
-clients_has_tank flag.
-
 check and guard cross-thread accesses to common structures.
 signal handling.
 

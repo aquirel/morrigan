@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "bstrlib.h"
 
@@ -16,6 +17,8 @@
 int main(int argc, const char *argv[], const char *envp[])
 {
     puts("Starting morrigan.");
+
+    srand(time(NULL));
 
     check(net_start(), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");

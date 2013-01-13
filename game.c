@@ -57,9 +57,45 @@ static int game_worker(void *unused)
         for (size_t i = 0; i < clients_count; i++)
         {
             Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+
+            if (cs_in_game == c->state)
+            {
+                Vector position, top;
+
+                size_t j;
+                do
+                {
+                    position.x = (rand() % (landscape->landscape_size * landscape->tile_size)) - 1;
+                    position.y = (rand() % (landscape->landscape_size * landscape->tile_size)) - 1;
+                    position.z = landscape_get_height_at(landscape, position.x, position.y);
+
+                    for (j = 0; j < clients_count; j++)
+                    {
+                        Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
+                        if (cs_in_game == previous_c->state &&
+                                          intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+                        {
+                            break;
+                        }
+                    }
+                } while (j < clients_count);
+
+                landscape_get_normal_at(landscape, position.x, position.y, &top);
+                tank_initialize(&c->tank, &position, &top, clients_count);
+                c->state = cs_in_game;
+            }
+
             tank_tick(&c->tank, landscape);
 
-            // TODO: Collision detection.
+            for (size_t j = 0; j < i; j++)
+            {
+                Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
+                if (cs_in_game == previous_c->state &&
+                    intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+                {
+                    intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
+                }
+            }
         }
 
         _gettimeofday(&tick_end_time, NULL);

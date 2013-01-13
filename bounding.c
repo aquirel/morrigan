@@ -221,7 +221,7 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
     return true;
 }
 
-void intersection_solve(const Bounding *b1, const Bounding *b2)
+void intersection_resolve(const Bounding *b1, const Bounding *b2)
 {
     assert(b1 && b2 && "Bad bounding pointers.");
     memcpy(b1->origin, b1->previous_origin, sizeof(Vector));

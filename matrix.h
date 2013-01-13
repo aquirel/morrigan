@@ -12,4 +12,4 @@ typedef struct Matrix
 
 Vector *matrix_vector_mul(const Matrix *m, const Vector *v, Vector *result); // matrix * vector.
 
-#endif
+#endif /* __MATRIX_H__ */

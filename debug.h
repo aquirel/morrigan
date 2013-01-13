@@ -22,4 +22,4 @@
 #define check_mem(CONDITION) check((CONDITION), "Out of memory.", "")
 #define check_debug(CONDITION, MESSAGE, ...) if(!(CONDITION)) { debug(MESSAGE, __VA_ARGS__); errno = 0; goto error; }
 
-#endif
+#endif /* __DEBUG_H__ */

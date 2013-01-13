@@ -20,4 +20,4 @@ void enqueue_client(const Client *c);
 
 void notify_shutdown(void);
 
-#endif
+#endif /* __SERVER_H__ */

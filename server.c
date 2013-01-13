@@ -11,7 +11,7 @@
 #include "debug.h"
 
 static thrd_t worker_tid;
-static atomic_bool working;
+static atomic_bool working = false;
 static DynamicArray *clients = NULL;
 static RingBuffer *requests = NULL;
 
@@ -25,7 +25,7 @@ bool server_start(void)
     check_mem(requests);
 
     working = true;
-    check(thrd_success == thrd_create(&worker_tid, server_worker, NULL), "Failed to start server worker thread", "");
+    check(thrd_success == thrd_create(&worker_tid, server_worker, NULL), "Failed to start server worker thread.", "");
 
     return true;
     error:
@@ -98,7 +98,7 @@ Client *register_client(const SOCKADDR *address)
     c->state = cs_connected;
     memcpy(&c->address, address, sizeof(SOCKADDR));
 
-    check(dynamic_array_push(clients, c), "Failed to new client", "");
+    check(dynamic_array_push(clients, c), "Failed to add new client.", "");
 
     error:
     if (c)

@@ -1,7 +1,7 @@
 // dynamic_array.h - dynamic arrays support.
 
-#ifndef __ARRAY_H__
-#define __ARRAY_H__
+#ifndef __DYNAMIC_ARRAY_H__
+#define __DYNAMIC_ARRAY_H__
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -26,4 +26,4 @@ void *dynamic_array_pop(DynamicArray *a);
 void dynamic_array_delete_at(DynamicArray *a, size_t i);
 size_t dynamic_array_count(DynamicArray *a);
 
-#endif
+#endif /* __DYNAMIC_ARRAY_H__ */

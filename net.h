@@ -15,4 +15,4 @@ void net_stop(void);
 
 void respond(const char *data, size_t data_length, const SOCKADDR *to);
 
-#endif
+#endif /* __NET_H__ */

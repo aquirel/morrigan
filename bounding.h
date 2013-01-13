@@ -60,4 +60,4 @@ bool projections_are_intersecting(double projection1_start, double projection1_e
 bool intersection_test(const Bounding *b1, const Bounding *b2);
 void intersection_solve(const Bounding *b1, const Bounding *b2);
 
-#endif
+#endif /* __BOUNDING_H__ */

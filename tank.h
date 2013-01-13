@@ -50,4 +50,4 @@ void tank_turn(Tank *tank, double turn_angle);
 void tank_look_at(Tank *tank, const Vector *look);
 void tank_set_power(Tank *tank, int power);
 
-#endif
+#endif /* __TANK_H__ */

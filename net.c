@@ -12,24 +12,24 @@
 #include "server.h"
 
 static thrd_t worker_tid;
-static atomic_bool working;
-static SOCKET s;
+static atomic_bool working = false;
+static SOCKET s = INVALID_SOCKET;
 
 static int net_worker(void *unused);
 
 bool net_start(void)
 {
     WSADATA winsockData;
-    check(0 == WSAStartup(MAKEWORD(2, 2), &winsockData), "Failed to initialize winsock. Error: %d", WSAGetLastError());
+    check(0 == WSAStartup(MAKEWORD(2, 2), &winsockData), "Failed to initialize winsock. Error: %d.", WSAGetLastError());
 
     s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    check(INVALID_SOCKET != s, "Failed to create socket. Error: %d", WSAGetLastError());
+    check(INVALID_SOCKET != s, "Failed to create socket. Error: %d.", WSAGetLastError());
 
     SOCKADDR_IN s_address = { .sin_family = AF_INET, .sin_port = htons(PORT), .sin_addr.s_addr = htonl(INADDR_ANY) };
-    check(SOCKET_ERROR != bind(s, (const SOCKADDR *) &s_address, sizeof(s_address)), "Failed to bind socket. Error: %d", WSAGetLastError());
+    check(SOCKET_ERROR != bind(s, (const SOCKADDR *) &s_address, sizeof(s_address)), "Failed to bind socket. Error: %d.", WSAGetLastError());
 
     working = true;
-    check(thrd_success == thrd_create(&worker_tid, net_worker, NULL), "Failed to start network worker thread", "");
+    check(thrd_success == thrd_create(&worker_tid, net_worker, NULL), "Failed to start network worker thread.", "");
 
     return true;
 
@@ -84,5 +84,9 @@ void net_stop(void)
 
 void respond(const char *data, size_t data_length, const SOCKADDR *to)
 {
-    sendto(s, data, data_length, 0, to, sizeof(*to));
+    check(SOCKET_ERROR != sendto(s, data, data_length, 0, to, sizeof(*to)),
+          "Failed to send response to client. Error: %d.",
+           WSAGetLastError());
+    error:
+    return;
 }

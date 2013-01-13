@@ -39,4 +39,4 @@ Vector *vector_rotate(const Vector *v, const Vector *axis, double angle, Vector 
 Vector *vector_zero(Vector *v);
 double vector_angle(const Vector *v1, const Vector *v2);
 
-#endif
+#endif /* __VECTOR_H__ */

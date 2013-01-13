@@ -34,15 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __TESTHELP_H
-#define __TESTHELP_H
+#ifndef __TESTHELP_H__
+#define __TESTHELP_H__
 
 int __failed_tests = 0;
 int __test_num = 0;
+
 #define test_cond(descr,_c) do { \
     __test_num++; printf("%d - %s: ", __test_num, descr); \
     if(_c) printf("PASSED\n"); else {printf("FAILED\n"); __failed_tests++;} \
-} while(0);
+    } while(0);
+
 #define test_report() do { \
     printf("%d tests, %d passed, %d failed\n", __test_num, \
                     __test_num-__failed_tests, __failed_tests); \
@@ -51,4 +53,4 @@ int __test_num = 0;
     } \
 } while(0);
 
-#endif
+#endif /* __TESTHELP_H__ */

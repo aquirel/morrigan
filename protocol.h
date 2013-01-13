@@ -56,4 +56,4 @@ typedef struct Client
 
 void handle_packet(const char *packet, const SOCKADDR *sender_address);
 
-#endif
+#endif /* __PROTOCOL_H__ */

@@ -27,7 +27,7 @@ bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
             return composite_intersects_with_landscape(l, b);
 
         default:
-            sentinel("Unknown bounding type", "");
+            sentinel("Unknown bounding type.", "");
     }
 
     error:
@@ -95,7 +95,7 @@ void project_bounding_on_axis(const Bounding *b, Axis axis, double *projection_s
             sentinel("Cannot project composite bounding.", "");
 
         default:
-            sentinel("Unknown bounding type", "");
+            sentinel("Unknown bounding type.", "");
     }
 
     error:

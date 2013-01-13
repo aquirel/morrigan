@@ -1,5 +1,6 @@
 ﻿// protocol.h - protocol definition.
 
+#pragma once
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
@@ -13,22 +14,36 @@
 
 typedef enum Requests
 {
-    req_hello = 0x00,
-    req_bye   = 0x01
+    // Connecting.
+    req_hello            = 0x00,
+    req_bye              = 0x01,
+
+    // Tank control.
+    req_set_engine_power = 0x10,
+    req_turn             = 0x11,
+    req_look_at          = 0x12,
+    req_shoot            = 0x13,
+
+    // Tank telemetry.
+    req_get_heading      = 0x20,
+    req_get_speed        = 0x21,
+    req_get_hp           = 0x22,
+
+    // Observing.
+    req_get_map          = 0x30,
+    req_get_tanks        = 0x31,
 } Requests;
 
 typedef enum Responses
 {
-    res_hello            = 0x00,
-    res_bye              = 0x01,
-    res_too_many_clients = 0x03,
-    res_wait             = 0x04,
-    res_bad_request      = 0x80
+    res_bad_request      = 0x80,
+    res_too_many_clients = 0x83,
+    res_wait             = 0x84
 } Responses;
 
 typedef struct Client Client;
 
-typedef bool (*packet_validation_handler)(const void *packet);
+typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
 typedef void (*packet_execution_handler)(Client *c);
 
 typedef struct PacketDefinition
@@ -51,9 +66,48 @@ typedef struct Client
     SOCKADDR address;
     Tank tank;
     char current_packet_buffer[PACKET_BUFFER];
+    size_t current_packet_size;
     PacketDefinition *current_packet_definition;
 } Client;
 
-void handle_packet(const char *packet, const SOCKADDR *sender_address);
+void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
+
+// Packet body definitions.
+#pragma pack(push, 1)
+
+typedef struct ReqSetEnginePower
+{
+    int8_t engine_power;
+} ReqSetEnginePower;
+
+typedef struct ReqTurn
+{
+    double turn_angle;
+} ReqTurn;
+
+typedef struct ReqLookAt
+{
+    double x, y, z;
+} ReqLookAt;
+
+typedef struct ResGetHeading
+{
+    uint8_t packet_id;
+    double heading;
+} ResGetHeading;
+
+typedef struct ResGetSpeed
+{
+    uint8_t packet_id;
+    double speed;
+} ResGetSpeed;
+
+typedef struct ResGetHP
+{
+    uint8_t packet_id;
+    uint8_t hp;
+} ResGetHP;
+
+#pragma pack(pop)
 
 #endif /* __PROTOCOL_H__ */

@@ -126,12 +126,12 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
     __get_tile(l, x, y, &t_x, &t_y);
     __validate_location(l, t_x, t_y);
 
-    a->x = t_x + 1;
+    a->x = t_x + 1.0;
     a->y = t_y;
     a->z = landscape_get_height_at_node(l, (size_t) a->y, (size_t) a->x);
 
     b->x = t_x;
-    b->y = t_y + 1;
+    b->y = t_y + 1.0;
     b->z = landscape_get_height_at_node(l, (size_t) b->y, (size_t) b->x);
 
     Vector c1 = { .x = t_x + 1, .y = t_y + 1, .z = 0 },

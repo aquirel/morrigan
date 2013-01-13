@@ -1,5 +1,6 @@
 ﻿// bounding.h - collision detection.
 
+#pragma once
 #ifndef __BOUNDING_H__
 #define __BOUNDING_H__
 

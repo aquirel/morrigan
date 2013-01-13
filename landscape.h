@@ -1,5 +1,6 @@
 ﻿// landscape.h - landscape implementation.
 
+#pragma once
 #ifndef __LANDSCAPE_H__
 #define __LANDSCAPE_H__
 

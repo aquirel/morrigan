@@ -1,5 +1,6 @@
 ﻿// tank.h - tank definition.
 
+#pragma once
 #ifndef __TANK_H__
 #define __TANK_H__
 
@@ -10,10 +11,10 @@
 #include "bounding.h"
 
 #define TANK_HP 100
-#define TANK_MAX_POWER 100
-#define TANK_MIN_POWER -10
-#define TANK_POWER_CHANGE_STEP 5
-#define TANK_POWER_TO_SPEED_COEFFICIENT 0.5
+#define TANK_MIN_ENGINE_POWER 100
+#define TANK_MAX_ENGINE_POWER -10
+#define TANK_ENGINE_POWER_CHANGE_STEP 5
+#define TANK_ENGINE_POWER_TO_SPEED_COEFFICIENT 0.5
 #define TANK_MIN_LOOK_Z (-M_PI / 12)
 #define TANK_MAX_LOOK_Z (M_PI / 4)
 #define TANK_MAX_TURN_SPEED (M_PI / 12)
@@ -48,6 +49,7 @@ void tank_tick(Tank *tank, const Landscape *l);
 // Protocol functions.
 void tank_turn(Tank *tank, double turn_angle);
 void tank_look_at(Tank *tank, const Vector *look);
-void tank_set_power(Tank *tank, int power);
+void tank_set_engine_power(Tank *tank, int power);
+double tank_get_heading(Tank *tank);
 
 #endif /* __TANK_H__ */

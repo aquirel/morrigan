@@ -1,5 +1,6 @@
 ﻿// matrix.h - matrix implementation.
 
+#pragma once
 #ifndef __MATRIX_H__
 #define __MATRIX_H__
 

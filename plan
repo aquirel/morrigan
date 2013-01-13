@@ -1,8 +1,9 @@
 protocol:
-    tank protocol.
-    protocol implementation.
+    observing.
 load landscape from file.
-sdl.
+
+viewer:
+    sdl.
 
 --
 game entities (shell).

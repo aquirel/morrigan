@@ -34,6 +34,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
 #ifndef __TESTHELP_H__
 #define __TESTHELP_H__
 

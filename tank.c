@@ -5,9 +5,10 @@
 
 #include "tank.h"
 #include "landscape.h"
+#include "debug.h"
 
 void tank_change_turn(Tank *tank);
-void tank_change_power(Tank *tank);
+void tank_change_engine_power(Tank *tank);
 void tank_move(Tank *tank, const Landscape *l);
 void tank_rotate_turret(Tank *tank);
 
@@ -73,7 +74,7 @@ void tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
-    tank_change_power(tank);
+    tank_change_engine_power(tank);
     tank_move(tank, l);
     tank_change_turn(tank);
     tank_rotate_turret(tank);
@@ -106,20 +107,44 @@ void tank_look_at(Tank *tank, const Vector *look)
     }
 }
 
-void tank_set_power(Tank *tank, int power)
+void tank_set_engine_power(Tank *tank, int power)
 {
     assert(tank && "Bad tank pointer.");
 
-    if(TANK_MIN_POWER > power)
+    if(TANK_MIN_ENGINE_POWER > power)
     {
-        power = TANK_MIN_POWER;
+        power = TANK_MIN_ENGINE_POWER;
     }
-    else if(TANK_MAX_POWER < power)
+    else if(TANK_MAX_ENGINE_POWER < power)
     {
-        power = TANK_MAX_POWER;
+        power = TANK_MAX_ENGINE_POWER;
     }
 
     tank->engine_power_target = power;
+}
+
+double tank_get_heading(Tank *tank)
+{
+    assert(tank && "Bad tank pointer.");
+    double x = tank->direction.x;
+    double y = tank->direction.y;
+    double s = x + y;
+    y /= s;
+    x /= s;
+
+    if (x >= 0)
+    {
+        return M_PI_2 - asin(y);
+    }
+
+    if (x < 0)
+    {
+        return M_PI_2 + asin(y) + M_PI;
+    }
+
+    sentinel("Mustn't be here.", "");
+    error:
+    return 0.0;
 }
 
 void tank_change_turn(Tank *tank)
@@ -146,7 +171,7 @@ void tank_change_turn(Tank *tank)
     VECTOR_ROTATE(&tank->direction, &tank->orientation, step_turn_angle);
 }
 
-void tank_change_power(Tank *tank)
+void tank_change_engine_power(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
 
@@ -155,7 +180,7 @@ void tank_change_power(Tank *tank)
         return;
     }
 
-    if (abs(tank->engine_power_target - tank->engine_power) <= TANK_POWER_CHANGE_STEP)
+    if (abs(tank->engine_power_target - tank->engine_power) <= TANK_ENGINE_POWER_CHANGE_STEP)
     {
         tank->engine_power = tank->engine_power_target;
         return;
@@ -163,11 +188,11 @@ void tank_change_power(Tank *tank)
 
     if (tank->engine_power_target > tank->engine_power)
     {
-        tank->engine_power -= TANK_POWER_CHANGE_STEP;
+        tank->engine_power -= TANK_ENGINE_POWER_CHANGE_STEP;
     }
     else
     {
-        tank->engine_power += TANK_POWER_CHANGE_STEP;
+        tank->engine_power += TANK_ENGINE_POWER_CHANGE_STEP;
     }
 }
 
@@ -183,7 +208,7 @@ void tank_move(Tank *tank, const Landscape *l)
         return;
     }
 
-    tank->speed = TANK_POWER_TO_SPEED_COEFFICIENT * tank->engine_power;
+    tank->speed = TANK_ENGINE_POWER_TO_SPEED_COEFFICIENT * tank->engine_power;
 
     while (true)
     {

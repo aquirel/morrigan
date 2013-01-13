@@ -83,6 +83,7 @@ build\net.obj: \
 	net.c \
 	bounding.h \
 	debug.h \
+	dynamic_array.h \
 	landscape.h \
 	net.h \
 	protocol.h \
@@ -97,6 +98,8 @@ build\net.obj: \
 build\protocol.obj: \
 	protocol.c \
 	bounding.h \
+	debug.h \
+	dynamic_array.h \
 	landscape.h \
 	net.h \
 	protocol.h \
@@ -193,6 +196,7 @@ build\bounding.obj: \
 build\tank.obj: \
 	tank.c \
 	bounding.h \
+	debug.h \
 	landscape.h \
 	tank.h \
 	vector.h

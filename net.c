@@ -65,7 +65,7 @@ static int net_worker(void *unused)
             continue;
         }
 
-        handle_packet(buf, &sender_address);
+        handle_packet(buf, res, &sender_address);
     }
 
     notify_shutdown();

@@ -137,7 +137,7 @@ void notify_shutdown(void)
     {
         Client *c = DYNAMIC_ARRAY_GET(Client *, clients, 0);
         dynamic_array_delete_at(clients, 0);
-        uint8_t response = res_bye;
+        uint8_t response = req_bye;
         respond((char *) &response, 1, &c->address);
         free(c);
     }

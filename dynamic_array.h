@@ -1,5 +1,6 @@
 // dynamic_array.h - dynamic arrays support.
 
+#pragma once
 #ifndef __DYNAMIC_ARRAY_H__
 #define __DYNAMIC_ARRAY_H__
 

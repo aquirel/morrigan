@@ -6,8 +6,11 @@
 #include <winsock2.h>
 
 #include "protocol.h"
+#include "dynamic_array.h"
 
 #define MAX_CLIENTS 16
+
+extern DynamicArray *clients;
 
 bool server_start(void);
 void server_stop(void);

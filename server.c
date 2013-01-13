@@ -12,7 +12,7 @@
 
 static thrd_t worker_tid;
 static atomic_bool working = false;
-static DynamicArray *clients = NULL;
+DynamicArray *clients = NULL;
 static RingBuffer *requests = NULL;
 
 static int server_worker(void *unused);

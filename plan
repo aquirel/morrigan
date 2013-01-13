@@ -1,7 +1,10 @@
-cli interface.
+protocol:
+    tank protocol.
+    protocol implementation.
+load landscape from file.
+sdl.
 
+--
 game entities (shell).
 game entities behaviour (shell).
 Port existing code (shell).
-
-sdl.

@@ -15,7 +15,7 @@
 static thrd_t worker_tid;
 static atomic_bool working = false;
 
-static const Landscape *landscape = NULL;
+const Landscape *landscape = NULL;
 static DynamicArray *clients = NULL;
 
 static int game_worker(void *unused);
@@ -53,7 +53,7 @@ static int game_worker(void *unused)
     {
         _gettimeofday(&tick_start_time, NULL);
 
-        int clients_count = dynamic_array_count(clients);
+        size_t clients_count = dynamic_array_count(clients);
         for (size_t i = 0; i < clients_count; i++)
         {
             Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);

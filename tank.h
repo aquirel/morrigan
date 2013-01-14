@@ -23,6 +23,7 @@
 #define TANK_BOUNDING_BOX_EXTENT { .x = 5, .y = 3, .z = 2 }
 #define TANK_BOUNDING_SPHERE_RADIUS 1
 #define TANK_BOUNDING_PRIMITIVES 2
+#define TANK_OBSERVING_RANGE 32
 
 typedef struct Tank
 {

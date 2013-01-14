@@ -29,4 +29,6 @@ double landscape_get_height_at(const Landscape *l, double x, double y);
 Vector *landscape_get_normal_at(const Landscape *l, double x, double y, Vector *result);
 #define LANDSCAPE_GET_NORMAL_AT(l, v, r) landscape_get_normal_at((l), (v)->x, (v)->y, r)
 
+void landscape_get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y);
+
 #endif /* __LANDSCAPE_H__ */

@@ -1,7 +1,3 @@
-check and guard cross-thread accesses to common structures.
-    make DynamicArray thread safe.
-signal handling.
-
 --
 Real sizes and phys. values.
 

@@ -8,6 +8,8 @@
 
 #include "protocol.h"
 #include "server.h"
+#include "game.h"
+#include "landscape.h"
 #include "debug.h"
 
 // Connecting.
@@ -30,6 +32,7 @@ static void req_get_hp_executor(Client *c);
 
 // Observing.
 static void req_get_map_executor(Client *c);
+static void req_get_normal_executor(Client *c);
 static void req_get_tanks_executor(Client *c);
 
 static PacketDefinition RequestDefinitions[] =
@@ -51,6 +54,7 @@ static PacketDefinition RequestDefinitions[] =
 
     // Observing.
     { .id = req_get_map, .validator = NULL, .executor = req_get_map_executor },
+    { .id = req_get_normal, .validator = NULL, .executor = req_get_normal_executor },
     { .id = req_get_tanks, .validator = NULL, .executor = req_get_tanks_executor }
 };
 
@@ -212,9 +216,84 @@ static void req_get_hp_executor(Client *c)
 static void req_get_map_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+    char response[1 + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double)];
+    memset(response, 0, sizeof(response));
+    response[0] = (uint8_t) req_get_map;
+
+    double (*response_height_map)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE] =
+        (double (*)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE]) (&response[1]);
+
+    int t_x, t_y;
+    landscape_get_tile(landscape, c->tank.position.x, c->tank.position.y, &t_x, &t_y);
+
+    for (int i = -TANK_OBSERVING_RANGE / 2; i < TANK_OBSERVING_RANGE / 2; i++)
+    {
+        for (int j = -TANK_OBSERVING_RANGE / 2; j < TANK_OBSERVING_RANGE / TANK_OBSERVING_RANGE; j++)
+        {
+            int l_y = t_y + i, l_x = t_x + j;
+            if (l_y < 0 || l_y >= landscape->landscape_size ||
+                l_x < 0 || l_x >= landscape->landscape_size)
+            {
+                continue;
+            }
+
+            (*response_height_map)[l_y][l_x] = landscape_get_height_at_node(landscape, l_y, l_x);
+        }
+    }
+
+    respond(response, sizeof(response), &c->address);
+}
+
+static void req_get_normal_executor(Client *c)
+{
+    assert(c && "Bad client pointer.");
+    ResGetNormal response = { .packet_id = req_get_normal };
+    Vector t;
+    landscape_get_normal_at(landscape, c->tank.position.x, c->tank.position.y, &t);
+    response.x = t.x;
+    response.y = t.y;
+    response.z = t.z;
+    respond((char *) &response, sizeof(response), &c->address);
 }
 
 static void req_get_tanks_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+    char response[sizeof(ResGetTanks) + MAX_CLIENTS * sizeof(ResGetTanksTankRecord)];
+    memset(response, 0, sizeof(response));
+
+    ResGetTanks *response_header = (ResGetTanks *) response;
+    response_header->packet_id = req_get_tanks;
+    response_header->tanks_count = 0;
+
+    ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
+
+    size_t clients_count = dynamic_array_count(clients);
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *other_c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+
+        if (other_c == c ||
+            TANK_OBSERVING_RANGE * landscape->tile_size < vector_distance(&c->tank.position, &other_c->tank.position))
+        {
+            continue;
+        }
+
+        response_body->x = other_c->tank.position.x - c->tank.position.x;
+        response_body->y = other_c->tank.position.y - c->tank.position.y;
+        response_body->z = other_c->tank.position.z - c->tank.position.z;
+        response_body->direction_x = other_c->tank.direction.x;
+        response_body->direction_y = other_c->tank.direction.y;
+        response_body->direction_z = other_c->tank.direction.z;
+        response_body->turret_x = other_c->tank.turret_direction.x;
+        response_body->turret_y = other_c->tank.turret_direction.y;
+        response_body->turret_z = other_c->tank.turret_direction.z;
+        response_body->speed = other_c->tank.speed;
+        response_body->team = other_c->tank.team;
+
+        response_body++;
+        response_header->tanks_count++;
+    }
+
+    respond((char *) &response, sizeof(response), &c->address);
 }

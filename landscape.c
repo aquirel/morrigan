@@ -6,7 +6,6 @@
 #include "landscape.h"
 #include "debug.h"
 
-static inline void __get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y);
 static inline void __validate_location(const Landscape *l, size_t x, size_t y);
 static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
 
@@ -101,7 +100,7 @@ Vector *landscape_get_normal_at(const Landscape *l, double x, double y, Vector *
     return result;
 }
 
-static inline void __get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y)
+void landscape_get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y)
 {
     assert(l && "Bad landscape pointer.");
     assert(x >= 0 && y >= 0 && "Negative position values.");
@@ -123,7 +122,7 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
     assert(a && b && c && "Bad vector pointers.");
 
     size_t t_x, t_y;
-    __get_tile(l, x, y, &t_x, &t_y);
+    landscape_get_tile(l, x, y, &t_x, &t_y);
     __validate_location(l, t_x, t_y);
 
     a->x = t_x + 1.0;

@@ -31,7 +31,8 @@ typedef enum Requests
 
     // Observing.
     req_get_map          = 0x30,
-    req_get_tanks        = 0x31,
+    req_get_normal       = 0x31,
+    req_get_tanks        = 0x32,
 } Requests;
 
 typedef enum Responses
@@ -107,6 +108,27 @@ typedef struct ResGetHP
     uint8_t packet_id;
     uint8_t hp;
 } ResGetHP;
+
+typedef struct ResGetNormal
+{
+    uint8_t packet_id;
+    double x, y, z;
+} ResGetNormal;
+
+typedef struct ResGetTanks
+{
+    uint8_t packet_id;
+    uint8_t tanks_count;
+} ResGetTanks;
+
+typedef struct ResGetTanksTankRecord
+{
+    double x, y, z;
+    double direction_x, direction_y, direction_z;
+    double turret_x, turret_y, turret_z;
+    double speed;
+    uint8_t team;
+} ResGetTanksTankRecord;
 
 #pragma pack(pop)
 

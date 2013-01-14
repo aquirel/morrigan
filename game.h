@@ -12,6 +12,8 @@
 // 0.1 sec.
 #define GAME_TICK_DURATION 1000000
 
+extern const Landscape *landscape;
+
 bool game_start(const Landscape *l, DynamicArray *c);
 void game_stop(void);
 

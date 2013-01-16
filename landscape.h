@@ -17,6 +17,7 @@ typedef struct Landscape
     double *height_map;
 } Landscape;
 
+Landscape *landscape_load(const char *filename, size_t tile_size);
 Landscape *landscape_create(size_t landscape_size, size_t tile_size);
 void landscape_destroy(Landscape *l);
 

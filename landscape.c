@@ -2,12 +2,47 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "landscape.h"
 #include "debug.h"
 
 static inline void __validate_location(const Landscape *l, size_t x, size_t y);
 static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
+
+Landscape *landscape_load(const char *filename, size_t tile_size)
+{
+    FILE *landscape_file = fopen(filename, "rb");
+    check(landscape_file, "Failed to open landscape file.", "");
+    check(0 == fseek(landscape_file, 0, SEEK_END), "fseek() failed.", "");
+
+    int file_size = ftell(landscape_file);
+    check(0 < file_size, "ftell() failed.", "");
+    int landscape_size = sqrt(file_size);
+    check(file_size == landscape_size * landscape_size, "Landscape isn't square.", "");
+
+    Landscape *l = landscape_create(landscape_size, tile_size);
+    check_mem(l);
+
+    rewind(landscape_file);
+    check(file_size == fread(&l->height_map, 1, file_size, landscape_file), "fread() failed.", "");
+
+    fclose(landscape_file);
+    return l;
+
+    error:
+    if (landscape_file)
+    {
+        fclose(landscape_file);
+    }
+
+    if (l)
+    {
+        landscape_destroy(l);
+    }
+
+    return NULL;
+}
 
 Landscape *landscape_create(size_t landscape_size, size_t tile_size)
 {

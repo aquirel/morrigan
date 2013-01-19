@@ -1,5 +1,5 @@
+request validation.
 check and guard cross-thread accesses to common structures.
-    make DynamicArray thread safe.
 signal handling.
 
 viewer:

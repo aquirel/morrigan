@@ -18,6 +18,8 @@ DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
     a->data = (char *) calloc(array_capacity, element_size);
     check_mem(a->data);
 
+    check(thrd_success == mtx_init(&a->guard_mutex, mtx_recursive), "Failed to initialize array mutex.", "");
+
     a->element_size = element_size;
     a->element_count = 0;
     a->array_capacity = array_capacity;
@@ -31,6 +33,7 @@ DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
     }
     if (a)
     {
+        mtx_destroy(&a->guard_mutex);
         free(a);
     }
     return NULL;
@@ -41,6 +44,15 @@ void dynamic_array_destroy(DynamicArray *a)
     assert(a && "Nothing to destroy.");
     assert(a->data && "Nothing to destroy.");
 
+    if (thrd_busy == mtx_trylock(&a->guard_mutex))
+    {
+        sentinel("An attempt to destroy array with locked mutex.", "");
+    }
+
+    mtx_unlock(&a->guard_mutex);
+
+    error:
+    mtx_destroy(&a->guard_mutex);
     free(a->data);
     free(a);
 }
@@ -109,6 +121,22 @@ size_t dynamic_array_count(DynamicArray *a)
 {
     __dynamic_array_assert(a);
     return a->element_count;
+}
+
+void dynamic_array_lock(DynamicArray *a)
+{
+    assert(a && "Bad array.");
+    check(thrd_error != mtx_lock(&a->guard_mutex), "Failed to lock array mutex.", "");
+    error:
+    return;
+}
+
+void dynamic_array_unlock(DynamicArray *a)
+{
+    assert(a && "Bad array.");
+    check(thrd_error != mtx_unlock(&a->guard_mutex), "Failed to unlock array mutex.", "");
+    error:
+    return;
 }
 
 static inline void __dynamic_array_assert(const DynamicArray *a)

@@ -1,7 +1,6 @@
-signal handling.
-
-viewer:
-    sdl.
+viewer client handling.
+viewer protocol.
+sdl.
 
 --
 game entities (shell).

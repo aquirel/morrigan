@@ -23,6 +23,7 @@ static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2
 
 bool game_start(const Landscape *l, DynamicArray *c)
 {
+    fprintf(stderr, "game_start start.\n");
     assert(l && "Bad landscape pointer.");
     assert(c && "Bad clients array pointer.");
 
@@ -32,17 +33,21 @@ bool game_start(const Landscape *l, DynamicArray *c)
     working = true;
     check(thrd_success == thrd_create(&worker_tid, game_worker, NULL), "Failed to start game worker thread.", "");
 
+    fprintf(stderr, "game_start end.\n");
     return true;
     error:
+    fprintf(stderr, "game_start error.\n");
     thrd_detach(worker_tid);
     return false;
 }
 
 void game_stop(void)
 {
+    fprintf(stderr, "game_stop start.\n");
     working = false;
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
+    fprintf(stderr, "game_stop end.\n");
 }
 
 static int game_worker(void *unused)
@@ -120,6 +125,7 @@ static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2
 {
     assert(t1 && t2 && "Bad time pointers.");
 
+    // TODO: Fix it.
     unsigned long long _t1 = t1->tv_sec * 1000000 + t1->tv_usec,
                        _t2 = t2->tv_sec * 1000000 + t2->tv_usec;
     return _t1 - _t2;

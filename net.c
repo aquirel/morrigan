@@ -75,12 +75,14 @@ static int net_worker(void *unused)
 
 void net_stop(void)
 {
+    fprintf(stderr, "net_stop start.\n");
     working = false;
     shutdown(s, SD_RECEIVE);
+    closesocket(s);
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
-    closesocket(s);
     WSACleanup();
+    fprintf(stderr, "net_stop end.\n");
 }
 
 void respond(const char *data, size_t data_length, const SOCKADDR *to)

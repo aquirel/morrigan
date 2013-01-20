@@ -46,6 +46,7 @@ bool server_start(void)
 
 void server_stop(void)
 {
+    fprintf(stderr, "server_stop start.\n");
     working = false;
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
@@ -61,6 +62,8 @@ void server_stop(void)
         ring_buffer_destroy(requests);
         requests = NULL;
     }
+
+    fprintf(stderr, "server_stop end.\n");
 }
 
 Client *find_client_by_address(const SOCKADDR *address)

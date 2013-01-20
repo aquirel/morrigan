@@ -45,7 +45,7 @@ typedef enum Responses
 typedef struct Client Client;
 
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
-typedef void (*packet_execution_handler)(Client *c);
+typedef void (*packet_execution_handler)(void *c);
 
 typedef struct PacketDefinition
 {
@@ -70,6 +70,15 @@ typedef struct Client
     size_t current_packet_size;
     PacketDefinition *current_packet_definition;
 } Client;
+
+typedef struct ViewerClient
+{
+    ClientState state;
+    SOCKADDR address;
+    char current_packet_buffer[PACKET_BUFFER];
+    size_t current_packet_size;
+    PacketDefinition *current_packet_definition;
+} ViewerClient;
 
 void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
 

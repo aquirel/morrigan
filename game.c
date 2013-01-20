@@ -124,8 +124,6 @@ static int game_worker(void *unused)
 static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2)
 {
     assert(t1 && t2 && "Bad time pointers.");
-
-    // TODO: Fix it.
     unsigned long long _t1 = t1->tv_sec * 1000000 + t1->tv_usec,
                        _t2 = t2->tv_sec * 1000000 + t2->tv_usec;
     return _t1 - _t2;

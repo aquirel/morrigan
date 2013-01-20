@@ -33,8 +33,6 @@ int main(int argc, const char *argv[], const char *envp[])
 
     l = landscape_load("land.dat", 0, 1.0);
     check(l, "Failed to load landscape.", "");
-
-    // TODO: Fix it.
     check(net_start(), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");
     check(game_start(l, clients), "Failed to start game.", "");
@@ -65,7 +63,10 @@ int main(int argc, const char *argv[], const char *envp[])
 void stop(void)
 {
     puts("Stopping morrigan.");
-    input ? bdestroy(input) : 0;
+    if (input)
+    {
+        bdestroy(input);
+    }
     net_stop();
     game_stop();
     server_stop();

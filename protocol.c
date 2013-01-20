@@ -12,6 +12,8 @@
 #include "landscape.h"
 #include "debug.h"
 
+static inline bool __check_double(double v, double min, double max);
+
 // Connecting.
 static void req_hello_executor(Client *c);
 static void req_bye_executor(Client *c);
@@ -165,7 +167,14 @@ static void req_turn_executor(Client *c)
 static bool req_turn_validator(const void *packet, size_t packet_size)
 {
     assert(packet && "Bad packet data pointer.");
-    return sizeof(ReqTurn) == packet_size - 1;
+
+    if (sizeof(ReqTurn) != packet_size - 1)
+    {
+        return false;
+    }
+
+    double turn_angle = ((ReqTurn *) (& ((const char *) packet)[1]))->turn_angle;
+    return __check_double(turn_angle, -180.0, 180.0);
 }
 
 static void req_look_at_executor(Client *c)
@@ -180,7 +189,16 @@ static void req_look_at_executor(Client *c)
 static bool req_look_at_validator(const void *packet, size_t packet_size)
 {
     assert(packet && "Bad packet data pointer.");
-    return sizeof(ReqLookAt) == packet_size - 1;
+
+    if (sizeof(ReqLookAt) != packet_size - 1)
+    {
+        return false;
+    }
+
+    ReqLookAt *p = ((ReqLookAt *) (& ((const char *) packet)[1]));
+    return __check_double(p->x, -1.0, 1.0) &&
+           __check_double(p->y, -1.0, 1.0) &&
+           __check_double(p->z, -1.0, 1.0);
 }
 
 static void req_shoot_executor(Client *c)
@@ -296,4 +314,9 @@ static void req_get_tanks_executor(Client *c)
     }
 
     respond((char *) &response, sizeof(response), &c->address);
+}
+
+static inline bool __check_double(double v, double min, double max)
+{
+    return isfinite(v) && min <= v && v <= max;
 }

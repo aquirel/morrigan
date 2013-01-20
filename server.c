@@ -65,6 +65,7 @@ void server_stop(void)
 
 Client *find_client_by_address(const SOCKADDR *address)
 {
+    dynamic_array_lock(clients);
     size_t client_count = dynamic_array_count(clients);
 
     for (size_t i = 0; i < client_count; i++)
@@ -72,9 +73,11 @@ Client *find_client_by_address(const SOCKADDR *address)
         Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
+            dynamic_array_unlock(clients);
             return c;
         }
     }
+    dynamic_array_unlock(clients);
 
     return NULL;
 }
@@ -98,9 +101,13 @@ Client *register_client(const SOCKADDR *address)
     c->state = cs_connected;
     memcpy(&c->address, address, sizeof(SOCKADDR));
 
+    dynamic_array_lock(clients);
     check(dynamic_array_push(clients, c), "Failed to add new client.", "");
+    dynamic_array_unlock(clients);
 
+    return c;
     error:
+    dynamic_array_unlock(clients);
     if (c)
     {
         free(c);
@@ -110,6 +117,7 @@ Client *register_client(const SOCKADDR *address)
 
 bool unregister_client(const SOCKADDR *address)
 {
+    dynamic_array_lock(clients);
     size_t client_count = dynamic_array_count(clients);
 
     for (size_t i = 0; i < client_count; i++)
@@ -119,9 +127,11 @@ bool unregister_client(const SOCKADDR *address)
         {
             dynamic_array_delete_at(clients, i);
             free(c);
+            dynamic_array_unlock(clients);
             return true;
         }
     }
+    dynamic_array_unlock(clients);
 
     return false;
 }
@@ -133,6 +143,7 @@ void enqueue_client(const Client *c)
 
 void notify_shutdown(void)
 {
+    dynamic_array_lock(clients);
     while (dynamic_array_count(clients))
     {
         Client *c = DYNAMIC_ARRAY_GET(Client *, clients, 0);
@@ -141,6 +152,7 @@ void notify_shutdown(void)
         respond((char *) &response, 1, &c->address);
         free(c);
     }
+    dynamic_array_unlock(clients);
 }
 
 static int server_worker(void *unused)

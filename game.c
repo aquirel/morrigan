@@ -53,12 +53,13 @@ static int game_worker(void *unused)
     {
         _gettimeofday(&tick_start_time, NULL);
 
+        dynamic_array_lock(clients);
         size_t clients_count = dynamic_array_count(clients);
         for (size_t i = 0; i < clients_count; i++)
         {
             Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
 
-            if (cs_in_game == c->state)
+            if (cs_acknowledged == c->state)
             {
                 Vector position, top;
 
@@ -97,6 +98,7 @@ static int game_worker(void *unused)
                 }
             }
         }
+        dynamic_array_unlock(clients);
 
         _gettimeofday(&tick_end_time, NULL);
 

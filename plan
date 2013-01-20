@@ -1,5 +1,4 @@
-request validation.
-check and guard cross-thread accesses to common structures.
+stop recvfrom.
 signal handling.
 
 viewer:

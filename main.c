@@ -22,8 +22,8 @@ int main(int argc, const char *argv[], const char *envp[])
 
     srand(time(NULL));
 
-    Landscape *l = NULL;
-    // TODO: Create & load landscape. Add load_landscape function.
+    Landscape *l = landscape_load("land.dat", 0);
+    check(l, "Failed to load landscape.", "");
     check(net_start(), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");
     check(game_start(l, clients), "Failed to start game.", "");

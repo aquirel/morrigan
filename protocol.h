@@ -17,6 +17,8 @@ typedef enum Requests
     // Connecting.
     req_hello            = 0x00,
     req_bye              = 0x01,
+    req_viewer_hello     = 0x03,
+    req_viewer_bye       = 0x04,
 
     // Tank control.
     req_set_engine_power = 0x10,
@@ -52,6 +54,7 @@ typedef struct PacketDefinition
     uint8_t id;
     packet_validation_handler validator;
     packet_execution_handler executor;
+    bool is_client_protocol;
 } PacketDefinition;
 
 typedef enum ClientState

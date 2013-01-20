@@ -17,6 +17,8 @@ static inline bool __check_double(double v, double min, double max);
 // Connecting.
 static void req_hello_executor(Client *c);
 static void req_bye_executor(Client *c);
+static void req_viewer_hello_executor(ViewerClient *c);
+static void req_viewer_bye_executor(ViewerClient *c);
 
 // Tank control.
 static void req_set_engine_power_executor(Client *c);
@@ -40,24 +42,26 @@ static void req_get_tanks_executor(Client *c);
 static PacketDefinition RequestDefinitions[] =
 {
     // Connecting.
-    { .id = req_hello, .validator = NULL, .executor = req_hello_executor },
-    { .id = req_bye, .validator = NULL, .executor = req_bye_executor },
+    { .id = req_hello, .validator = NULL, .executor = req_hello_executor, .is_client_protocol = true },
+    { .id = req_bye, .validator = NULL, .executor = req_bye_executor, .is_client_protocol = true },
+    { .id = req_viewer_hello, .validator = NULL, .executor = req_viewer_hello_executor, .is_client_protocol = false },
+    { .id = req_viewer_bye, .validator = NULL, .executor = req_viewer_bye_executor, .is_client_protocol = false },
 
     // Tank control.
-    { .id = req_set_engine_power, .validator = req_set_engine_power_validator, .executor = req_set_engine_power_executor },
-    { .id = req_turn, .validator = req_turn_validator, .executor = req_turn_executor },
-    { .id = req_look_at, .validator = req_look_at_validator, .executor = req_look_at_executor },
-    { .id = req_shoot, .validator = NULL, .executor = req_shoot_executor },
+    { .id = req_set_engine_power, .validator = req_set_engine_power_validator, .executor = req_set_engine_power_executor, .is_client_protocol = true },
+    { .id = req_turn, .validator = req_turn_validator, .executor = req_turn_executor, .is_client_protocol = true },
+    { .id = req_look_at, .validator = req_look_at_validator, .executor = req_look_at_executor, .is_client_protocol = true },
+    { .id = req_shoot, .validator = NULL, .executor = req_shoot_executor, .is_client_protocol = true },
 
     // Tank telemetry.
-    { .id = req_get_heading, .validator = NULL, .executor = req_get_heading_executor },
-    { .id = req_get_speed, .validator = NULL, .executor = req_get_speed_executor },
-    { .id = req_get_hp, .validator = NULL, .executor = req_get_hp_executor },
+    { .id = req_get_heading, .validator = NULL, .executor = req_get_heading_executor, .is_client_protocol = true },
+    { .id = req_get_speed, .validator = NULL, .executor = req_get_speed_executor, .is_client_protocol = true },
+    { .id = req_get_hp, .validator = NULL, .executor = req_get_hp_executor, .is_client_protocol = true },
 
     // Observing.
-    { .id = req_get_map, .validator = NULL, .executor = req_get_map_executor },
-    { .id = req_get_normal, .validator = NULL, .executor = req_get_normal_executor },
-    { .id = req_get_tanks, .validator = NULL, .executor = req_get_tanks_executor }
+    { .id = req_get_map, .validator = NULL, .executor = req_get_map_executor, .is_client_protocol = true },
+    { .id = req_get_normal, .validator = NULL, .executor = req_get_normal_executor, .is_client_protocol = true },
+    { .id = req_get_tanks, .validator = NULL, .executor = req_get_tanks_executor, .is_client_protocol = true }
 };
 
 static PacketDefinition *find_packet_by_id(uint8_t id)
@@ -89,31 +93,78 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
     }
 
     Client *c = find_client_by_address(sender_address);
-    if (NULL == c)
+    ViewerClient *vc = find_viewer_by_address(sender_address);
+
+    if (packet_definition->is_client_protocol)
     {
-        c = register_client(sender_address);
-        if (NULL == c)
+        if (NULL != vc)
         {
-            uint8_t response = res_too_many_clients;
+            uint8_t response = res_bad_request;
             respond((char *) &response, 1, sender_address);
             return;
         }
 
-        uint8_t response = req_hello;
-        respond((char *) &response, 1, sender_address);
-    }
+        if (NULL == c)
+        {
+            c = register_client(sender_address);
+            if (NULL == c)
+            {
+                uint8_t response = res_too_many_clients;
+                respond((char *) &response, 1, sender_address);
+                return;
+            }
 
-    if (c->current_packet_definition)
+            uint8_t response = req_hello;
+            respond((char *) &response, 1, sender_address);
+        }
+
+        if (c->current_packet_definition)
+        {
+            uint8_t response = res_wait;
+            respond((char *) &response, 1, sender_address);
+            return;
+        }
+
+        memcpy(c->current_packet_buffer, packet, PACKET_BUFFER);
+        c->current_packet_size = packet_size;
+        c->current_packet_definition = packet_definition;
+        enqueue_client(c);
+    }
+    else
     {
-        uint8_t response = res_wait;
-        respond((char *) &response, 1, sender_address);
-        return;
-    }
+        if (NULL != c)
+        {
+            uint8_t response = res_bad_request;
+            respond((char *) &response, 1, sender_address);
+            return;
+        }
 
-    memcpy(c->current_packet_buffer, packet, PACKET_BUFFER);
-    c->current_packet_size = packet_size;
-    c->current_packet_definition = packet_definition;
-    enqueue_client(c);
+        if (NULL == vc)
+        {
+            vc = register_viewer(sender_address);
+            if (NULL == vc)
+            {
+                uint8_t response = res_too_many_clients;
+                respond((char *) &response, 1, sender_address);
+                return;
+            }
+
+            uint8_t response = req_viewer_hello;
+            respond((char *) &response, 1, sender_address);
+        }
+
+        if (vc->current_packet_definition)
+        {
+            uint8_t response = res_wait;
+            respond((char *) &response, 1, sender_address);
+            return;
+        }
+
+        memcpy(vc->current_packet_buffer, packet, PACKET_BUFFER);
+        vc->current_packet_size = packet_size;
+        vc->current_packet_definition = packet_definition;
+        enqueue_viewer(vc);
+    }
 
     error:
     return;
@@ -138,6 +189,27 @@ static void req_bye_executor(Client *c)
     assert(c && "Bad client pointer.");
     unregister_client(&c->address);
     uint8_t response = req_bye;
+    respond((char *) &response, 1, &c->address);
+}
+
+static void req_viewer_hello_executor(ViewerClient *c)
+{
+    assert(c && "Bad viewer client pointer.");
+
+    if (cs_connected == c->state)
+    {
+        c->state = cs_acknowledged;
+    }
+
+    uint8_t response = req_viewer_hello;
+    respond((char *) &response, 1, &c->address);
+}
+
+static void req_viewer_bye_executor(ViewerClient *c)
+{
+    assert(c && "Bad viewer client pointer.");
+    unregister_viewer(&c->address);
+    uint8_t response = req_viewer_bye;
     respond((char *) &response, 1, &c->address);
 }
 

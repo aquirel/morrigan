@@ -11,7 +11,7 @@
 #include "debug.h"
 
 static thrd_t worker_tid;
-static atomic_bool working = false;
+static volatile atomic_bool working = false;
 DynamicArray *clients = NULL;
 static RingBuffer *requests = NULL;
 

@@ -18,7 +18,7 @@ DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
     a->data = (char *) calloc(array_capacity, element_size);
     check_mem(a->data);
 
-    check(thrd_success == mtx_init(&a->guard_mutex, mtx_recursive), "Failed to initialize array mutex.", "");
+    check(thrd_success == mtx_init(&a->guard_mutex, mtx_plain | mtx_recursive), "Failed to initialize array mutex.", "");
 
     a->element_size = element_size;
     a->element_count = 0;

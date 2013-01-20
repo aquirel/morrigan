@@ -13,7 +13,7 @@
 #include "tank.h"
 
 static thrd_t worker_tid;
-static atomic_bool working = false;
+static volatile atomic_bool working = false;
 
 const Landscape *landscape = NULL;
 static DynamicArray *clients = NULL;

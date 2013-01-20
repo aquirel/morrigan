@@ -12,7 +12,7 @@
 #include "server.h"
 
 static thrd_t worker_tid;
-static atomic_bool working = false;
+static volatile atomic_bool working = false;
 static SOCKET s = INVALID_SOCKET;
 
 static int net_worker(void *unused);
@@ -76,9 +76,10 @@ static int net_worker(void *unused)
 void net_stop(void)
 {
     working = false;
-    closesocket(s);
+    shutdown(s, SD_RECEIVE);
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
+    closesocket(s);
     WSACleanup();
 }
 

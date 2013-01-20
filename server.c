@@ -48,6 +48,11 @@ void server_stop(void)
 {
     fprintf(stderr, "server_stop start.\n");
     working = false;
+    if (requests)
+    {
+        Client c;
+        enqueue_client(&c);
+    }
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
 
@@ -165,6 +170,11 @@ static int server_worker(void *unused)
         if (ring_buffer_is_empty(requests))
         {
             ring_buffer_wait_not_empty(requests);
+
+            if (!working)
+            {
+                break;
+            }
         }
 
         if (ring_buffer_is_empty(requests))

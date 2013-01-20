@@ -58,13 +58,7 @@ int main(int argc, const char *argv[], const char *envp[])
 
     error:
     fprintf(stderr, "Error exit.\n");
-    net_stop();
-    game_stop();
-    server_stop();
-    if (l)
-    {
-        landscape_destroy(l);
-    }
+    stop();
     return EXIT_FAILURE;
 }
 
@@ -75,7 +69,10 @@ void stop(void)
     net_stop();
     game_stop();
     server_stop();
-    landscape_destroy(l);
+    if (l)
+    {
+        landscape_destroy(l);
+    }
 }
 
 #endif

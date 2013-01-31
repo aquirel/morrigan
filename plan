@@ -1,7 +1,3 @@
-viewer protocol.
-    get full map.
-    get full tanks.
-
 sdl.
 
 --

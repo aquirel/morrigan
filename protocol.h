@@ -35,6 +35,10 @@ typedef enum Requests
     req_get_map          = 0x30,
     req_get_normal       = 0x31,
     req_get_tanks        = 0x32,
+
+    // Viewing.
+    req_viewer_get_map   = 0x40,
+    req_viewer_get_tanks = 0x41
 } Requests;
 
 typedef enum Responses

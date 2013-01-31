@@ -22,6 +22,7 @@ Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);
 bool unregister_client(const SOCKADDR *address);
 void enqueue_client(const Client *c);
+void enqueue_viewer(const ViewerClient *c);
 
 ViewerClient *find_viewer_by_address(const SOCKADDR *address);
 ViewerClient *register_viewer(const SOCKADDR *address);

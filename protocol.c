@@ -39,6 +39,10 @@ static void req_get_map_executor(Client *c);
 static void req_get_normal_executor(Client *c);
 static void req_get_tanks_executor(Client *c);
 
+// Viewing.
+static void req_viewer_get_map_executor(ViewerClient *c);
+static void req_viewer_get_tanks_executor(ViewerClient *c);
+
 static PacketDefinition RequestDefinitions[] =
 {
     // Connecting.
@@ -61,7 +65,11 @@ static PacketDefinition RequestDefinitions[] =
     // Observing.
     { .id = req_get_map, .validator = NULL, .executor = req_get_map_executor, .is_client_protocol = true },
     { .id = req_get_normal, .validator = NULL, .executor = req_get_normal_executor, .is_client_protocol = true },
-    { .id = req_get_tanks, .validator = NULL, .executor = req_get_tanks_executor, .is_client_protocol = true }
+    { .id = req_get_tanks, .validator = NULL, .executor = req_get_tanks_executor, .is_client_protocol = true },
+
+    // Viewing.
+    { .id = req_viewer_get_map, .validator = NULL, .executor = req_viewer_get_map_executor, .is_client_protocol = false },
+    { .id = req_viewer_get_tanks, .validator = NULL, .executor = req_viewer_get_tanks_executor, .is_client_protocol = false }
 };
 
 static PacketDefinition *find_packet_by_id(uint8_t id)
@@ -385,7 +393,58 @@ static void req_get_tanks_executor(Client *c)
         response_header->tanks_count++;
     }
 
-    respond((char *) &response, sizeof(response), &c->address);
+    respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
+}
+
+static void req_viewer_get_map_executor(ViewerClient *c)
+{
+    assert(c && "Bad viewer client pointer.");
+    const size_t ls = landscape->landscape_size;
+    char response[1 + 2 * sizeof(size_t) + ls * ls * sizeof(double)];
+    memset(response, 0, sizeof(response));
+    response[0] = (uint8_t) req_viewer_get_map;
+
+    *((size_t *) &response[1]) = ls;
+    *((size_t *) &response[1 + sizeof(size_t)]) = landscape->tile_size;
+    memcpy(&response[1 + 2 * sizeof(size_t)], landscape->height_map, ls * ls);
+
+    respond(response, sizeof(response), &c->address);
+}
+
+static void req_viewer_get_tanks_executor(ViewerClient *c)
+{
+    assert(c && "Bad viewer client pointer.");
+    char response[sizeof(ResGetTanks) + MAX_CLIENTS * sizeof(ResGetTanksTankRecord)];
+    memset(response, 0, sizeof(response));
+
+    ResGetTanks *response_header = (ResGetTanks *) response;
+    response_header->packet_id = req_viewer_get_tanks;
+    response_header->tanks_count = 0;
+
+    ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
+
+    size_t clients_count = dynamic_array_count(clients);
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *other_c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+
+        response_body->x = other_c->tank.position.x;
+        response_body->y = other_c->tank.position.y;
+        response_body->z = other_c->tank.position.z;
+        response_body->direction_x = other_c->tank.direction.x;
+        response_body->direction_y = other_c->tank.direction.y;
+        response_body->direction_z = other_c->tank.direction.z;
+        response_body->turret_x = other_c->tank.turret_direction.x;
+        response_body->turret_y = other_c->tank.turret_direction.y;
+        response_body->turret_z = other_c->tank.turret_direction.z;
+        response_body->speed = other_c->tank.speed;
+        response_body->team = other_c->tank.team;
+
+        response_body++;
+        response_header->tanks_count++;
+    }
+
+    respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
 }
 
 static inline bool __check_double(double v, double min, double max)

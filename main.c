@@ -22,7 +22,7 @@ void stop(void);
 static Landscape *l = NULL;
 static bstring input = NULL;
 
-int main(int argc, const char *argv[], const char *envp[])
+int main(const int argc, const char const *argv[], const char const *envp[])
 {
     puts("Starting morrigan.");
 

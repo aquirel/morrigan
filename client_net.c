@@ -34,6 +34,14 @@ bool client_connect(SOCKET *s, const char *address, bool is_client)
     *s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     check(INVALID_SOCKET != *s, "Failed to create socket. Error: %d.", WSAGetLastError());
 
+    DWORD b = PACKET_BUFFER;
+    check(SOCKET_ERROR != setsockopt(*s, SOL_SOCKET, SO_RCVBUF, (const char *) &b, sizeof(DWORD)),
+          "Failed to socket set socket buffer. Error: %d.",
+          WSAGetLastError());
+    check(SOCKET_ERROR != setsockopt(*s, SOL_SOCKET, SO_SNDBUF, (const char *) &b, sizeof(DWORD)),
+          "Failed to socket set socket buffer. Error: %d.",
+          WSAGetLastError());
+
     struct addrinfo *result = NULL, hints = { .ai_family = AF_INET };
     check(0 == getaddrinfo(address, NULL, NULL, &result),
           "getaddrinfo() failed. Error: %d.",
@@ -93,7 +101,32 @@ bool client_disconnect(SOCKET *s, bool is_client)
     return false;
 }
 
-const Landscape *client_get_landscape(SOCKET *s);
+Landscape *client_get_landscape(SOCKET *s)
+{
+    assert(s && "Bad socket pointer.");
+
+    uint8_t req = req_viewer_get_map;
+    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char buf[CLIENT_PACKET_BUFFER];
+    int received;
+    check(__recv_timeout(s, buf, PACKET_BUFFER, 0, NET_TIMEOUT, &received), "Net timeout.", "");
+    check(received > 1 + 2 * sizeof(size_t), "Bad map response.", "");
+
+    check(req_viewer_get_map == (uint8_t) buf[0], "Bad map response.", "");
+
+    size_t landscape_size = *((size_t *) &buf[1]),
+           tile_size = *((size_t *) &buf[1 + sizeof(size_t)]);
+
+    Landscape *l = landscape_create(landscape_size, tile_size);
+    check_mem(l);
+
+    memcpy(l->height_map, &buf[1 + 2 * sizeof(size_t)], landscape_size * landscape_size);
+    return l;
+
+    error:
+    return NULL;
+}
 
 bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *res)
 {
@@ -101,7 +134,9 @@ bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *
     FD_ZERO(&set);
     FD_SET(*s, &set);
 
-    struct timeval tv = { .tv_sec = 0, .tv_usec = 1000 * timeout };
+    unsigned long long t = 1000 * timeout;
+
+    struct timeval tv = { .tv_sec = t % 1000000, .tv_usec = t / 1000000 };
 
     switch (select(0, &set, NULL, NULL, &tv))
     {

@@ -385,6 +385,7 @@ static bool req_get_tanks_executor(Client *c)
 
     ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
 
+    dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
@@ -411,6 +412,7 @@ static bool req_get_tanks_executor(Client *c)
         response_body++;
         response_header->tanks_count++;
     }
+    dynamic_array_unlock(clients);
 
     respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
     return true;
@@ -444,6 +446,7 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
 
     ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
 
+    dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
@@ -464,6 +467,7 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
         response_body++;
         response_header->tanks_count++;
     }
+    dynamic_array_unlock(clients);
 
     respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
     return true;

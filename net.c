@@ -25,6 +25,14 @@ bool net_start(void)
     s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     check(INVALID_SOCKET != s, "Failed to create socket. Error: %d.", WSAGetLastError());
 
+    DWORD b = PACKET_BUFFER;
+    check(SOCKET_ERROR != setsockopt(s, SOL_SOCKET, SO_RCVBUF, (const char *) &b, sizeof(DWORD)),
+          "Failed to socket set socket buffer. Error: %d.",
+          WSAGetLastError());
+    check(SOCKET_ERROR != setsockopt(s, SOL_SOCKET, SO_SNDBUF, (const char *) &b, sizeof(DWORD)),
+          "Failed to socket set socket buffer. Error: %d.",
+          WSAGetLastError());
+
     SOCKADDR_IN s_address = { .sin_family = AF_INET, .sin_port = htons(PORT), .sin_addr.s_addr = htonl(INADDR_ANY) };
     check(SOCKET_ERROR != bind(s, (const SOCKADDR *) &s_address, sizeof(s_address)), "Failed to bind socket. Error: %d.", WSAGetLastError());
 
@@ -34,8 +42,8 @@ bool net_start(void)
     return true;
 
     error:
-    WSACleanup();
     closesocket(s);
+    WSACleanup();
     thrd_detach(worker_tid);
     return false;
 }

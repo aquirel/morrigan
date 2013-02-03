@@ -5,6 +5,8 @@
 #include "debug.h"
 #include "client_net.h"
 
+void cleanup(Landscape *l);
+
 int main(int argc, char *argv[])
 {
     if (2 > argc)
@@ -16,17 +18,31 @@ int main(int argc, char *argv[])
     check(client_net_start(), "Failed to initialize net.", "");
 
     SOCKET s;
-    check(client_connect(&s, argv[1], true), "Failed to connect.", "");
+    check(client_connect(&s, argv[1], false), "Failed to connect.", "");
 
     puts("Connected to server.");
     getchar();
 
-    check(client_disconnect(&s, true), "Failed to disconnect.", "");
+    Landscape *l = NULL;
+    l = client_get_landscape(&s);
+    puts("Loaded landscape.");
+    getchar();
 
-    client_net_stop();
+    check(client_disconnect(&s, false), "Failed to disconnect.", "");
+
+    cleanup(l);
     return 0;
 
     error:
-    client_net_stop();
+    cleanup(l); 
     return -1;
+}
+
+void cleanup(Landscape *l)
+{
+    client_net_stop();
+    if (l)
+    {
+        landscape_destroy(l);
+    }
 }

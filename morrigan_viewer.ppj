@@ -27,8 +27,11 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl\SDL-1.2.15#
 # Build morrigan_viewer.exe.
 # 
 bin\morrigan_viewer.exe: \
+	build\client_net.obj \
 	build\main.obj \
-	build\client_net.obj
+	build\landscape.obj \
+	build\vector.obj \
+	build\matrix.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -50,6 +53,34 @@ build\client_net.obj: \
 	net.h \
 	protocol.h \
 	tank.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build landscape.obj.
+# 
+build\landscape.obj: \
+	landscape.c \
+	debug.h \
+	landscape.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build vector.obj.
+# 
+build\vector.obj: \
+	vector.c \
+	matrix.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build matrix.obj.
+# 
+build\matrix.obj: \
+	matrix.c \
+	matrix.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

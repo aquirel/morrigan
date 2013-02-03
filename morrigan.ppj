@@ -40,7 +40,8 @@ bin\morrigan.exe: \
 	build\ring_buffer.obj \
 	build\server.obj \
 	build\tank.obj \
-	build\vector.obj
+	build\vector.obj \
+	build\client_net.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -199,6 +200,21 @@ build\tank.obj: \
 	bounding.h \
 	debug.h \
 	landscape.h \
+	tank.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build client_net.obj.
+# 
+build\client_net.obj: \
+	client_net.c \
+	bounding.h \
+	client_net.h \
+	debug.h \
+	landscape.h \
+	net.h \
+	protocol.h \
 	tank.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"

@@ -124,6 +124,7 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
 
             uint8_t response = req_hello;
             respond((char *) &response, 1, sender_address);
+            return;
         }
 
         if (c->current_packet_definition)
@@ -159,6 +160,7 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
 
             uint8_t response = req_viewer_hello;
             respond((char *) &response, 1, sender_address);
+            return;
         }
 
         if (vc->current_packet_definition)
@@ -190,6 +192,7 @@ static void req_hello_executor(Client *c)
 
     uint8_t response = req_hello;
     respond((char *) &response, 1, &c->address);
+    puts("Client connected.");
 }
 
 static void req_bye_executor(Client *c)
@@ -198,6 +201,7 @@ static void req_bye_executor(Client *c)
     unregister_client(&c->address);
     uint8_t response = req_bye;
     respond((char *) &response, 1, &c->address);
+    puts("Client disconnected.");
 }
 
 static void req_viewer_hello_executor(ViewerClient *c)
@@ -211,6 +215,7 @@ static void req_viewer_hello_executor(ViewerClient *c)
 
     uint8_t response = req_viewer_hello;
     respond((char *) &response, 1, &c->address);
+    puts("Viewer connected.");
 }
 
 static void req_viewer_bye_executor(ViewerClient *c)
@@ -219,6 +224,7 @@ static void req_viewer_bye_executor(ViewerClient *c)
     unregister_viewer(&c->address);
     uint8_t response = req_viewer_bye;
     respond((char *) &response, 1, &c->address);
+    puts("Viewer disconnected.");
 }
 
 // Tank control.

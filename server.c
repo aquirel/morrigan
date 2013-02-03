@@ -69,8 +69,11 @@ bool server_start(void)
 void server_stop(void)
 {
     fprintf(stderr, "server_stop start.\n");
-    working = false;
-    check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
+    if (working)
+    {
+        working = false;
+        check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
+    }
     error:
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);

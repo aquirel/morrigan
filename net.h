@@ -4,12 +4,12 @@
 #ifndef __NET_H__
 #define __NET_H__
 
-#define PORT 9000
-#define PACKET_BUFFER 256
-
 #include <stdbool.h>
 
 #include <winsock2.h>
+
+#define PORT 9000
+#define PACKET_BUFFER 256
 
 bool net_start(void);
 void net_stop(void);

@@ -64,6 +64,11 @@ static int game_worker(void *unused)
         {
             Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
 
+            if (cs_connected == c->state)
+            {
+                continue;
+            }
+
             if (cs_acknowledged == c->state)
             {
                 Vector position, top;
@@ -77,6 +82,11 @@ static int game_worker(void *unused)
 
                     for (j = 0; j < clients_count; j++)
                     {
+                        if (i == j)
+                        {
+                            continue;
+                        }
+
                         Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
                         if (cs_in_game == previous_c->state &&
                                           intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
@@ -95,6 +105,11 @@ static int game_worker(void *unused)
 
             for (size_t j = 0; j < i; j++)
             {
+                if (i == j)
+                {
+                    continue;
+                }
+
                 Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
                 if (cs_in_game == previous_c->state &&
                     intersection_test(&c->tank.bounding, &previous_c->tank.bounding))

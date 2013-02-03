@@ -326,8 +326,14 @@ static int server_worker(void *unused)
             assert(c->current_packet_definition && "Client doesn't have pending packet.");
             assert(c->current_packet_definition->executor && "No executor in packet definition.");
 
-            c->current_packet_definition->executor(c);
-            c->current_packet_definition = NULL;
+            if (c->current_packet_definition->executor(c))
+            {
+                c->current_packet_definition = NULL;
+            }
+            else
+            {
+                free(c);
+            }
         }
 
         if (!no_viewer_request)
@@ -337,8 +343,14 @@ static int server_worker(void *unused)
             assert(c->current_packet_definition && "ViewerClient doesn't have pending packet.");
             assert(c->current_packet_definition->executor && "No executor in packet definition.");
 
-            c->current_packet_definition->executor(c);
-            c->current_packet_definition = NULL;
+            if (c->current_packet_definition->executor(c))
+            {
+                c->current_packet_definition = NULL;
+            }
+            else
+            {
+                free(c);
+            }
         }
     }
 

@@ -76,8 +76,8 @@ static int game_worker(void *unused)
                 size_t j;
                 do
                 {
-                    position.x = (rand() % (landscape->landscape_size * landscape->tile_size)) - 1;
-                    position.y = (rand() % (landscape->landscape_size * landscape->tile_size)) - 1;
+                    position.x = rand() % (landscape->landscape_size * landscape->tile_size - 1);
+                    position.y = rand() % (landscape->landscape_size * landscape->tile_size - 1);
                     position.z = landscape_get_height_at(landscape, position.x, position.y);
 
                     for (j = 0; j < clients_count; j++)

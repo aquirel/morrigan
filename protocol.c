@@ -15,33 +15,33 @@
 static inline bool __check_double(double v, double min, double max);
 
 // Connecting.
-static void req_hello_executor(Client *c);
-static void req_bye_executor(Client *c);
-static void req_viewer_hello_executor(ViewerClient *c);
-static void req_viewer_bye_executor(ViewerClient *c);
+static bool req_hello_executor(Client *c);
+static bool req_bye_executor(Client *c);
+static bool req_viewer_hello_executor(ViewerClient *c);
+static bool req_viewer_bye_executor(ViewerClient *c);
 
 // Tank control.
-static void req_set_engine_power_executor(Client *c);
+static bool req_set_engine_power_executor(Client *c);
 static bool req_set_engine_power_validator(const void *packet, size_t packet_size);
-static void req_turn_executor(Client *c);
+static bool req_turn_executor(Client *c);
 static bool req_turn_validator(const void *packet, size_t packet_size);
-static void req_look_at_executor(Client *c);
+static bool req_look_at_executor(Client *c);
 static bool req_look_at_validator(const void *packet, size_t packet_size);
-static void req_shoot_executor(Client *c);
+static bool req_shoot_executor(Client *c);
 
 // Tank telemetry.
-static void req_get_heading_executor(Client *c);
-static void req_get_speed_executor(Client *c);
-static void req_get_hp_executor(Client *c);
+static bool req_get_heading_executor(Client *c);
+static bool req_get_speed_executor(Client *c);
+static bool req_get_hp_executor(Client *c);
 
 // Observing.
-static void req_get_map_executor(Client *c);
-static void req_get_normal_executor(Client *c);
-static void req_get_tanks_executor(Client *c);
+static bool req_get_map_executor(Client *c);
+static bool req_get_normal_executor(Client *c);
+static bool req_get_tanks_executor(Client *c);
 
 // Viewing.
-static void req_viewer_get_map_executor(ViewerClient *c);
-static void req_viewer_get_tanks_executor(ViewerClient *c);
+static bool req_viewer_get_map_executor(ViewerClient *c);
+static bool req_viewer_get_tanks_executor(ViewerClient *c);
 
 static PacketDefinition RequestDefinitions[] =
 {
@@ -181,7 +181,7 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
 }
 
 // Connecting.
-static void req_hello_executor(Client *c)
+static bool req_hello_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
 
@@ -193,18 +193,20 @@ static void req_hello_executor(Client *c)
     uint8_t response = req_hello;
     respond((char *) &response, 1, &c->address);
     puts("Client connected.");
+    return true;
 }
 
-static void req_bye_executor(Client *c)
+static bool req_bye_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     unregister_client(&c->address);
     uint8_t response = req_bye;
     respond((char *) &response, 1, &c->address);
     puts("Client disconnected.");
+    return false;
 }
 
-static void req_viewer_hello_executor(ViewerClient *c)
+static bool req_viewer_hello_executor(ViewerClient *c)
 {
     assert(c && "Bad viewer client pointer.");
 
@@ -216,24 +218,27 @@ static void req_viewer_hello_executor(ViewerClient *c)
     uint8_t response = req_viewer_hello;
     respond((char *) &response, 1, &c->address);
     puts("Viewer connected.");
+    return true;
 }
 
-static void req_viewer_bye_executor(ViewerClient *c)
+static bool req_viewer_bye_executor(ViewerClient *c)
 {
     assert(c && "Bad viewer client pointer.");
     unregister_viewer(&c->address);
     uint8_t response = req_viewer_bye;
     respond((char *) &response, 1, &c->address);
     puts("Viewer disconnected.");
+    return false;
 }
 
 // Tank control.
-static void req_set_engine_power_executor(Client *c)
+static bool req_set_engine_power_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     tank_set_engine_power(&c->tank, ((ReqSetEnginePower *) (&c->current_packet_buffer[1]))->engine_power);
     uint8_t response = req_set_engine_power;
     respond((char *) &response, 1, &c->address);
+    return true;
 }
 
 static bool req_set_engine_power_validator(const void *packet, size_t packet_size)
@@ -242,12 +247,13 @@ static bool req_set_engine_power_validator(const void *packet, size_t packet_siz
     return sizeof(ReqSetEnginePower) == packet_size - 1;
 }
 
-static void req_turn_executor(Client *c)
+static bool req_turn_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     tank_turn(&c->tank, ((ReqTurn *) (&c->current_packet_buffer[1]))->turn_angle);
     uint8_t response = req_turn;
     respond((char *) &response, 1, &c->address);
+    return true;
 }
 
 static bool req_turn_validator(const void *packet, size_t packet_size)
@@ -263,13 +269,14 @@ static bool req_turn_validator(const void *packet, size_t packet_size)
     return __check_double(turn_angle, -180.0, 180.0);
 }
 
-static void req_look_at_executor(Client *c)
+static bool req_look_at_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     ReqLookAt *p = ((ReqLookAt *) (&c->current_packet_buffer[1]));
     tank_look_at(&c->tank, &(Vector) { .x = p->x, .y = p->y, .z = p->z });
     uint8_t response = req_look_at;
     respond((char *) &response, 1, &c->address);
+    return true;
 }
 
 static bool req_look_at_validator(const void *packet, size_t packet_size)
@@ -287,37 +294,41 @@ static bool req_look_at_validator(const void *packet, size_t packet_size)
            __check_double(p->z, -1.0, 1.0);
 }
 
-static void req_shoot_executor(Client *c)
+static bool req_shoot_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     uint8_t response = req_shoot;
     respond((char *) &response, 1, &c->address);
+    return true;
 }
 
 // Tank telemetry.
-static void req_get_heading_executor(Client *c)
+static bool req_get_heading_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     ResGetHeading response = { .packet_id = req_get_heading, .heading = tank_get_heading(&c->tank) };
     respond((char *) &response, sizeof(response), &c->address);
+    return true;
 }
 
-static void req_get_speed_executor(Client *c)
+static bool req_get_speed_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     ResGetSpeed response = { .packet_id = req_get_speed, .speed = c->tank.speed };
     respond((char *) &response, sizeof(response), &c->address);
+    return true;
 }
 
-static void req_get_hp_executor(Client *c)
+static bool req_get_hp_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     ResGetHP response = { .packet_id = req_get_hp, .hp = c->tank.hp };
     respond((char *) &response, sizeof(response), &c->address);
+    return true;
 }
 
 // Observing.
-static void req_get_map_executor(Client *c)
+static bool req_get_map_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     char response[1 + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double)];
@@ -346,9 +357,10 @@ static void req_get_map_executor(Client *c)
     }
 
     respond(response, sizeof(response), &c->address);
+    return true;
 }
 
-static void req_get_normal_executor(Client *c)
+static bool req_get_normal_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     ResGetNormal response = { .packet_id = req_get_normal };
@@ -358,9 +370,10 @@ static void req_get_normal_executor(Client *c)
     response.y = t.y;
     response.z = t.z;
     respond((char *) &response, sizeof(response), &c->address);
+    return true;
 }
 
-static void req_get_tanks_executor(Client *c)
+static bool req_get_tanks_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
     char response[sizeof(ResGetTanks) + MAX_CLIENTS * sizeof(ResGetTanksTankRecord)];
@@ -400,9 +413,10 @@ static void req_get_tanks_executor(Client *c)
     }
 
     respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
+    return true;
 }
 
-static void req_viewer_get_map_executor(ViewerClient *c)
+static bool req_viewer_get_map_executor(ViewerClient *c)
 {
     assert(c && "Bad viewer client pointer.");
     const size_t ls = landscape->landscape_size;
@@ -415,9 +429,10 @@ static void req_viewer_get_map_executor(ViewerClient *c)
     memcpy(&response[1 + 2 * sizeof(size_t)], landscape->height_map, ls * ls);
 
     respond(response, sizeof(response), &c->address);
+    return true;
 }
 
-static void req_viewer_get_tanks_executor(ViewerClient *c)
+static bool req_viewer_get_tanks_executor(ViewerClient *c)
 {
     assert(c && "Bad viewer client pointer.");
     char response[sizeof(ResGetTanks) + MAX_CLIENTS * sizeof(ResGetTanksTankRecord)];
@@ -451,6 +466,7 @@ static void req_viewer_get_tanks_executor(ViewerClient *c)
     }
 
     respond((char *) &response, sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord), &c->address);
+    return true;
 }
 
 static inline bool __check_double(double v, double min, double max)

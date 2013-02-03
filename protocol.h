@@ -51,7 +51,7 @@ typedef enum Responses
 typedef struct Client Client;
 
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
-typedef void (*packet_execution_handler)(void *c);
+typedef bool (*packet_execution_handler)(void *c);
 
 typedef struct PacketDefinition
 {

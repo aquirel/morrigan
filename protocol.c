@@ -375,7 +375,7 @@ static void req_get_tanks_executor(Client *c)
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
-        Client *other_c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+        Client *other_c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
         if (other_c == c ||
             TANK_OBSERVING_RANGE * landscape->tile_size < vector_distance(&c->tank.position, &other_c->tank.position))
@@ -432,7 +432,7 @@ static void req_viewer_get_tanks_executor(ViewerClient *c)
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
-        Client *other_c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+        Client *other_c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
         response_body->x = other_c->tank.position.x;
         response_body->y = other_c->tank.position.y;

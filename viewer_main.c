@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     check(client_connect(&s, argv[1], true), "Failed to connect.", "");
 
     puts("Connected to server.");
+    getchar();
 
     check(client_disconnect(&s, true), "Failed to disconnect.", "");
 

@@ -62,7 +62,7 @@ static int game_worker(void *unused)
         size_t clients_count = dynamic_array_count(clients);
         for (size_t i = 0; i < clients_count; i++)
         {
-            Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+            Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
             if (cs_connected == c->state)
             {
@@ -87,7 +87,7 @@ static int game_worker(void *unused)
                             continue;
                         }
 
-                        Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
+                        Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
                         if (cs_in_game == previous_c->state &&
                                           intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
                         {
@@ -110,7 +110,7 @@ static int game_worker(void *unused)
                     continue;
                 }
 
-                Client *previous_c = DYNAMIC_ARRAY_GET(Client *, clients, j);
+                Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
                 if (cs_in_game == previous_c->state &&
                     intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
                 {

@@ -68,8 +68,6 @@ static int net_worker(void *unused)
         handle_packet(buf, res, &sender_address);
     }
 
-    notify_shutdown();
-
     return 0;
 }
 
@@ -77,6 +75,7 @@ void net_stop(void)
 {
     fprintf(stderr, "net_stop start.\n");
     working = false;
+    notify_shutdown();
     shutdown(s, SD_RECEIVE);
     closesocket(s);
     thrd_join(worker_tid, NULL);

@@ -115,7 +115,7 @@ Client *find_client_by_address(const SOCKADDR *address)
 
     for (size_t i = 0; i < client_count; i++)
     {
-        Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
             dynamic_array_unlock(clients);
@@ -134,7 +134,7 @@ ViewerClient *find_viewer_by_address(const SOCKADDR *address)
 
     for (size_t i = 0; i < viewer_count; i++)
     {
-        ViewerClient *c = DYNAMIC_ARRAY_GET(ViewerClient *, viewers, i);
+        ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
             dynamic_array_unlock(viewers);
@@ -166,7 +166,7 @@ Client *register_client(const SOCKADDR *address)
     memcpy(&c->address, address, sizeof(SOCKADDR));
 
     dynamic_array_lock(clients);
-    check(dynamic_array_push(clients, c), "Failed to add new client.", "");
+    check(dynamic_array_push(clients, &c), "Failed to add new client.", "");
     dynamic_array_unlock(clients);
 
     return c;
@@ -199,7 +199,7 @@ ViewerClient *register_viewer(const SOCKADDR *address)
     memcpy(&c->address, address, sizeof(SOCKADDR));
 
     dynamic_array_lock(viewers);
-    check(dynamic_array_push(viewers, c), "Failed to add new viewer.", "");
+    check(dynamic_array_push(viewers, &c), "Failed to add new viewer.", "");
     dynamic_array_unlock(viewers);
 
     return c;
@@ -219,7 +219,7 @@ bool unregister_client(const SOCKADDR *address)
 
     for (size_t i = 0; i < client_count; i++)
     {
-        Client *c = DYNAMIC_ARRAY_GET(Client *, clients, i);
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
             dynamic_array_delete_at(clients, i);
@@ -240,7 +240,7 @@ bool unregister_viewer(const SOCKADDR *address)
 
     for (size_t i = 0; i < viewer_count; i++)
     {
-        ViewerClient *c = DYNAMIC_ARRAY_GET(ViewerClient *, viewers, i);
+        ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
             dynamic_array_delete_at(viewers, i);
@@ -256,7 +256,7 @@ bool unregister_viewer(const SOCKADDR *address)
 
 void enqueue_client(const Client *c)
 {
-    ring_buffer_write(client_requests, c);
+    ring_buffer_write(client_requests, &c);
     check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
     error:
     return;
@@ -264,7 +264,7 @@ void enqueue_client(const Client *c)
 
 void enqueue_viewer(const ViewerClient *c)
 {
-    ring_buffer_write(viewer_requests, c);
+    ring_buffer_write(viewer_requests, &c);
     check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
     error:
     return;
@@ -275,7 +275,7 @@ void notify_shutdown(void)
     dynamic_array_lock(clients);
     while (dynamic_array_count(clients))
     {
-        Client *c = DYNAMIC_ARRAY_GET(Client *, clients, 0);
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, 0);
         dynamic_array_delete_at(clients, 0);
         uint8_t response = req_bye;
         respond((char *) &response, 1, &c->address);
@@ -286,7 +286,7 @@ void notify_shutdown(void)
     dynamic_array_lock(viewers);
     while (dynamic_array_count(viewers))
     {
-        ViewerClient *c = DYNAMIC_ARRAY_GET(ViewerClient *, viewers, 0);
+        ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, 0);
         dynamic_array_delete_at(viewers, 0);
         uint8_t response = req_bye;
         respond((char *) &response, 1, &c->address);
@@ -321,7 +321,7 @@ static int server_worker(void *unused)
 
         if (!no_client_request)
         {
-            Client *c = RING_BUFFER_READ(Client *, client_requests);
+            Client *c = *RING_BUFFER_READ(Client **, client_requests);
             assert(c && "Bad Client pointer.");
             assert(c->current_packet_definition && "Client doesn't have pending packet.");
             assert(c->current_packet_definition->executor && "No executor in packet definition.");
@@ -332,7 +332,7 @@ static int server_worker(void *unused)
 
         if (!no_viewer_request)
         {
-            ViewerClient *c = RING_BUFFER_READ(ViewerClient *, viewer_requests);
+            ViewerClient *c = *RING_BUFFER_READ(ViewerClient **, viewer_requests);
             assert(c && "Bad ViewerClient pointer.");
             assert(c->current_packet_definition && "ViewerClient doesn't have pending packet.");
             assert(c->current_packet_definition->executor && "No executor in packet definition.");

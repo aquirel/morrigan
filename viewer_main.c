@@ -106,13 +106,12 @@ bool process_events(void)
 {
     SDL_Event event;
 
-    while (SDL_PollEvent(&event))
+    SDL_WaitEvent(&event);
+
+    switch (event.type)
     {
-        switch (event.type)
-        {
-            case SDL_QUIT:
-                return false;
-        }
+        case SDL_QUIT:
+            return false;
     }
 
     return true;
@@ -130,44 +129,50 @@ void draw(const Landscape *l)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    // Light.
+    GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    GLfloat light_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    GLfloat light_position[] = { 0, 0, 8, 1 };
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
     // Draw axis.
+    size_t ls = l->landscape_size,
+           ts = l->tile_size;
+
     glColor3d(1, 0, 0);
     glBegin(GL_LINES);
-    glVertex3i(0, 0, 0);
-    glVertex3i(1024, 0, 0);
+    glVertex3d(0, 0, 0);
+    glVertex3d(ls * ts, 0, 0);
     glEnd();
 
     glColor3d(0, 1, 0);
     glBegin(GL_LINES);
-    glVertex3i(0, 0, 0);
-    glVertex3i(0, 1024, 0);
+    glVertex3d(0, 0, 0);
+    glVertex3d(0, ls * ts, 0);
     glEnd();
 
     glColor3d(0, 0, 1);
     glBegin(GL_LINES);
-    glVertex3i(0, 0, 0);
-    glVertex3i(0, 0, 1024);
+    glVertex3d(0, 0, 0);
+    glVertex3d(0, 0, ls * ts);
     glEnd();
 
     // Draw landscape.
     glColor3d(0, 0.5, 0);
-    size_t ls = l->landscape_size,
-           ts = l->tile_size;
-
     for (size_t i = 0; i < ls - 1; i++)
     {
         for (size_t j = 0; j < ls - 1; j++)
         {
             glBegin(GL_TRIANGLE_STRIP);
 
-            /*glVertex3f(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
-            glVertex3f((j + 1) * ts, i * ts, landscape_get_height_at_node(l, i, j + 1));
-            glVertex3f(j * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j));
-            glVertex3f((j + 1) * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j + 1));*/
-            glVertex3f(j * ts, i * ts, 0);
-            glVertex3f((j + 1) * ts, i * ts, 0);
-            glVertex3f(j * ts, (i + 1) * ts, 0);
-            glVertex3f((j + 1) * ts, (i + 1) * ts, 0);
+            glVertex3d(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
+            glVertex3d((j + 1) * ts, i * ts, landscape_get_height_at_node(l, i, j + 1));
+            glVertex3d(j * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j));
+            glVertex3d((j + 1) * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j + 1));
 
             glEnd();
         }
@@ -180,24 +185,30 @@ void draw(const Landscape *l)
     {
         gluQuadricDrawStyle(q, GLU_FILL);
         gluQuadricNormals(q, GLU_FLAT);
-        gluSphere(q, 0.25, 32, 32);
 
+        gluSphere(q, 0.25, 64, 64);
+
+        glPushMatrix();
         glTranslated(0.25, 0, 0);
         glColor3d(0.5, 0, 0);
-        gluSphere(q, 0.125, 32, 32);
+        gluSphere(q, 0.125, 64, 64);
+        glPopMatrix();
+
+        glPushMatrix();
+        glTranslated(0, 0.25, 0);
+        glColor3d(0, 0.5, 0);
+        gluSphere(q, 0.125, 64, 64);
+        glPopMatrix();
+
+        glPushMatrix();
+        glTranslated(0, 0, 0.25);
+        glColor3d(0, 0, 0.5);
+        gluSphere(q, 0.125, 64, 64);
+        glPopMatrix();
 
         gluDeleteQuadric(q);
     }
     ///
-
-    GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    GLfloat light_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    GLfloat light_position[] = { 0, 0, 8, 1 };
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     SDL_GL_SwapBuffers( );
 }

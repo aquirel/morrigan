@@ -1,4 +1,4 @@
-﻿//viewer_main.c - main() for viewer.
+﻿// viewer_main.c - main() for viewer.
 
 #include "viewer.h"
 
@@ -9,10 +9,16 @@ SOCKET s;
 bool connected = false;
 Landscape *l = NULL;
 
+const int w = 640, h = 480, bpp = 16;
+double camera_x, camera_y, camera_z = 256;
+double vertical_angle = 90.0, horizontal_angle = 0.0;
+
 bool init_video(void);
 bool process_events(void);
 void draw(const Landscape *l);
 void cleanup(void);
+
+double __range_angle(double a);
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +36,8 @@ int main(int argc, char *argv[])
 
     l = client_get_landscape(&s);
     puts("Loaded landscape.");
+
+    camera_x = camera_y = l->landscape_size / 2.0 * l->tile_size;
 
     check(init_video(), "Failed to init video.", "");
 
@@ -53,22 +61,20 @@ int main(int argc, char *argv[])
 
 bool init_video(void)
 {
-    const int w = 640, h = 480, bpp = 16;
-
     check(0 == SDL_Init(SDL_INIT_VIDEO), "Failed to init SDL.", "");
     SDL_WM_SetCaption("morrigan viewer", NULL);
-    check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16), "Failed to set SDL_GL_DEPTH_SIZE.", "");
+    check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24), "Failed to set SDL_GL_DEPTH_SIZE.", "");
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_OPENGL), "Failed to set video mode.", "");
+    SDL_ShowCursor(SDL_DISABLE);
+    SDL_WM_GrabInput(SDL_GRAB_ON);
 
     glLineWidth(2.0);
 
     glShadeModel(GL_SMOOTH);
-
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
     glCullFace(GL_FRONT);
-
     glEnable(GL_DITHER);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -88,14 +94,16 @@ bool init_video(void)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
+    glViewport(0, 0, w, h);
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    float ratio = (float) w / (float) h;
+    gluPerspective(60.0, ratio, 1, 16384.0);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    glViewport(0, 0, w, h);
-    float ratio = (float) w / (float) h;
-    gluPerspective(60.0, ratio, 1.0, 4096.0);
+    glScaled(1.0, 1.0, -1.0);
 
     return true;
     error:
@@ -112,6 +120,33 @@ bool process_events(void)
     {
         case SDL_QUIT:
             return false;
+
+        case SDL_KEYDOWN:
+            if (SDLK_ESCAPE == event.key.keysym.sym)
+            {
+                return false;
+            }
+            break;
+
+        case SDL_MOUSEMOTION:
+            {
+                static bool first_time = true;
+                if (first_time)
+                {
+                    first_time = false;
+                    break;
+                }
+
+                int xrel = event.motion.xrel,
+                    yrel = event.motion.yrel;
+
+                horizontal_angle -= xrel * 0.05;
+                vertical_angle += yrel * 0.05;
+
+                horizontal_angle = __range_angle(horizontal_angle);
+                vertical_angle = __range_angle(vertical_angle);
+            }
+            break;
     }
 
     return true;
@@ -122,12 +157,11 @@ void draw(const Landscape *l)
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluLookAt(0, 0, 0, 0, 0, 1, 1, 1, 0);
+    glPushMatrix();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    glRotated(-vertical_angle, 1.0, 0.0, 0.0);
+    glRotated(horizontal_angle, 0.0, 0.0, 1.0);
+    glTranslated(-camera_x, -camera_y, -camera_z);
 
     // Light.
     GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -136,81 +170,36 @@ void draw(const Landscape *l)
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
     GLfloat light_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    GLfloat light_position[] = { 0, 0, 8, 1 };
+    GLfloat light_position[] = { 0, 0, 0, 0 };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-    // Draw axis.
+    // Draw landscape.
     size_t ls = l->landscape_size,
            ts = l->tile_size;
 
-    glColor3d(1, 0, 0);
-    glBegin(GL_LINES);
-    glVertex3d(0, 0, 0);
-    glVertex3d(ls * ts, 0, 0);
-    glEnd();
-
-    glColor3d(0, 1, 0);
-    glBegin(GL_LINES);
-    glVertex3d(0, 0, 0);
-    glVertex3d(0, ls * ts, 0);
-    glEnd();
-
-    glColor3d(0, 0, 1);
-    glBegin(GL_LINES);
-    glVertex3d(0, 0, 0);
-    glVertex3d(0, 0, ls * ts);
-    glEnd();
-
-    // Draw landscape.
     glColor3d(0, 0.5, 0);
     for (size_t i = 0; i < ls - 1; i++)
     {
         for (size_t j = 0; j < ls - 1; j++)
         {
-            glBegin(GL_TRIANGLE_STRIP);
+            ///glBegin(GL_TRIANGLE_STRIP);
+            glBegin(GL_LINE_STRIP);
 
             glVertex3d(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
             glVertex3d((j + 1) * ts, i * ts, landscape_get_height_at_node(l, i, j + 1));
             glVertex3d(j * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j));
             glVertex3d((j + 1) * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j + 1));
 
+            ///
+            glVertex3d(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
+
             glEnd();
         }
     }
 
-    ///
-    glColor3d(0.5, 0.5, 0.5);
-    GLUquadric *q = gluNewQuadric();
-    if (q)
-    {
-        gluQuadricDrawStyle(q, GLU_FILL);
-        gluQuadricNormals(q, GLU_FLAT);
+    glPopMatrix();
 
-        gluSphere(q, 0.25, 64, 64);
-
-        glPushMatrix();
-        glTranslated(0.25, 0, 0);
-        glColor3d(0.5, 0, 0);
-        gluSphere(q, 0.125, 64, 64);
-        glPopMatrix();
-
-        glPushMatrix();
-        glTranslated(0, 0.25, 0);
-        glColor3d(0, 0.5, 0);
-        gluSphere(q, 0.125, 64, 64);
-        glPopMatrix();
-
-        glPushMatrix();
-        glTranslated(0, 0, 0.25);
-        glColor3d(0, 0, 0.5);
-        gluSphere(q, 0.125, 64, 64);
-        glPopMatrix();
-
-        gluDeleteQuadric(q);
-    }
-    ///
-
-    SDL_GL_SwapBuffers( );
+    SDL_GL_SwapBuffers();
 }
 
 void cleanup(void)
@@ -231,4 +220,18 @@ void cleanup(void)
     {
         landscape_destroy(l);
     }
+}
+
+double __range_angle(double a)
+{
+    if (a < 0.0)
+    {
+        return 360.0;
+    }
+    else if (a > 360.0)
+    {
+        return 0.0;
+    }
+
+    return a;
 }

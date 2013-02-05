@@ -8,7 +8,7 @@
 
 #include "vector.h"
 
-#define TILE_SIZE 1
+#define TILE_SIZE 16
 
 typedef struct Landscape
 {

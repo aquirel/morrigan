@@ -7,7 +7,7 @@ POC_PROJECT_VERSION = 7.00#
 POC_PROJECT_TYPE = 0#
 POC_PROJECT_OUTPUTDIR = build#
 POC_PROJECT_RESULTDIR = bin#
-POC_PROJECT_ARGUMENTS = #
+POC_PROJECT_ARGUMENTS = localhost#
 POC_PROJECT_WORKPATH = .#
 POC_PROJECT_EXECUTOR = #
 CC = pocc.exe#
@@ -18,20 +18,20 @@ SIGN = posign.exe#
 CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Ze -Gi -J -D_X86_ -D_M_IX86 #
 ASFLAGS = -AIA32 -Gz #
 RCFLAGS = #
-LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB#
+LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB SDL.lib SDLmain.lib opengl32.lib glu32.lib glaux.lib#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
 INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include;..\_libz\sdl\SDL-1.2.15\include#
-LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl\SDL-1.2.15#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl#
 
 # 
 # Build morrigan_viewer.exe.
 # 
 bin\morrigan_viewer.exe: \
 	build\client_net.obj \
-	build\main.obj \
 	build\landscape.obj \
-	build\vector.obj \
-	build\matrix.obj
+	build\main.obj \
+	build\matrix.obj \
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -53,7 +53,8 @@ build\client_net.obj: \
 	net.h \
 	protocol.h \
 	tank.h \
-	vector.h
+	vector.h \
+	viewer.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 

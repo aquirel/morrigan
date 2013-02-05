@@ -6,8 +6,7 @@
 
 #include <stdbool.h>
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include "viewer.h"
 
 #include "landscape.h"
 

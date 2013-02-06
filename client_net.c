@@ -121,7 +121,7 @@ Landscape *client_get_landscape(SOCKET *s)
     Landscape *l = landscape_create(landscape_size, tile_size);
     check_mem(l);
 
-    memcpy(l->height_map, &buf[1 + 2 * sizeof(size_t)], landscape_size * landscape_size);
+    memcpy(l->height_map, &buf[1 + 2 * sizeof(size_t)], landscape_size * landscape_size * sizeof(double));
     return l;
 
     error:

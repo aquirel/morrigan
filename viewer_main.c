@@ -216,7 +216,7 @@ void draw(const Landscape *l)
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
     GLfloat light_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    GLfloat light_position[] = { 0, 0, 0, 0 };
+    GLfloat light_position[] = { 0, 0, 256, 0 };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     // Draw landscape.

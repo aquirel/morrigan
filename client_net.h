@@ -13,7 +13,7 @@
 #define PORT 9000
 #define CLIENT_PACKET_BUFFER 65535
 // In ms.
-#define NET_TIMEOUT 1000
+#define NET_TIMEOUT 5000
 
 bool client_net_start(void);
 void client_net_stop(void);

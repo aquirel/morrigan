@@ -5,6 +5,8 @@
 #define __VIEWER_H__
 
 #include <stdio.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include <winsock2.h>
 #include <windows.h>

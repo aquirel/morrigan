@@ -10,8 +10,10 @@ bool connected = false;
 Landscape *l = NULL;
 
 const int w = 640, h = 480, bpp = 16;
-double camera_x, camera_y, camera_z = 256;
+double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
+const double fov_y = 60.0;
+const double move_speed = 2.0, mouse_sensitivity = 0.1;
 
 bool init_video(void);
 bool process_events(void);
@@ -63,13 +65,14 @@ bool init_video(void)
 {
     check(0 == SDL_Init(SDL_INIT_VIDEO), "Failed to init SDL.", "");
     SDL_WM_SetCaption("morrigan viewer", NULL);
-    check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24), "Failed to set SDL_GL_DEPTH_SIZE.", "");
+    check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16), "Failed to set SDL_GL_DEPTH_SIZE.", "");
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
     SDL_WM_GrabInput(SDL_GRAB_ON);
+    check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
 
-    glLineWidth(2.0);
+    glLineWidth(1.0);
 
     glShadeModel(GL_SMOOTH);
     glEnable(GL_CULL_FACE);
@@ -99,7 +102,7 @@ bool init_video(void)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     float ratio = (float) w / (float) h;
-    gluPerspective(60.0, ratio, 1, 16384.0);
+    gluPerspective(fov_y, ratio, 1, 16384.0);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -122,9 +125,52 @@ bool process_events(void)
             return false;
 
         case SDL_KEYDOWN:
-            if (SDLK_ESCAPE == event.key.keysym.sym)
+        case SDL_KEYUP:
+            switch (event.key.keysym.sym)
             {
-                return false;
+                case SDLK_ESCAPE:
+                    return false;
+
+                case SDLK_f:
+                case SDLK_HOME:
+                case SDLK_PAGEUP:
+                    camera_z += move_speed;
+                    break;
+
+                case SDLK_v:
+                case SDLK_END:
+                case SDLK_PAGEDOWN:
+                    camera_z -= move_speed;
+                    break;
+
+                case SDLK_w:
+                case SDLK_UP:
+                    camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI);
+                    camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
+                    break;
+
+                case SDLK_s:
+                case SDLK_DOWN:
+                    camera_x += move_speed * sin(horizontal_angle / 180 * M_PI);
+                    camera_y += move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
+                    break;
+
+                case SDLK_a:
+                case SDLK_LEFT:
+                    camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
+                    break;
+
+                case SDLK_d:
+                case SDLK_RIGHT:
+                    camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
+                    break;
+
+                default:
+                    return true;
             }
             break;
 
@@ -140,8 +186,8 @@ bool process_events(void)
                 int xrel = event.motion.xrel,
                     yrel = event.motion.yrel;
 
-                horizontal_angle -= xrel * 0.05;
-                vertical_angle += yrel * 0.05;
+                horizontal_angle -= xrel * mouse_sensitivity;
+                vertical_angle += yrel * mouse_sensitivity;
 
                 horizontal_angle = __range_angle(horizontal_angle);
                 vertical_angle = __range_angle(vertical_angle);

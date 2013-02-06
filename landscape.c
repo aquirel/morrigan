@@ -160,8 +160,8 @@ void landscape_get_tile(const Landscape *l, double x, double y, size_t *tile_x, 
 static inline void __validate_location(const Landscape *l, size_t x, size_t y)
 {
     assert(l && "Bad landscape pointer.");
-    assert(x >= 0 && x < l->landscape_size && "X value out of range.");
-    assert(y >= 0 && y < l->landscape_size && "Y value out of range.");
+    assert(x >= 0 && x <= l->landscape_size && "X value out of range.");
+    assert(y >= 0 && y <= l->landscape_size && "Y value out of range.");
 }
 
 static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c)
@@ -198,7 +198,7 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
 int main(void)
 {
     Landscape *l = landscape_create(2, 4);
-    test_cond("Crete landscape.", l);
+    test_cond("Create landscape.", l);
 
     landscape_set_height_at_node(l, 0, 0, 0.1);
     landscape_set_height_at_node(l, 0, 1, 0.2);

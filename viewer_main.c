@@ -69,7 +69,6 @@ bool init_video(void)
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
-    SDL_WM_GrabInput(SDL_GRAB_ON);
     check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
 
     glLineWidth(1.0);
@@ -191,6 +190,9 @@ bool process_events(void)
 
                 horizontal_angle = __range_angle(horizontal_angle);
                 vertical_angle = __range_angle(vertical_angle);
+
+                first_time = true;
+                SDL_WarpMouse(w / 2, h / 2);
             }
             break;
     }

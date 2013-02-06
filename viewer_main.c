@@ -144,15 +144,15 @@ bool process_events(void)
 
                 case SDLK_w:
                 case SDLK_UP:
-                    camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI);
-                    camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                    camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
                     break;
 
                 case SDLK_s:
                 case SDLK_DOWN:
-                    camera_x += move_speed * sin(horizontal_angle / 180 * M_PI);
-                    camera_y += move_speed * cos(horizontal_angle / 180 * M_PI);
+                    camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                    camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
                     break;
 

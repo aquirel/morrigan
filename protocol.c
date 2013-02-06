@@ -428,7 +428,7 @@ static bool req_viewer_get_map_executor(ViewerClient *c)
 
     *((size_t *) &response[1]) = ls;
     *((size_t *) &response[1 + sizeof(size_t)]) = landscape->tile_size;
-    memcpy(&response[1 + 2 * sizeof(size_t)], landscape->height_map, ls * ls);
+    memcpy(&response[1 + 2 * sizeof(size_t)], landscape->height_map, ls * ls * sizeof(double));
 
     respond(response, sizeof(response), &c->address);
     return true;

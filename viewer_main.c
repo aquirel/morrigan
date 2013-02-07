@@ -8,15 +8,17 @@
 SOCKET s;
 bool connected = false;
 Landscape *l = NULL;
+Vector *landscape_normals = NULL;
+///double *landscape_vertex_map;
 
-const int w = 640, h = 480, bpp = 16;
+const int w = 640, h = 480, bpp = 32;
 double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
 const double fov_y = 60.0;
 const double move_speed = 2.0, mouse_sensitivity = 0.1;
 
 bool init_video(void);
-bool process_events(void);
+bool process_events(bool *need_redraw);
 void draw(const Landscape *l);
 void cleanup(void);
 
@@ -37,20 +39,37 @@ int main(int argc, char *argv[])
     puts("Connected to server.");
 
     l = client_get_landscape(&s);
+    check_mem(landscape_normals = (Vector *) calloc(l->landscape_size * l->landscape_size, sizeof(Vector)));
+
+    for (size_t i = 0; i < l->landscape_size; i++)
+    {
+        for (size_t j = 0; j < l->landscape_size; j++)
+        {
+            landscape_get_normal_at(l, j * l->tile_size, i * l->tile_size, &landscape_normals[i * l->landscape_size + j]);
+        }
+    }
+
     puts("Loaded landscape.");
 
     camera_x = camera_y = l->landscape_size / 2.0 * l->tile_size;
 
     check(init_video(), "Failed to init video.", "");
 
+    /// TODO: Prepare vertex & normal arrays.
+    ///glVertexPointer(3, GL_DOUBLE, 0, )
+
     while (true)
     {
-        if (!process_events())
+        bool need_redraw = false;
+        if (!process_events(&need_redraw))
         {
             break;
         }
 
-        draw(l);
+        if (need_redraw)
+        {
+            draw(l);
+        }
     }
 
     cleanup();
@@ -71,7 +90,7 @@ bool init_video(void)
     SDL_ShowCursor(SDL_DISABLE);
     check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
 
-    glLineWidth(1.0);
+    glLineWidth(2.0);
 
     glShadeModel(GL_SMOOTH);
     glEnable(GL_CULL_FACE);
@@ -84,13 +103,14 @@ bool init_video(void)
     glDepthFunc(GL_LESS);
     glEnable(GL_ALPHA_TEST);
     glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glEnable(GL_LIGHT0);
-    GLfloat ambient_params[] = { 0.5, 0.5, 0.5, 1.0 };
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient_params);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_POLYGON_SMOOTH);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+
+    ///glEnableClientState(GL_VERTEX_ARRAY);
+    ///glEnableClientState(GL_NORMAL_ARRAY);
 
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -112,7 +132,7 @@ bool init_video(void)
     return false;
 }
 
-bool process_events(void)
+bool process_events(bool *need_redraw)
 {
     SDL_Event event;
 
@@ -122,6 +142,11 @@ bool process_events(void)
     {
         case SDL_QUIT:
             return false;
+
+        case SDL_ACTIVEEVENT:
+        case SDL_SYSWMEVENT:
+            *need_redraw = true;
+            return true;
 
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -134,12 +159,14 @@ bool process_events(void)
                 case SDLK_HOME:
                 case SDLK_PAGEUP:
                     camera_z += move_speed;
+                    *need_redraw = true;
                     break;
 
                 case SDLK_v:
                 case SDLK_END:
                 case SDLK_PAGEDOWN:
                     camera_z -= move_speed;
+                    *need_redraw = true;
                     break;
 
                 case SDLK_w:
@@ -147,6 +174,7 @@ bool process_events(void)
                     camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
+                    *need_redraw = true;
                     break;
 
                 case SDLK_s:
@@ -154,18 +182,21 @@ bool process_events(void)
                     camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
                     camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
+                    *need_redraw = true;
                     break;
 
                 case SDLK_a:
                 case SDLK_LEFT:
                     camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
                     camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
+                    *need_redraw = true;
                     break;
 
                 case SDLK_d:
                 case SDLK_RIGHT:
                     camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
                     camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
+                    *need_redraw = true;
                     break;
 
                 default:
@@ -193,6 +224,7 @@ bool process_events(void)
 
                 first_time = true;
                 SDL_WarpMouse(w / 2, h / 2);
+                *need_redraw = true;
             }
             break;
     }
@@ -211,36 +243,64 @@ void draw(const Landscape *l)
     glRotated(horizontal_angle, 0.0, 0.0, 1.0);
     glTranslated(-camera_x, -camera_y, -camera_z);
 
-    // Light.
-    GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    GLfloat light_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    GLfloat light_position[] = { 0, 0, 256, 0 };
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-
     // Draw landscape.
     size_t ls = l->landscape_size,
            ts = l->tile_size;
 
-    glColor3d(0, 0.5, 0);
-    for (size_t i = 0; i < ls - 1; i++)
+    // Light.
+    GLfloat light_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+
+    GLfloat light_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+
+    GLfloat light_specular[] = { 0.5, 0.5, 0.5, 1.0 };
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+
+    GLfloat light_position[] = { ts * ls / 2.0, ts * ls / 2.0, 512.0, 1.0 };
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
+
+    for (size_t i = 0; i < ls; i++)
     {
-        for (size_t j = 0; j < ls - 1; j++)
+        for (size_t j = 0; j < ls; j++)
         {
-            ///glBegin(GL_TRIANGLE_STRIP);
-            glBegin(GL_LINE_STRIP);
+            // TODO: Move it to vertex array.
+            double h00 = landscape_get_height_at_node(l, i, j),
+                   h01 = landscape_get_height_at_node(l, i, j + 1),
+                   h10 = landscape_get_height_at_node(l, i + 1, j),
+                   h11 = landscape_get_height_at_node(l, i + 1, j + 1);
 
-            glVertex3d(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
-            glVertex3d((j + 1) * ts, i * ts, landscape_get_height_at_node(l, i, j + 1));
-            glVertex3d(j * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j));
-            glVertex3d((j + 1) * ts, (i + 1) * ts, landscape_get_height_at_node(l, i + 1, j + 1));
+            double x  = j * ts,
+                   xp = x + ts,
+                   y  = i * ts,
+                   yp = y + ts;
 
-            ///
-            glVertex3d(j * ts, i * ts, landscape_get_height_at_node(l, i, j));
+            // TODO: Move it to normals array.
+            Vector *n00 = &landscape_normals[i * ls + j],
+                   *n01 = &landscape_normals[i * ls + j + 1],
+                   *n10 = &landscape_normals[(i + 1) * ls + j],
+                   *n11 = &landscape_normals[(i + 1) * ls + j + 1];
 
+            glColor3d(0, 0.5, 0);
+            glBegin(GL_TRIANGLE_STRIP);
+            glNormal3dv((GLdouble *) n00);
+            glVertex3d(x, y, h00);
+            glNormal3dv((GLdouble *) n01);
+            glVertex3d(xp, y, h01);
+            glNormal3dv((GLdouble *) n10);
+            glVertex3d(x, yp, h10);
+            glNormal3dv((GLdouble *) n11);
+            glVertex3d(xp, yp, h11);
+            glEnd();
+
+            glColor3d(0, 0.25, 0);
+            glBegin(GL_LINE_LOOP);
+            glVertex3d(x, y, h00);
+            glVertex3d(xp, y, h01);
+            glVertex3d(x, yp, h10);
             glEnd();
         }
     }
@@ -257,6 +317,16 @@ void cleanup(void)
         SDL_Quit();
     }
 
+    if (landscape_normals)
+    {
+        free(landscape_normals);
+    }
+
+    if (l)
+    {
+        landscape_destroy(l);
+    }
+
     if (connected)
     {
         check(client_disconnect(&s, false), "Failed to disconnect.", "");
@@ -264,10 +334,6 @@ void cleanup(void)
 
     error:
     client_net_stop();
-    if (l)
-    {
-        landscape_destroy(l);
-    }
 }
 
 double __range_angle(double a)

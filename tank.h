@@ -45,7 +45,7 @@ typedef struct Tank
 } Tank;
 
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team);
-void tank_tick(Tank *tank, const Landscape *l);
+bool tank_tick(Tank *tank, const Landscape *l);
 
 // Protocol functions.
 void tank_turn(Tank *tank, double turn_angle);

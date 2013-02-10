@@ -9,7 +9,7 @@
 
 void tank_change_turn(Tank *tank);
 void tank_change_engine_power(Tank *tank);
-void tank_move(Tank *tank, const Landscape *l);
+bool tank_move(Tank *tank, const Landscape *l);
 void tank_rotate_turret(Tank *tank);
 
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team)
@@ -70,14 +70,15 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     };
 }
 
-void tank_tick(Tank *tank, const Landscape *l)
+bool tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
     tank_change_engine_power(tank);
-    tank_move(tank, l);
+    bool result = tank_move(tank, l);
     tank_change_turn(tank);
     tank_rotate_turret(tank);
+    return result;
 }
 
 void tank_turn(Tank *tank, double turn_angle)
@@ -196,7 +197,7 @@ void tank_change_engine_power(Tank *tank)
     }
 }
 
-void tank_move(Tank *tank, const Landscape *l)
+bool tank_move(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
@@ -205,30 +206,42 @@ void tank_move(Tank *tank, const Landscape *l)
     if (0 == tank->engine_power)
     { // We hold brakes.
         tank->speed = 0.0;
-        return;
+        return true;
     }
 
     tank->speed = TANK_ENGINE_POWER_TO_SPEED_COEFFICIENT * tank->engine_power;
 
+    double k = 1.0;
     while (true)
     {
         Vector t;
-        vector_scale(&tank->direction, tank->speed, &t);
+        vector_scale(&tank->direction, k * tank->speed, &t);
         vector_add(&tank->previous_position, &t, &tank->position);
+
+        if (tank->position.x < 0.0 ||
+            tank->position.y < 0.0 ||
+            tank->position.x > l->landscape_size * l->tile_size ||
+            tank->position.y > l->landscape_size * l->tile_size)
+        {
+            tank->position = tank->previous_position;
+            return false;
+        }
+
         tank->position.z = landscape_get_height_at(l, tank->position.x, tank->position.y);
 
         vector_sub(&tank->position, &tank->previous_position, &t);
         double new_speed = vector_length(&t);
 
-        if (fabs(new_speed - tank->speed) < vector_eps)
+        if (fabs(new_speed - k * tank->speed) < vector_eps)
         {
             break;
         }
 
-        tank->speed = new_speed;
+        k = tank->speed / new_speed;
     }
 
     landscape_get_normal_at(l, tank->position.x, tank->position.y, &tank->orientation);
+    return true;
 }
 
 void tank_rotate_turret(Tank *tank)

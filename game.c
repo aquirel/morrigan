@@ -101,7 +101,11 @@ static int game_worker(void *unused)
                 c->state = cs_in_game;
             }
 
-            tank_tick(&c->tank, landscape);
+            if (!tank_tick(&c->tank, landscape))
+            {
+                uint8_t data = not_tank_hit_bound;
+                respond(&data, 1, &c->address);
+            }
 
             for (size_t j = 0; j < i; j++)
             {
@@ -115,6 +119,10 @@ static int game_worker(void *unused)
                     intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
                 {
                     intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
+
+                    uint8_t data = not_tank_collision;
+                    respond(&data, 1, &c->address);
+                    respond(&data, 1, &previous_c->address);
                 }
             }
         }

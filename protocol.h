@@ -43,10 +43,16 @@ typedef enum Requests
 
 typedef enum Responses
 {
-    res_bad_request      = 0x80,
-    res_too_many_clients = 0x83,
-    res_wait             = 0x84
+    res_bad_request      = 0xf0,
+    res_too_many_clients = 0xf3,
+    res_wait             = 0xf4
 } Responses;
+
+typedef enum Notifications
+{
+    not_tank_hit_bound        = 0x80,
+    not_tank_collision        = 0x81
+} Notifications;
 
 typedef struct Client Client;
 

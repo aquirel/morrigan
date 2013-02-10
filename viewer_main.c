@@ -17,6 +17,8 @@ double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
 const double fov_y = 60.0;
 int mouse_prev_x, mouse_prev_y;
+SDL_TimerID timer_id = NULL;
+#define TIMER_EVENT_ID 1
 
 bool init_video(void);
 bool process_events(bool *need_redraw);
@@ -24,6 +26,7 @@ void draw(const Landscape *l);
 void draw_landscape(const Landscape *l);
 void cleanup(void);
 
+Uint32 timer_handler(Uint32 interval, void *param);
 double range_angle(double a);
 
 int main(int argc, char *argv[])
@@ -77,7 +80,7 @@ int main(int argc, char *argv[])
 
 bool init_video(void)
 {
-    check(0 == SDL_Init(SDL_INIT_VIDEO), "Failed to init SDL.", "");
+    check(0 == SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER), "Failed to init SDL.", "");
     SDL_WM_SetCaption("morrigan viewer", NULL);
     check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16), "Failed to set SDL_GL_DEPTH_SIZE.", "");
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
@@ -91,7 +94,7 @@ bool init_video(void)
     h = 600;
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_HWSURFACE | SDL_SWSURFACE | SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
-    check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
+    check(NULL != (timer_id = SDL_AddTimer(SDL_DEFAULT_REPEAT_INTERVAL, timer_handler, NULL)), "Failed to setup timer.", "");
 
     glLineWidth(1.0);
 
@@ -135,12 +138,20 @@ bool init_video(void)
 
 bool process_events(bool *need_redraw)
 {
+    static bool w_pressed = false,
+                s_pressed = false,
+                a_pressed = false,
+                d_pressed = false,
+                f_pressed = false,
+                v_pressed = false;
     SDL_Event event;
 
     SDL_WaitEvent(&event);
 
     do
     {
+        bool key_event = false;
+
         switch (event.type)
         {
             case SDL_QUIT:
@@ -151,7 +162,17 @@ bool process_events(bool *need_redraw)
                 *need_redraw = true;
                 return true;
 
+            case SDL_USEREVENT:
+                if (TIMER_EVENT_ID == event.user.code)
+                {
+                    key_event = true;
+                    *need_redraw = true;
+                }
+                break;
+
             case SDL_KEYDOWN:
+                key_event = true;
+
                 switch (event.key.keysym.sym)
                 {
                     case SDLK_ESCAPE:
@@ -160,49 +181,79 @@ bool process_events(bool *need_redraw)
                     case SDLK_f:
                     case SDLK_HOME:
                     case SDLK_PAGEUP:
-                        camera_z += move_speed;
-                        *need_redraw = true;
+                        f_pressed = true;
                         break;
 
                     case SDLK_v:
                     case SDLK_END:
                     case SDLK_PAGEDOWN:
-                        camera_z -= move_speed;
-                        *need_redraw = true;
+                        v_pressed = true;
                         break;
 
                     case SDLK_w:
                     case SDLK_UP:
-                        camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                        camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                        camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
-                        *need_redraw = true;
+                        w_pressed = true;
                         break;
 
                     case SDLK_s:
                     case SDLK_DOWN:
-                        camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                        camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                        camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
-                        *need_redraw = true;
+                        s_pressed = true;
                         break;
 
                     case SDLK_a:
                     case SDLK_LEFT:
-                        camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
-                        camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
-                        *need_redraw = true;
+                        a_pressed = true;
                         break;
 
                     case SDLK_d:
                     case SDLK_RIGHT:
-                        camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
-                        camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
-                        *need_redraw = true;
+                        d_pressed = true;
                         break;
 
                     default:
-                        return true;
+                        break;
+                }
+                break;
+
+            case SDL_KEYUP:
+                key_event = true;
+
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_f:
+                    case SDLK_HOME:
+                    case SDLK_PAGEUP:
+                        f_pressed = false;
+                        break;
+
+                    case SDLK_v:
+                    case SDLK_END:
+                    case SDLK_PAGEDOWN:
+                        v_pressed = false;
+                        break;
+
+                    case SDLK_w:
+                    case SDLK_UP:
+                        w_pressed = false;
+                        break;
+
+                    case SDLK_s:
+                    case SDLK_DOWN:
+                        s_pressed = false;
+                        break;
+
+                    case SDLK_a:
+                    case SDLK_LEFT:
+                        a_pressed = false;
+                        break;
+
+                    case SDLK_d:
+                    case SDLK_RIGHT:
+                        d_pressed = false;
+                        break;
+
+                    default:
+                        break;
                 }
                 break;
 
@@ -221,6 +272,53 @@ bool process_events(bool *need_redraw)
                     *need_redraw = true;
                 }
                 break;
+        }
+
+        if (!key_event)
+        {
+            continue;
+        }
+
+        if (w_pressed)
+        {
+            camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+            camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+            camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
+            *need_redraw = true;
+        }
+
+        if (s_pressed)
+        {
+            camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+            camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+            camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
+            *need_redraw = true;
+        }
+
+        if (a_pressed)
+        {
+            camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
+            camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
+            *need_redraw = true;
+        }
+
+        if (d_pressed)
+        {
+            camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
+            camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
+            *need_redraw = true;
+        }
+
+        if (f_pressed)
+        {
+            camera_z += move_speed;
+            *need_redraw = true;
+        }
+
+        if (v_pressed)
+        {
+            camera_z -= move_speed;
+            *need_redraw = true;
         }
     } while (SDL_PollEvent(&event));
 
@@ -316,9 +414,14 @@ void draw_landscape(const Landscape *l)
 
 void cleanup(void)
 {
-    if (SDL_WasInit(SDL_INIT_VIDEO))
+    if (SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_TIMER))
     {
         SDL_Quit();
+    }
+
+    if (NULL != timer_id)
+    {
+        SDL_RemoveTimer(timer_id);
     }
 
     if (0 != landscape_display_list)
@@ -338,6 +441,23 @@ void cleanup(void)
 
     error:
     client_net_stop();
+}
+
+Uint32 timer_handler(Uint32 interval, void *param)
+{
+    SDL_Event event =
+    {
+        .type = SDL_USEREVENT,
+        .user =
+        {
+            .type = SDL_USEREVENT,
+            .code = TIMER_EVENT_ID,
+            .data1 = NULL,
+            .data2 = NULL
+        }
+    };
+    SDL_PushEvent(&event);
+    return interval;
 }
 
 double range_angle(double a)

@@ -11,11 +11,12 @@ Landscape *l = NULL;
 Vector *landscape_normals = NULL;
 ///double *landscape_vertex_map;
 
-const int w = 640, h = 480, bpp = 32;
+int w = 640, h = 480, bpp = 32;
 double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
 const double fov_y = 60.0;
 const double move_speed = 2.0, mouse_sensitivity = 0.1;
+int mouse_prev_x, mouse_prev_y;
 
 bool init_video(void);
 bool process_events(bool *need_redraw);
@@ -86,11 +87,17 @@ bool init_video(void)
     SDL_WM_SetCaption("morrigan viewer", NULL);
     check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16), "Failed to set SDL_GL_DEPTH_SIZE.", "");
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
-    check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_OPENGL), "Failed to set video mode.", "");
+    const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+    check(NULL != vi, "SDL_GetVideoInfo() failed.", "");
+    //w = vi->current_w;
+    //h = vi->current_h;
+    w = 800;
+    h = 600;
+    check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_HWSURFACE | SDL_SWSURFACE | SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
     check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
 
-    glLineWidth(2.0);
+    glLineWidth(0.5);
 
     glShadeModel(GL_SMOOTH);
     glEnable(GL_CULL_FACE);
@@ -100,7 +107,7 @@ bool init_video(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_ALPHA_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -127,6 +134,7 @@ bool init_video(void)
     glLoadIdentity();
     glScaled(1.0, 1.0, -1.0);
 
+    SDL_WarpMouse(mouse_prev_x = w / 2, mouse_prev_y = h / 2);
     return true;
     error:
     return false;
@@ -206,15 +214,8 @@ bool process_events(bool *need_redraw)
 
         case SDL_MOUSEMOTION:
             {
-                static bool first_time = true;
-                if (first_time)
-                {
-                    first_time = false;
-                    break;
-                }
-
-                int xrel = event.motion.xrel,
-                    yrel = event.motion.yrel;
+                int xrel = event.motion.x - mouse_prev_x,
+                    yrel = event.motion.y - mouse_prev_y;
 
                 horizontal_angle -= xrel * mouse_sensitivity;
                 vertical_angle += yrel * mouse_sensitivity;
@@ -222,8 +223,7 @@ bool process_events(bool *need_redraw)
                 horizontal_angle = __range_angle(horizontal_angle);
                 vertical_angle = __range_angle(vertical_angle);
 
-                first_time = true;
-                SDL_WarpMouse(w / 2, h / 2);
+                SDL_WarpMouse(mouse_prev_x = w / 2, mouse_prev_y = h / 2);
                 *need_redraw = true;
             }
             break;
@@ -248,13 +248,13 @@ void draw(const Landscape *l)
            ts = l->tile_size;
 
     // Light.
-    GLfloat light_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+    GLfloat light_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
 
-    GLfloat light_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
+    GLfloat light_diffuse[] = { 0.4, 0.4, 0.4, 1.0 };
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
 
-    GLfloat light_specular[] = { 0.5, 0.5, 0.5, 1.0 };
+    GLfloat light_specular[] = { 0.4, 0.4, 0.4, 1.0 };
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
     GLfloat light_position[] = { ts * ls / 2.0, ts * ls / 2.0, 512.0, 1.0 };
@@ -284,7 +284,7 @@ void draw(const Landscape *l)
                    *n10 = &landscape_normals[(i + 1) * ls + j],
                    *n11 = &landscape_normals[(i + 1) * ls + j + 1];
 
-            glColor3d(0, 0.5, 0);
+            glColor3ub(0x22, 0x8b, 0x22);
             glBegin(GL_TRIANGLE_STRIP);
             glNormal3dv((GLdouble *) n00);
             glVertex3d(x, y, h00);
@@ -296,7 +296,7 @@ void draw(const Landscape *l)
             glVertex3d(xp, yp, h11);
             glEnd();
 
-            glColor3d(0, 0.25, 0);
+            glColor3ub(0x1e, 0x87, 0x1e);
             glBegin(GL_LINE_LOOP);
             glVertex3d(x, y, h00);
             glVertex3d(xp, y, h01);

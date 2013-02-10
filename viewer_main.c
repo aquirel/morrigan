@@ -406,6 +406,14 @@ void draw_landscape(const Landscape *l)
             glBegin(GL_LINE_LOOP);
             glVertex3d(x, y, h00);
             glVertex3d(xp, y, h01);
+            glVertex3d(xp, yp, h11);
+            glVertex3d(x, yp, h10);
+            glEnd();
+
+            glBegin(GL_LINES);
+            glVertex3d(x, y, h00);
+            glVertex3d(xp, yp, h11);
+            glVertex3d(xp, y, h01);
             glVertex3d(x, yp, h10);
             glEnd();
         }

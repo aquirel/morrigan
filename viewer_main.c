@@ -8,22 +8,23 @@
 SOCKET s;
 bool connected = false;
 Landscape *l = NULL;
-Vector *landscape_normals = NULL;
-///double *landscape_vertex_map;
+GLuint landscape_display_list = 0;
 
-int w = 640, h = 480, bpp = 32;
+int w = 800, h = 600, bpp = 32;
+const double move_speed = 4.0, mouse_sensitivity = 0.1;
+
 double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
 const double fov_y = 60.0;
-const double move_speed = 2.0, mouse_sensitivity = 0.1;
 int mouse_prev_x, mouse_prev_y;
 
 bool init_video(void);
 bool process_events(bool *need_redraw);
 void draw(const Landscape *l);
+void draw_landscape(const Landscape *l);
 void cleanup(void);
 
-double __range_angle(double a);
+double range_angle(double a);
 
 int main(int argc, char *argv[])
 {
@@ -40,24 +41,17 @@ int main(int argc, char *argv[])
     puts("Connected to server.");
 
     l = client_get_landscape(&s);
-    check_mem(landscape_normals = (Vector *) calloc(l->landscape_size * l->landscape_size, sizeof(Vector)));
-
-    for (size_t i = 0; i < l->landscape_size; i++)
-    {
-        for (size_t j = 0; j < l->landscape_size; j++)
-        {
-            landscape_get_normal_at(l, j * l->tile_size, i * l->tile_size, &landscape_normals[i * l->landscape_size + j]);
-        }
-    }
-
     puts("Loaded landscape.");
 
     camera_x = camera_y = l->landscape_size / 2.0 * l->tile_size;
 
     check(init_video(), "Failed to init video.", "");
 
-    /// TODO: Prepare vertex & normal arrays.
-    ///glVertexPointer(3, GL_DOUBLE, 0, )
+    check(0 != (landscape_display_list = glGenLists(1)), "Failed to create display list.", "");
+    glNewList(landscape_display_list, GL_COMPILE);
+    check(GL_NO_ERROR == glGetError(), "Failed to create display list.", "");
+    draw_landscape(l);
+    glEndList();
 
     while (true)
     {
@@ -87,17 +81,19 @@ bool init_video(void)
     SDL_WM_SetCaption("morrigan viewer", NULL);
     check(0 == SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16), "Failed to set SDL_GL_DEPTH_SIZE.", "");
     check(0 == SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1), "Failed to set SDL_GL_DOUBLEBUFFER.", "");
+    /*
     const SDL_VideoInfo *vi = SDL_GetVideoInfo();
     check(NULL != vi, "SDL_GetVideoInfo() failed.", "");
-    //w = vi->current_w;
-    //h = vi->current_h;
+    w = vi->current_w;
+    h = vi->current_h;
+    */
     w = 800;
     h = 600;
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_HWSURFACE | SDL_SWSURFACE | SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
     check(0 == SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL), "Failed to set key repeat.", "");
 
-    glLineWidth(0.5);
+    glLineWidth(1.0);
 
     glShadeModel(GL_SMOOTH);
     glEnable(GL_CULL_FACE);
@@ -115,9 +111,6 @@ bool init_video(void)
     glEnable(GL_POLYGON_SMOOTH);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glEnable(GL_COLOR_MATERIAL);
-
-    ///glEnableClientState(GL_VERTEX_ARRAY);
-    ///glEnableClientState(GL_NORMAL_ARRAY);
 
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -146,88 +139,90 @@ bool process_events(bool *need_redraw)
 
     SDL_WaitEvent(&event);
 
-    switch (event.type)
+    do
     {
-        case SDL_QUIT:
-            return false;
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                return false;
 
-        case SDL_ACTIVEEVENT:
-        case SDL_SYSWMEVENT:
-            *need_redraw = true;
-            return true;
-
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            switch (event.key.keysym.sym)
-            {
-                case SDLK_ESCAPE:
-                    return false;
-
-                case SDLK_f:
-                case SDLK_HOME:
-                case SDLK_PAGEUP:
-                    camera_z += move_speed;
-                    *need_redraw = true;
-                    break;
-
-                case SDLK_v:
-                case SDLK_END:
-                case SDLK_PAGEDOWN:
-                    camera_z -= move_speed;
-                    *need_redraw = true;
-                    break;
-
-                case SDLK_w:
-                case SDLK_UP:
-                    camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                    camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                    camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
-                    *need_redraw = true;
-                    break;
-
-                case SDLK_s:
-                case SDLK_DOWN:
-                    camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                    camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
-                    camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
-                    *need_redraw = true;
-                    break;
-
-                case SDLK_a:
-                case SDLK_LEFT:
-                    camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
-                    camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
-                    *need_redraw = true;
-                    break;
-
-                case SDLK_d:
-                case SDLK_RIGHT:
-                    camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
-                    camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
-                    *need_redraw = true;
-                    break;
-
-                default:
-                    return true;
-            }
-            break;
-
-        case SDL_MOUSEMOTION:
-            {
-                int xrel = event.motion.x - mouse_prev_x,
-                    yrel = event.motion.y - mouse_prev_y;
-
-                horizontal_angle -= xrel * mouse_sensitivity;
-                vertical_angle += yrel * mouse_sensitivity;
-
-                horizontal_angle = __range_angle(horizontal_angle);
-                vertical_angle = __range_angle(vertical_angle);
-
-                SDL_WarpMouse(mouse_prev_x = w / 2, mouse_prev_y = h / 2);
+            case SDL_ACTIVEEVENT:
+            case SDL_SYSWMEVENT:
                 *need_redraw = true;
-            }
-            break;
-    }
+                return true;
+
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_ESCAPE:
+                        return false;
+
+                    case SDLK_f:
+                    case SDLK_HOME:
+                    case SDLK_PAGEUP:
+                        camera_z += move_speed;
+                        *need_redraw = true;
+                        break;
+
+                    case SDLK_v:
+                    case SDLK_END:
+                    case SDLK_PAGEDOWN:
+                        camera_z -= move_speed;
+                        *need_redraw = true;
+                        break;
+
+                    case SDLK_w:
+                    case SDLK_UP:
+                        camera_x -= move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                        camera_y -= move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                        camera_z += move_speed * cos(vertical_angle / 180 * M_PI);
+                        *need_redraw = true;
+                        break;
+
+                    case SDLK_s:
+                    case SDLK_DOWN:
+                        camera_x += move_speed * sin(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                        camera_y += move_speed * cos(horizontal_angle / 180 * M_PI) * sin(vertical_angle / 180 * M_PI);
+                        camera_z -= move_speed * cos(vertical_angle / 180 * M_PI);
+                        *need_redraw = true;
+                        break;
+
+                    case SDLK_a:
+                    case SDLK_LEFT:
+                        camera_x -= move_speed * cos(horizontal_angle / 180 * M_PI);
+                        camera_y += move_speed * sin(horizontal_angle / 180 * M_PI);
+                        *need_redraw = true;
+                        break;
+
+                    case SDLK_d:
+                    case SDLK_RIGHT:
+                        camera_x += move_speed * cos(horizontal_angle / 180 * M_PI);
+                        camera_y -= move_speed * sin(horizontal_angle / 180 * M_PI);
+                        *need_redraw = true;
+                        break;
+
+                    default:
+                        return true;
+                }
+                break;
+
+            case SDL_MOUSEMOTION:
+                {
+                    int xrel = event.motion.x - mouse_prev_x,
+                        yrel = event.motion.y - mouse_prev_y;
+
+                    horizontal_angle -= xrel * mouse_sensitivity;
+                    vertical_angle += yrel * mouse_sensitivity;
+
+                    horizontal_angle = range_angle(horizontal_angle);
+                    vertical_angle = range_angle(vertical_angle);
+
+                    SDL_WarpMouse(mouse_prev_x = w / 2, mouse_prev_y = h / 2);
+                    *need_redraw = true;
+                }
+                break;
+        }
+    } while (SDL_PollEvent(&event));
 
     return true;
 }
@@ -235,7 +230,7 @@ bool process_events(bool *need_redraw)
 void draw(const Landscape *l)
 {
     glClearColor(0, 0, 0, 0);
-    glClearDepth(0.0);
+    glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();
@@ -244,7 +239,6 @@ void draw(const Landscape *l)
     glRotated(horizontal_angle, 0.0, 0.0, 1.0);
     glTranslated(-camera_x, -camera_y, -camera_z);
 
-    // Draw landscape.
     size_t ls = l->landscape_size,
            ts = l->tile_size;
 
@@ -264,36 +258,49 @@ void draw(const Landscape *l)
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
 
-    for (size_t i = 0; i < ls; i++)
-    {
-        for (size_t j = 0; j < ls; j++)
-        {
-            // TODO: Move it to vertex array.
-            double h00 = landscape_get_height_at_node(l, i, j),
-                   h01 = landscape_get_height_at_node(l, i, j + 1),
-                   h10 = landscape_get_height_at_node(l, i + 1, j),
-                   h11 = landscape_get_height_at_node(l, i + 1, j + 1);
+    glCallList(landscape_display_list);
 
+    glPopMatrix();
+
+    glFlush();
+    glFinish();
+    SDL_GL_SwapBuffers();
+}
+
+void draw_landscape(const Landscape *l)
+{
+    size_t ls = l->landscape_size,
+           ts = l->tile_size;
+
+    for (size_t i = 0; i < ls - 1; i++)
+    {
+        for (size_t j = 0; j < ls - 1; j++)
+        {
             double x  = j * ts,
                    xp = x + ts,
                    y  = i * ts,
                    yp = y + ts;
 
-            // TODO: Move it to normals array.
-            Vector *n00 = &landscape_normals[i * ls + j],
-                   *n01 = &landscape_normals[i * ls + j + 1],
-                   *n10 = &landscape_normals[(i + 1) * ls + j],
-                   *n11 = &landscape_normals[(i + 1) * ls + j + 1];
+            double h00 = landscape_get_height_at_node(l, i, j),
+                   h01 = landscape_get_height_at_node(l, i, j + 1),
+                   h10 = landscape_get_height_at_node(l, i + 1, j),
+                   h11 = landscape_get_height_at_node(l, i + 1, j + 1);
+
+            Vector n00, n01, n10, n11;
+            landscape_get_normal_at(l, x, y, &n00);
+            landscape_get_normal_at(l, xp, y, &n01);
+            landscape_get_normal_at(l, x, yp, &n10);
+            landscape_get_normal_at(l, xp, yp, &n11);
 
             glColor3ub(0x22, 0x8b, 0x22);
             glBegin(GL_TRIANGLE_STRIP);
-            glNormal3dv((GLdouble *) n00);
+            glNormal3dv((GLdouble *) &n00);
             glVertex3d(x, y, h00);
-            glNormal3dv((GLdouble *) n01);
+            glNormal3dv((GLdouble *) &n01);
             glVertex3d(xp, y, h01);
-            glNormal3dv((GLdouble *) n10);
+            glNormal3dv((GLdouble *) &n10);
             glVertex3d(x, yp, h10);
-            glNormal3dv((GLdouble *) n11);
+            glNormal3dv((GLdouble *) &n11);
             glVertex3d(xp, yp, h11);
             glEnd();
 
@@ -305,10 +312,6 @@ void draw(const Landscape *l)
             glEnd();
         }
     }
-
-    glPopMatrix();
-
-    SDL_GL_SwapBuffers();
 }
 
 void cleanup(void)
@@ -318,9 +321,9 @@ void cleanup(void)
         SDL_Quit();
     }
 
-    if (landscape_normals)
+    if (0 != landscape_display_list)
     {
-        free(landscape_normals);
+        glDeleteLists(landscape_display_list, 1);
     }
 
     if (l)
@@ -337,7 +340,7 @@ void cleanup(void)
     client_net_stop();
 }
 
-double __range_angle(double a)
+double range_angle(double a)
 {
     if (a < 0.0)
     {

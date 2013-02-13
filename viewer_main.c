@@ -190,8 +190,16 @@ bool process_events(bool *need_redraw)
                 switch (event.user.code)
                 {
                     case TIMER_EVENT_ID:
-                        key_event = true;
-                        *need_redraw = true;
+                        if (w_pressed ||
+                            s_pressed ||
+                            a_pressed ||
+                            d_pressed ||
+                            f_pressed ||
+                            v_pressed)
+                        {
+                            key_event = true;
+                            *need_redraw = true;
+                        }
                        break;
 
                     case TANKS_TIMER_EVENT_ID:
@@ -547,6 +555,7 @@ Uint32 tanks_timer_handler(Uint32 interval, void *param)
     }
 
     tanks_count = client_get_tanks(&s, tanks);
+    puts("Got tanks.");
 
     SDL_Event event =
     {

@@ -43,7 +43,7 @@ bool client_connect(SOCKET *s, const char *address, bool is_client)
           WSAGetLastError());
 
     struct addrinfo *result = NULL, hints = { .ai_family = AF_INET };
-    check(0 == getaddrinfo(address, NULL, NULL, &result),
+    check(0 == getaddrinfo(address, NULL, &hints, &result),
           "getaddrinfo() failed. Error: %d.",
           WSAGetLastError());
 
@@ -126,6 +126,31 @@ Landscape *client_get_landscape(SOCKET *s)
 
     error:
     return NULL;
+}
+
+size_t client_get_tanks(SOCKET *s, ResGetTanksTankRecord tanks[MAX_CLIENTS])
+{
+    assert(s && "Bad socket pointer.");
+
+    uint8_t req = req_viewer_get_tanks;
+    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char buf[CLIENT_PACKET_BUFFER];
+    int received;
+    check(__recv_timeout(s, buf, PACKET_BUFFER, 0, NET_TIMEOUT, &received), "Net timeout.", "");
+    check(received >= 2 * sizeof(uint8_t), "Bad tanks response.", "");
+
+    check(req_viewer_get_tanks == (uint8_t) buf[0], "Bad tanks response.", "");
+    size_t tanks_count = (uint8_t) buf[1];
+
+    check(received == 2 * sizeof(uint8_t) + tanks_count * sizeof(ResGetTanksTankRecord), "Bad tanks response (stage 2).", "");
+
+    memcpy(tanks, &buf[2 * sizeof(uint8_t)], tanks_count * sizeof(ResGetTanksTankRecord));
+
+    return tanks_count;
+
+    error:
+    return 0;
 }
 
 bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *res)

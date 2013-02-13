@@ -8,25 +8,39 @@
 SOCKET s;
 bool connected = false;
 Landscape *l = NULL;
-GLuint landscape_display_list = 0;
+ResGetTanksTankRecord tanks[MAX_CLIENTS];
+size_t tanks_count = 0;
+bool need_redraw_tanks = false;
+#define TANKS_POLL_INTERVAL 1000
 
 int w = 800, h = 600, bpp = 32;
 const double move_speed = 4.0, mouse_sensitivity = 0.1;
+
+#define DISPLAY_LISTS_COUNT 2
+#define LANDSCAPE_DISPLAY_LIST 0
+#define TANK_BODY_DISPLAY_LIST 1
+GLuint display_lists = 0;
 
 double camera_x, camera_y, camera_z = 512;
 double vertical_angle = 90.0, horizontal_angle = 0.0;
 const double fov_y = 60.0;
 int mouse_prev_x, mouse_prev_y;
-SDL_TimerID timer_id = NULL;
+SDL_TimerID timer_id = NULL, tanks_timer_id = NULL;
 #define TIMER_EVENT_ID 1
+#define TANKS_TIMER_EVENT_ID 2
 
 bool init_video(void);
 bool process_events(bool *need_redraw);
 void draw(const Landscape *l);
 void draw_landscape(const Landscape *l);
+void draw_tank_body(void);
+void draw_tank(const ResGetTanksTankRecord *tank);
+void draw_tanks(void);
 void cleanup(void);
 
 Uint32 timer_handler(Uint32 interval, void *param);
+Uint32 tanks_timer_handler(Uint32 interval, void *param);
+
 double range_angle(double a);
 
 int main(int argc, char *argv[])
@@ -50,10 +64,16 @@ int main(int argc, char *argv[])
 
     check(init_video(), "Failed to init video.", "");
 
-    check(0 != (landscape_display_list = glGenLists(1)), "Failed to create display list.", "");
-    glNewList(landscape_display_list, GL_COMPILE);
+    check(0 != (display_lists = glGenLists(DISPLAY_LISTS_COUNT)), "Failed to create display list.", "");
+
+    glNewList(display_lists + LANDSCAPE_DISPLAY_LIST, GL_COMPILE);
     check(GL_NO_ERROR == glGetError(), "Failed to create display list.", "");
     draw_landscape(l);
+    glEndList();
+
+    glNewList(display_lists + TANK_BODY_DISPLAY_LIST, GL_COMPILE);
+    check(GL_NO_ERROR == glGetError(), "Failed to create display list.", "");
+    draw_tank_body();
     glEndList();
 
     while (true)
@@ -95,6 +115,7 @@ bool init_video(void)
     check(NULL != SDL_SetVideoMode(w, h, bpp, SDL_HWSURFACE | SDL_SWSURFACE | SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
     check(NULL != (timer_id = SDL_AddTimer(SDL_DEFAULT_REPEAT_INTERVAL, timer_handler, NULL)), "Failed to setup timer.", "");
+    check(NULL != (tanks_timer_id = SDL_AddTimer(TANKS_POLL_INTERVAL, tanks_timer_handler, NULL)), "Failed to setup tanks timer.", "");
 
     glLineWidth(1.0);
 
@@ -146,7 +167,10 @@ bool process_events(bool *need_redraw)
                 v_pressed = false;
     SDL_Event event;
 
-    SDL_WaitEvent(&event);
+    if (!SDL_WaitEvent(&event))
+    {
+        return false;
+    }
 
     do
     {
@@ -163,11 +187,22 @@ bool process_events(bool *need_redraw)
                 return true;
 
             case SDL_USEREVENT:
-                if (TIMER_EVENT_ID == event.user.code)
+                switch (event.user.code)
                 {
-                    key_event = true;
-                    *need_redraw = true;
+                    case TIMER_EVENT_ID:
+                        key_event = true;
+                        *need_redraw = true;
+                       break;
+
+                    case TANKS_TIMER_EVENT_ID:
+                        *need_redraw = true;
+                        need_redraw_tanks = true;
+                        break;
+
+                    default:
+                        break;
                 }
+
                 break;
 
             case SDL_KEYDOWN:
@@ -356,9 +391,15 @@ void draw(const Landscape *l)
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
 
-    glCallList(landscape_display_list);
+    glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
 
     glPopMatrix();
+
+    if (need_redraw_tanks)
+    {
+        draw_tanks();
+        need_redraw_tanks = false;
+    }
 
     glFlush();
     glFinish();
@@ -420,6 +461,31 @@ void draw_landscape(const Landscape *l)
     }
 }
 
+void draw_tank_body(void)
+{
+    // TODO: Write it.
+}
+
+void draw_tank(const ResGetTanksTankRecord *tank)
+{
+    // TODO: Write it.
+    // todo: static array of team colors.
+    glPushMatrix();
+    /*glRotated(-vertical_angle, 1.0, 0.0, 0.0);
+        glRotated(horizontal_angle, 0.0, 0.0, 1.0);
+        glTranslated(-camera_x, -camera_y, -camera_z);*/
+        //call list
+    glPopMatrix();
+}
+
+void draw_tanks(void)
+{
+    for (size_t i = 0; i < tanks_count; i++)
+    {
+        draw_tank(&tanks[i]);
+    }
+}
+
 void cleanup(void)
 {
     if (SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_TIMER))
@@ -432,9 +498,14 @@ void cleanup(void)
         SDL_RemoveTimer(timer_id);
     }
 
-    if (0 != landscape_display_list)
+    if (NULL != tanks_timer_id)
     {
-        glDeleteLists(landscape_display_list, 1);
+        SDL_RemoveTimer(tanks_timer_id);
+    }
+
+    if (0 != display_lists)
+    {
+        glDeleteLists(display_lists, DISPLAY_LISTS_COUNT);
     }
 
     if (l)
@@ -455,7 +526,6 @@ Uint32 timer_handler(Uint32 interval, void *param)
 {
     SDL_Event event =
     {
-        .type = SDL_USEREVENT,
         .user =
         {
             .type = SDL_USEREVENT,
@@ -464,7 +534,32 @@ Uint32 timer_handler(Uint32 interval, void *param)
             .data2 = NULL
         }
     };
-    SDL_PushEvent(&event);
+    check(0 == SDL_PushEvent(&event), "SDL_PushEvent() failed.", "");
+    error:
+    return interval;
+}
+
+Uint32 tanks_timer_handler(Uint32 interval, void *param)
+{
+    if (need_redraw_tanks)
+    {
+        return interval;
+    }
+
+    tanks_count = client_get_tanks(&s, tanks);
+
+    SDL_Event event =
+    {
+        .user =
+        {
+            .type = SDL_USEREVENT,
+            .code = TANKS_TIMER_EVENT_ID,
+            .data1 = NULL,
+            .data2 = NULL
+        }
+    };
+    check(0 == SDL_PushEvent(&event), "SDL_PushEvent() failed.", "");
+    error:
     return interval;
 }
 

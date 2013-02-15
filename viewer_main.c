@@ -5,7 +5,7 @@
 #include "debug.h"
 #include "client_net.h"
 
-SOCKET s;
+SOCKET s = INVALID_SOCKET;
 bool connected = false;
 Landscape *l = NULL;
 ResGetTanksTankRecord tanks[MAX_CLIENTS];
@@ -504,30 +504,40 @@ void cleanup(void)
     if (NULL != timer_id)
     {
         SDL_RemoveTimer(timer_id);
+        timer_id = NULL;
     }
 
     if (NULL != tanks_timer_id)
     {
         SDL_RemoveTimer(tanks_timer_id);
+        tanks_timer_id = NULL;
     }
 
     if (0 != display_lists)
     {
         glDeleteLists(display_lists, DISPLAY_LISTS_COUNT);
+        display_lists = 0;
     }
 
     if (l)
     {
         landscape_destroy(l);
+        l = NULL;
     }
 
     if (connected)
     {
         check(client_disconnect(&s, false), "Failed to disconnect.", "");
+        connected = false;
     }
 
+    static bool net_stopped = false;
     error:
-    client_net_stop();
+    if (!net_stopped)
+    {
+        client_net_stop();
+        net_stopped = true;
+    }
 }
 
 Uint32 timer_handler(Uint32 interval, void *param)

@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 
-#include "viewer.h"
+#include <ws2tcpip.h>
 
 #include "landscape.h"
 #include "protocol.h"

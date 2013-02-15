@@ -399,7 +399,7 @@ void draw(const Landscape *l)
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
 
-    glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
+    //glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
 
     glPopMatrix();
 
@@ -476,12 +476,26 @@ void draw_tank_body(void)
 
 void draw_tank(const ResGetTanksTankRecord *tank)
 {
+    assert(tank && "Bad tank pointer.");
     // TODO: Write it.
     // todo: static array of team colors.
     glPushMatrix();
+    //glTranslated(-tank->x, -tank->y, -tank->z);
+
+    printf("x: %lf, y: %lf, z: %lf\n", tank->x, tank->y, tank->z);
+
+    glColor3d(0.5, 0.5, 0.5);
+    /*GLUquadric *q = gluNewQuadric();
+    gluSphere(q, 16.0, 64, 64);
+    gluDeleteQuadric(q);*/
+    glBegin(GL_TRIANGLES);
+    glVertex3d(0.0, 0.0, 128.0);
+    glVertex3d(0.0, 128.0, 0.0);
+    glVertex3d(128.0, .0, 0.0);
+    glEnd();
     /*glRotated(-vertical_angle, 1.0, 0.0, 0.0);
         glRotated(horizontal_angle, 0.0, 0.0, 1.0);
-        glTranslated(-camera_x, -camera_y, -camera_z);*/
+        */
         //call list
     glPopMatrix();
 }
@@ -564,8 +578,7 @@ Uint32 tanks_timer_handler(Uint32 interval, void *param)
         return interval;
     }
 
-    tanks_count = client_get_tanks(&s, tanks);
-    puts("Got tanks.");
+    printf("Got %d tanks.\n", tanks_count = client_get_tanks(&s, tanks));
 
     SDL_Event event =
     {

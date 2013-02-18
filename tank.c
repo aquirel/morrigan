@@ -21,7 +21,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     {
         .position = { .x = position->x, .y = position->y, .z = position->z },
         .previous_position = { .x = position->x, .y = position->y, .z = position->z },
-        .direction = { .x = 1, .y = 0, .z = 0 },
+        //.direction = { .x = 1, .y = 0, .z = 0 },
         .orientation = { .x = top->x, .y = top->y, .z = top->z },
         .speed = 0,
         .bounding_primitives =
@@ -68,6 +68,9 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
         .turret_direction_target = { .x = 1, .y = 0, .z = 0 },
         .turn_angle_target = 0
     };
+
+    Vector axis = { .x = 0.0, .y = 1.0, .z = 0.0 };
+    vector_rotate(top, &axis, M_PI_2, &tank->direction);
 }
 
 bool tank_tick(Tank *tank, const Landscape *l)

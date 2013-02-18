@@ -28,8 +28,8 @@ bin\morrigan_client.exe: \
 	build\client_main.obj \
 	build\client_net.obj \
 	build\landscape.obj \
-	build\vector.obj \
-	build\matrix.obj
+	build\matrix.obj \
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -44,8 +44,7 @@ build\client_main.obj: \
 	net.h \
 	protocol.h \
 	tank.h \
-	vector.h \
-	viewer.h
+	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -91,6 +90,6 @@ build\matrix.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

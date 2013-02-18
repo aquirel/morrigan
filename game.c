@@ -54,6 +54,8 @@ static int game_worker(void *unused)
 {
     struct _timeval tick_start_time, tick_end_time;
 
+    srand(time(NULL));
+
     while (working)
     {
         _gettimeofday(&tick_start_time, NULL);

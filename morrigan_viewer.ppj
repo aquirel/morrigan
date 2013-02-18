@@ -38,7 +38,16 @@ bin\morrigan_viewer.exe: \
 # Build main.obj.
 # 
 build\main.obj: \
-	viewer_main.c
+	viewer_main.c \
+	bounding.h \
+	client_net.h \
+	debug.h \
+	landscape.h \
+	net.h \
+	protocol.h \
+	tank.h \
+	vector.h \
+	viewer.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -53,8 +62,7 @@ build\client_net.obj: \
 	net.h \
 	protocol.h \
 	tank.h \
-	vector.h \
-	viewer.h
+	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 

@@ -31,7 +31,7 @@ int main(const int argc, const char const *argv[], const char const *envp[])
 
     srand(time(NULL));
 
-    l = landscape_load("land.dat", 0, 1.0);
+    l = landscape_load("land.dat", 32, 1.0);
     check(l, "Failed to load landscape.", "");
     check(net_start(), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");

@@ -139,6 +139,8 @@ Vector *landscape_get_normal_at(const Landscape *l, double x, double y, Vector *
     vector_sub(&c, &a, &ac);
 
     vector_vector_mul(&ab, &ac, result);
+    result->x /= l->tile_size;
+    result->y /= l->tile_size;
     VECTOR_NORMALIZE(result);
 
     if (0.0 > result->z)
@@ -197,7 +199,7 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
 
 int main(void)
 {
-    Landscape *l = landscape_create(2, 4);
+    Landscape *l = landscape_create(2, 256);
     test_cond("Create landscape.", l);
 
     landscape_set_height_at_node(l, 0, 0, 0.1);
@@ -206,13 +208,13 @@ int main(void)
     landscape_set_height_at_node(l, 1, 1, 0.2);
 
     test_cond("Get height 1.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 0)));
-    test_cond("Get height 2.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 4 - vector_eps)));
-    test_cond("Get height 3.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 4 - vector_eps, 0)));
-    test_cond("Get height 4.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 4 - vector_eps, 4 - vector_eps)));
-    test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 2 - vector_eps, 0)));
+    test_cond("Get height 2.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 256 - vector_eps)));
+    test_cond("Get height 3.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - vector_eps, 0)));
+    test_cond("Get height 4.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - vector_eps, 256 - vector_eps)));
+    test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 128 - vector_eps, 0)));
 
     landscape_destroy(l);
-    l = landscape_create(2, 4);
+    l = landscape_create(2, 128);
     landscape_set_height_at_node(l, 0, 0, 0.0);
     landscape_set_height_at_node(l, 0, 1, 1.0);
     landscape_set_height_at_node(l, 1, 0, 0.0);

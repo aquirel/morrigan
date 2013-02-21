@@ -17,7 +17,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     assert(tank && "Bad tank pointer.");
     assert(position && top && "Bad geometry pointers.");
 
-    *tank = (Tank)
+    Tank t =
     {
         .position = { .x = position->x, .y = position->y, .z = position->z },
         .previous_position = { .x = position->x, .y = position->y, .z = position->z },
@@ -70,7 +70,9 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     };
 
     Vector axis = { .x = 0.0, .y = 1.0, .z = 0.0 };
-    vector_rotate(top, &axis, M_PI_2, &tank->direction);
+    vector_rotate(top, &axis, M_PI_2, &t.direction);
+
+    memcpy(tank, &t, sizeof(Tank));
 }
 
 bool tank_tick(Tank *tank, const Landscape *l)

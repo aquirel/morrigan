@@ -12,7 +12,7 @@
 #include "protocol.h"
 
 #define PORT 9000
-#define CLIENT_PACKET_BUFFER 65535
+#define CLIENT_PACKET_BUFFER 32768
 #define MAX_CLIENTS 16
 // In ms.
 #define NET_TIMEOUT 5000

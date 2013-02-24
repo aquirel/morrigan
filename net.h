@@ -9,7 +9,7 @@
 #include <winsock2.h>
 
 #define PORT 9000
-#define PACKET_BUFFER 65535
+#define PACKET_BUFFER 32768
 
 bool net_start(void);
 void net_stop(void);

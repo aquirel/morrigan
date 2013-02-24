@@ -54,8 +54,6 @@ typedef enum Notifications
     not_tank_collision        = 0x81
 } Notifications;
 
-typedef struct Client Client;
-
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
 typedef bool (*packet_execution_handler)(void *c);
 

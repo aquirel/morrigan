@@ -4,21 +4,22 @@
 
 #include "debug.h"
 #include "client_net.h"
+#include "tank.h"
 
 SOCKET s = INVALID_SOCKET;
 bool connected = false;
 Landscape *l = NULL;
 ResGetTanksTankRecord tanks[MAX_CLIENTS];
 size_t tanks_count = 0;
-bool need_redraw_tanks = false;
 #define TANKS_POLL_INTERVAL 1000
 
 int w = 800, h = 600, bpp = 32;
 const double move_speed = 4.0, mouse_sensitivity = 0.1;
 
-#define DISPLAY_LISTS_COUNT 2
-#define LANDSCAPE_DISPLAY_LIST 0
-#define TANK_BODY_DISPLAY_LIST 1
+#define DISPLAY_LISTS_COUNT 3
+#define LANDSCAPE_DISPLAY_LIST   0
+#define TANK_BODY_DISPLAY_LIST   1
+#define TANK_TURRET_DISPLAY_LIST 2
 GLuint display_lists = 0;
 
 double camera_x, camera_y, camera_z = 512;
@@ -34,6 +35,7 @@ bool process_events(bool *need_redraw);
 void draw(const Landscape *l);
 void draw_landscape(const Landscape *l);
 void draw_tank_body(void);
+void draw_tank_turret(void);
 void draw_tank(const ResGetTanksTankRecord *tank);
 void draw_tanks(void);
 void cleanup(void);
@@ -76,6 +78,11 @@ int main(int argc, char *argv[])
     draw_tank_body();
     glEndList();
 
+    glNewList(display_lists + TANK_TURRET_DISPLAY_LIST, GL_COMPILE);
+    check(GL_NO_ERROR == glGetError(), "Failed to create display list.", "");
+    draw_tank_turret();
+    glEndList();
+
     while (true)
     {
         bool need_redraw = false;
@@ -94,7 +101,7 @@ int main(int argc, char *argv[])
     return 0;
 
     error:
-    cleanup(); 
+    cleanup();
     return -1;
 }
 
@@ -204,7 +211,6 @@ bool process_events(bool *need_redraw)
 
                     case TANKS_TIMER_EVENT_ID:
                         *need_redraw = true;
-                        need_redraw_tanks = true;
                         break;
 
                     default:
@@ -399,15 +405,11 @@ void draw(const Landscape *l)
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
 
-    //glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
+    glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
+
+    draw_tanks();
 
     glPopMatrix();
-
-    if (need_redraw_tanks)
-    {
-        draw_tanks();
-        need_redraw_tanks = false;
-    }
 
     glFlush();
     glFinish();
@@ -438,6 +440,14 @@ void draw_landscape(const Landscape *l)
             landscape_get_normal_at(l, xp, y, &n01);
             landscape_get_normal_at(l, x, yp, &n10);
             landscape_get_normal_at(l, xp, yp, &n11);
+
+            glColor3ub(0xff, 0xff, 0xff);
+            glBegin(GL_LINES);
+            glVertex3d(x, y, h00);
+            glVertex3d(x + 5 * n00.x,
+                       y + 5 * n00.y,
+                       h00 + 5 * n00.z);
+            glEnd();
 
             glColor3ub(0x22, 0x8b, 0x22);
             glBegin(GL_TRIANGLE_STRIP);
@@ -471,32 +481,155 @@ void draw_landscape(const Landscape *l)
 
 void draw_tank_body(void)
 {
-    // TODO: Write it.
+    static Vector front  = { .x =  1, .y =  0, .z =  0 },
+                  back   = { .x = -1, .y =  0, .z =  0 },
+                  left   = { .x =  0, .y =  1, .z =  0 },
+                  right  = { .x =  0, .y = -1, .z =  0 },
+                  top    = { .x =  0, .y =  0, .z =  1 },
+                  bottom = { .x =  0, .y =  0, .z = -1 },
+                  extent = TANK_BOUNDING_BOX_EXTENT,
+                  scaled_front,
+                  scaled_back,
+                  scaled_left,
+                  scaled_right,
+                  scaled_top,
+                  scaled_bottom,
+                  t;
+
+    vector_scale(&front,  extent.x, &scaled_front);
+    vector_scale(&back,   extent.x, &scaled_back);
+    vector_scale(&left,   extent.y, &scaled_left);
+    vector_scale(&right,  extent.y, &scaled_right);
+    vector_scale(&top,    extent.z, &scaled_top);
+    vector_scale(&bottom, extent.z, &scaled_bottom);
+
+    glTranslated(0, 0, extent.z);
+
+    glColor3ub(0x35, 0x5e, 0x3b);
+
+    glBegin(GL_QUADS);
+    // Front face.
+    glNormal3dv((double *) &front);  vector_add(&scaled_front, &scaled_left, &t);   vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &front);  vector_add(&scaled_front, &scaled_right, &t);  vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &front);  vector_add(&scaled_front, &scaled_right, &t);  vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &front);  vector_add(&scaled_front, &scaled_left, &t);   vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+
+    // Back face.
+    glNormal3dv((double *) &back);   vector_add(&scaled_back, &scaled_left, &t);    vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &back);   vector_add(&scaled_back, &scaled_left, &t);    vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &back);   vector_add(&scaled_back, &scaled_right, &t);   vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &back);   vector_add(&scaled_back, &scaled_right, &t);   vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+
+    // Left face.
+    glNormal3dv((double *) &left);   vector_add(&scaled_left, &scaled_front, &t);   vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &left);   vector_add(&scaled_left, &scaled_front, &t);   vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &left);   vector_add(&scaled_left, &scaled_back, &t);    vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &left);   vector_add(&scaled_left, &scaled_back, &t);    vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+
+    // Right face.
+    glNormal3dv((double *) &right);  vector_add(&scaled_right, &scaled_front, &t);  vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &right);  vector_add(&scaled_right, &scaled_back, &t);   vector_add(&t, &scaled_top, &t);    glVertex3dv((double *) &t);
+    glNormal3dv((double *) &right);  vector_add(&scaled_right, &scaled_back, &t);   vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+    glNormal3dv((double *) &right);  vector_add(&scaled_right, &scaled_front, &t);  vector_add(&t, &scaled_bottom, &t); glVertex3dv((double *) &t);
+
+    // Top face.
+    glNormal3dv((double *) &top);    vector_add(&scaled_top, &scaled_front, &t);    vector_add(&t, &scaled_left, &t);   glVertex3dv((double *) &t);
+    glNormal3dv((double *) &top);    vector_add(&scaled_top, &scaled_back, &t);     vector_add(&t, &scaled_left, &t);   glVertex3dv((double *) &t);
+    glNormal3dv((double *) &top);    vector_add(&scaled_top, &scaled_back, &t);     vector_add(&t, &scaled_right, &t);  glVertex3dv((double *) &t);
+    glNormal3dv((double *) &top);    vector_add(&scaled_top, &scaled_front, &t);    vector_add(&t, &scaled_right, &t);  glVertex3dv((double *) &t);
+
+    // Bottom face.
+    glNormal3dv((double *) &bottom); vector_add(&scaled_bottom, &scaled_front, &t); vector_add(&t, &scaled_left, &t);   glVertex3dv((double *) &t);
+    glNormal3dv((double *) &bottom); vector_add(&scaled_bottom, &scaled_front, &t); vector_add(&t, &scaled_right, &t);  glVertex3dv((double *) &t);
+    glNormal3dv((double *) &bottom); vector_add(&scaled_bottom, &scaled_back, &t);  vector_add(&t, &scaled_right, &t);  glVertex3dv((double *) &t);
+    glNormal3dv((double *) &bottom); vector_add(&scaled_bottom, &scaled_back, &t);  vector_add(&t, &scaled_left, &t);   glVertex3dv((double *) &t);
+    glEnd();
+}
+
+void draw_tank_turret(void)
+{
+    static Vector extent = TANK_BOUNDING_BOX_EXTENT;
+    static double gun_radius = 0.25,
+                  gun_length,
+                  gun_slices = 8;
+    gun_length = extent.x * 1.5;
+
+    GLUquadric *q = gluNewQuadric();
+    gluQuadricNormals(q, GLU_SMOOTH);
+    gluQuadricOrientation(q, GLU_OUTSIDE);
+    assert(q && "Failed to create quadric.");
+
+    glTranslated(0, 0, extent.z);
+    gluSphere(q, TANK_BOUNDING_SPHERE_RADIUS, 32, 32);
+
+    glTranslated(0, 0, TANK_BOUNDING_SPHERE_RADIUS / 2);
+    glRotated(90, 0, 0, 1);
+    glRotated(90, 1, 0, 0);
+    glColor3ub(0x35, 0x5e, 0x3b);
+    gluCylinder(q, gun_radius, gun_radius, gun_length, gun_slices, gun_slices);
+
+    glTranslated(0, 0, gun_length);
+    gluDisk(q, 0.0, gun_radius, gun_slices, gun_slices);
+
+    gluDeleteQuadric(q);
 }
 
 void draw_tank(const ResGetTanksTankRecord *tank)
 {
+    static Vector tank_colors[] =
+    {
+        { 0.0,  0.0,  0.0  },
+        { 0.0,  0.0,  0.5  },
+        { 0.0,  0.5,  0.0  },
+        { 0.0,  0.5,  0.5  },
+        { 0.5,  0.0,  0.0  },
+        { 0.5,  0.0,  0.5  },
+        { 0.5,  0.5,  0.0  },
+        { 0.75, 0.75, 0.75 },
+        { 0.5,  0.5,  0.5  },
+        { 0.0,  0.0,  1.0  },
+        { 0.0,  1.0,  0.0  },
+        { 0.0,  1.0,  1.0  },
+        { 1.0,  0.0,  0.0  },
+        { 1.0,  0.0,  1.0  },
+        { 1.0,  1.0,  0.0  },
+        { 1.0,  1.0,  1.0  }
+    };
+
     assert(tank && "Bad tank pointer.");
-    // TODO: Write it.
-    // todo: static array of team colors.
+
     glPushMatrix();
-    //glTranslated(-tank->x, -tank->y, -tank->z);
+    glTranslated(tank->x, tank->y, tank->z);
 
-    printf("x: %lf, y: %lf, z: %lf\n", tank->x, tank->y, tank->z);
+    Vector default_direction   = { .x = 1.0, .y = 0.0, .z = 0.0 },
+           tank_direction      = { .x = tank->direction_x, .y = tank->direction_y, .z = tank->direction_z },
+           rotation_axis;
 
-    glColor3d(0.5, 0.5, 0.5);
-    /*GLUquadric *q = gluNewQuadric();
-    gluSphere(q, 16.0, 64, 64);
-    gluDeleteQuadric(q);*/
-    glBegin(GL_TRIANGLES);
-    glVertex3d(0.0, 0.0, 128.0);
-    glVertex3d(0.0, 128.0, 0.0);
-    glVertex3d(128.0, .0, 0.0);
-    glEnd();
-    /*glRotated(-vertical_angle, 1.0, 0.0, 0.0);
-        glRotated(horizontal_angle, 0.0, 0.0, 1.0);
-        */
-        //call list
+    if (0 != memcmp(&default_direction, &tank_direction, sizeof(Vector)))
+    {
+        vector_vector_mul(&default_direction, &tank_direction, &rotation_axis);
+        VECTOR_NORMALIZE(&rotation_axis);
+        double angle = acos(vector_mul(&default_direction, &tank_direction)) * 180 / M_PI;
+        glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+    }
+
+    glCallList(display_lists + TANK_BODY_DISPLAY_LIST);
+
+    Vector default_turret_look = { .x = 1.0, .y = 0.0, .z = 0.0 },
+           turret_look         = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z };
+
+    if (0 != memcmp(&default_turret_look, &turret_look, sizeof(Vector)))
+    {
+        vector_vector_mul(&default_turret_look, &turret_look, &rotation_axis);
+        VECTOR_NORMALIZE(&rotation_axis);
+        double angle = acos(vector_mul(&default_turret_look, &turret_look)) * 180 / M_PI;
+        glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+    }
+
+    glColor3dv((double *) &tank_colors[tank->team]);
+
+    glCallList(display_lists + TANK_TURRET_DISPLAY_LIST);
+
     glPopMatrix();
 }
 
@@ -573,11 +706,6 @@ Uint32 timer_handler(Uint32 interval, void *param)
 
 Uint32 tanks_timer_handler(Uint32 interval, void *param)
 {
-    if (need_redraw_tanks)
-    {
-        return interval;
-    }
-
     printf("Got %d tanks.\n", tanks_count = client_get_tanks(&s, tanks));
 
     SDL_Event event =

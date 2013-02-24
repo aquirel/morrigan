@@ -96,8 +96,6 @@ typedef struct ViewerClient
 void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
 
 // Packet body definitions.
-#pragma pack(push, 1)
-
 typedef struct ReqSetEnginePower
 {
     int8_t engine_power;
@@ -151,7 +149,5 @@ typedef struct ResGetTanksTankRecord
     double speed;
     uint8_t team;
 } ResGetTanksTankRecord;
-
-#pragma pack(pop)
 
 #endif /* __PROTOCOL_H__ */

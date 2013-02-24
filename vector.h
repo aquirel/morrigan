@@ -6,6 +6,8 @@
 
 #include <stdbool.h>
 
+#include "morrigan.h"
+
 extern double vector_eps;
 
 typedef struct Vector

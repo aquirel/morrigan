@@ -9,6 +9,7 @@
 
 #include <winsock2.h>
 
+#include "morrigan.h"
 #include "net.h"
 #include "tank.h"
 

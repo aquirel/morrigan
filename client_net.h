@@ -8,6 +8,7 @@
 
 #include <ws2tcpip.h>
 
+#include "morrigan.h"
 #include "landscape.h"
 #include "protocol.h"
 

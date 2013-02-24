@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <threads.h>
 
+#include "morrigan.h"
+
 typedef struct DynamicArray
 {
     size_t element_size;

@@ -19,4 +19,6 @@
 #include <gl/glu.h>
 #include <gl/glaux.h>
 
+#include "morrigan.h"
+
 #endif /* __VIEWER_H__ */

@@ -8,6 +8,8 @@
 
 #include <winsock2.h>
 
+#include "morrigan.h"
+
 #define PORT 9000
 #define PACKET_BUFFER 32768
 

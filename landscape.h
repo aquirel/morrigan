@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include "morrigan.h"
 #include "vector.h"
 
 #define TILE_SIZE 16

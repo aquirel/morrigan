@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 
+#include "morrigan.h"
 #include "dynamic_array.h"
 #include "landscape.h"
 

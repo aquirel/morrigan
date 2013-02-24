@@ -6,6 +6,7 @@
 
 #include <threads.h>
 
+#include "morrigan.h"
 #include "dynamic_array.h"
 
 typedef struct RingBuffer

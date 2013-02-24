@@ -4,6 +4,7 @@
 #ifndef __MATRIX_H__
 #define __MATRIX_H__
 
+#include "morrigan.h"
 #include "vector.h"
 
 typedef struct Matrix

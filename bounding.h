@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "morrigan.h"
 #include "vector.h"
 #include "landscape.h"
 

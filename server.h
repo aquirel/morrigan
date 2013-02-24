@@ -6,6 +6,7 @@
 
 #include <winsock2.h>
 
+#include "morrigan.h"
 #include "protocol.h"
 #include "dynamic_array.h"
 

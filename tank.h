@@ -7,6 +7,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "morrigan.h"
 #include "vector.h"
 #include "bounding.h"
 

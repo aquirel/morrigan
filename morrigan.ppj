@@ -189,6 +189,7 @@ build\bounding.obj: \
 	bounding.h \
 	debug.h \
 	landscape.h \
+	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

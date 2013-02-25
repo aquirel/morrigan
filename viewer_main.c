@@ -441,13 +441,13 @@ void draw_landscape(const Landscape *l)
             landscape_get_normal_at(l, x, yp, &n10);
             landscape_get_normal_at(l, xp, yp, &n11);
 
-            glColor3ub(0xff, 0xff, 0xff);
+            /*glColor3ub(0xff, 0xff, 0xff);
             glBegin(GL_LINES);
             glVertex3d(x, y, h00);
             glVertex3d(x + 5 * n00.x,
                        y + 5 * n00.y,
                        h00 + 5 * n00.z);
-            glEnd();
+            glEnd();*/
 
             glColor3ub(0x22, 0x8b, 0x22);
             glBegin(GL_TRIANGLE_STRIP);

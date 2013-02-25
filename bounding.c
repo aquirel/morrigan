@@ -206,6 +206,13 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
 {
     assert(b1 && b2 && "Bad bounding pointers.");
 
+    if (bounding_composite == b1->bounding_type)
+    {
+        size_t i = 0;
+
+
+    }
+
     for (Axis axis = axis_x; axis <= axis_z; axis++)
     {
         double p1s, p1e, p2s, p2e;

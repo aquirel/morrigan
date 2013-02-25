@@ -73,14 +73,18 @@ static int game_worker(void *unused)
 
             if (cs_acknowledged == c->state)
             {
-                Vector position, top;
-
                 size_t j;
+
                 do
                 {
+                    Vector position, top;
+
                     position.x = rand() % (landscape->landscape_size * landscape->tile_size - 1);
                     position.y = rand() % (landscape->landscape_size * landscape->tile_size - 1);
                     position.z = landscape_get_height_at(landscape, position.x, position.y);
+
+                    landscape_get_normal_at(landscape, position.x, position.y, &top);
+                    tank_initialize(&c->tank, &position, &top, clients_count);
 
                     for (j = 0; j < clients_count; j++)
                     {
@@ -98,8 +102,6 @@ static int game_worker(void *unused)
                     }
                 } while (j < clients_count);
 
-                landscape_get_normal_at(landscape, position.x, position.y, &top);
-                tank_initialize(&c->tank, &position, &top, clients_count);
                 c->state = cs_in_game;
             }
 

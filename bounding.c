@@ -208,9 +208,15 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
 
     if (bounding_composite == b1->bounding_type)
     {
-        size_t i = 0;
+        for (size_t i = 0; i < b1->data.composite_data.children_count; i++)
+        {
+            if (intersection_test(b2, &b1->data.composite_data.children[i]))
+            {
+                return true;
+            }
+        }
 
-
+        return false;
     }
 
     for (Axis axis = axis_x; axis <= axis_z; axis++)

@@ -153,6 +153,71 @@ size_t client_get_tanks(SOCKET *s, ResGetTanksTankRecord tanks[MAX_CLIENTS])
     return 0;
 }
 
+bool set_engine_power(SOCKET *s, int engine_power)
+{
+    assert(s && "Bad socket pointer.");
+
+    char req_buf[1 + sizeof(ReqSetEnginePower)];
+    req_buf[0] = req_set_engine_power;
+    ReqSetEnginePower *req_body = (ReqSetEnginePower *) &req_buf[1];
+    req_body->engine_power = engine_power;
+    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char receive_buf[1];
+    int received;
+
+    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
+    check(1 == received && req_set_engine_power == receive_buf[0], "Bad engine power response.", "");
+
+    return true;
+    error:
+    return false;
+}
+
+bool turn(SOCKET *s, double turn_angle)
+{
+    assert(s && "Bad socket pointer.");
+
+    char req_buf[1 + sizeof(ReqTurn)];
+    req_buf[0] = req_turn;
+    ReqTurn *req_body = (ReqTurn *) &req_buf[1];
+    req_body->turn_angle = turn_angle;
+    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char receive_buf[1];
+    int received;
+
+    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
+    check(1 == received && req_turn == receive_buf[0], "Bad turn response.", "");
+
+    return true;
+    error:
+    return false;
+}
+
+bool look_at(SOCKET *s, Vector *look_direction)
+{
+    assert(s && "Bad socket pointer.");
+
+    char req_buf[1 + sizeof(ReqLookAt)];
+    req_buf[0] = req_look_at;
+    ReqLookAt *req_body = (ReqLookAt *) &req_buf[1];
+    req_body->x = look_direction->x;
+    req_body->y = look_direction->y;
+    req_body->z = look_direction->z;
+    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char receive_buf[1];
+    int received;
+
+    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
+    check(1 == received && req_look_at == receive_buf[0], "Bad look at response.", "");
+
+    return true;
+    error:
+    return false;
+}
+
 bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *res)
 {
     fd_set set;
@@ -161,7 +226,7 @@ bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *
 
     unsigned long long t = 1000 * timeout;
 
-    struct timeval tv = { .tv_sec = t % 1000000, .tv_usec = t / 1000000 };
+    struct timeval tv = { .tv_sec = t / 1000000, .tv_usec = t % 1000000 };
 
     switch (select(0, &set, NULL, NULL, &tv))
     {

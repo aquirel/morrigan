@@ -115,11 +115,11 @@ void tank_set_engine_power(Tank *tank, int power)
 {
     assert(tank && "Bad tank pointer.");
 
-    if(TANK_MIN_ENGINE_POWER > power)
+    if (TANK_MIN_ENGINE_POWER > power)
     {
         power = TANK_MIN_ENGINE_POWER;
     }
-    else if(TANK_MAX_ENGINE_POWER < power)
+    else if (TANK_MAX_ENGINE_POWER < power)
     {
         power = TANK_MAX_ENGINE_POWER;
     }
@@ -190,7 +190,7 @@ void tank_change_engine_power(Tank *tank)
         return;
     }
 
-    if (tank->engine_power_target > tank->engine_power)
+    if (tank->engine_power_target < tank->engine_power)
     {
         tank->engine_power -= TANK_ENGINE_POWER_CHANGE_STEP;
     }

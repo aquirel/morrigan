@@ -21,13 +21,18 @@ int main(int argc, char *argv[])
     connected = true;
 
     puts("Connected to server.");
+
+    getchar();
+
+    set_engine_power(&s, 10);
+
     getchar();
 
     cleanup();
     return 0;
 
     error:
-    cleanup(); 
+    cleanup();
     return -1;
 }
 

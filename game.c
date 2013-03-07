@@ -23,7 +23,7 @@ static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2
 
 bool game_start(const Landscape *l, DynamicArray *c)
 {
-    fprintf(stderr, "game_start start.\n");
+    log_info("start.", "");
     assert(l && "Bad landscape pointer.");
     assert(c && "Bad clients array pointer.");
 
@@ -33,31 +33,34 @@ bool game_start(const Landscape *l, DynamicArray *c)
     working = true;
     check(thrd_success == thrd_create(&worker_tid, game_worker, NULL), "Failed to start game worker thread.", "");
 
-    fprintf(stderr, "game_start end.\n");
+    log_info("end.", "");
     return true;
     error:
-    fprintf(stderr, "game_start error.\n");
     thrd_detach(worker_tid);
+    log_info("error.", "");
     return false;
 }
 
 void game_stop(void)
 {
-    fprintf(stderr, "game_stop start.\n");
+    log_info("start.", "");
     working = false;
+    log_info("wait for worker to stop.", "");
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
-    fprintf(stderr, "game_stop end.\n");
+    log_info("end.", "");
 }
 
 static int game_worker(void *unused)
 {
     struct _timeval tick_start_time, tick_end_time;
+    log_info("start.", "");
 
     srand(time(NULL));
 
     while (working)
     {
+        log_info("tick start.", "");
         _gettimeofday(&tick_start_time, NULL);
 
         dynamic_array_lock(clients);
@@ -73,6 +76,8 @@ static int game_worker(void *unused)
 
             if (cs_acknowledged == c->state)
             {
+                log_info("initializing new tank.", "");
+
                 size_t j;
 
                 do
@@ -102,6 +107,7 @@ static int game_worker(void *unused)
                     }
                 } while (j < clients_count);
 
+                check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
                 c->state = cs_in_game;
             }
 
@@ -141,10 +147,14 @@ static int game_worker(void *unused)
             struct timespec sleep_duration = { .tv_sec = time_to_sleep / 1000000, .tv_nsec = (time_to_sleep % 1000000) * 1000 };
             check(0 == thrd_sleep(&sleep_duration, NULL), "Failed to sleep.", "");
         }
+
+        log_info("tick end.", "");
     }
 
+    log_info("end.", "");
     return 0;
     error:
+    log_info("error.", "");
     return -1;
 }
 

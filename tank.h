@@ -6,6 +6,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <threads.h>
 
 #include "morrigan.h"
 #include "vector.h"
@@ -28,6 +29,8 @@
 
 typedef struct Tank
 {
+    mtx_t mtx;
+
     // Common game object fields.
     Vector position;
     Vector previous_position;
@@ -46,6 +49,7 @@ typedef struct Tank
 } Tank;
 
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team);
+void tank_destroy(Tank *tank);
 bool tank_tick(Tank *tank, const Landscape *l);
 
 // Protocol functions.

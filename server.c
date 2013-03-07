@@ -223,6 +223,7 @@ bool unregister_client(const SOCKADDR *address)
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
             dynamic_array_delete_at(clients, i);
+            tank_destroy(&c->tank);
             free(c);
             dynamic_array_unlock(clients);
             return true;
@@ -279,6 +280,7 @@ void notify_shutdown(void)
         dynamic_array_delete_at(clients, 0);
         uint8_t response = req_bye;
         respond((char *) &response, 1, &c->address);
+        tank_destroy(&c->tank);
         free(c);
     }
     dynamic_array_unlock(clients);
@@ -330,10 +332,6 @@ static int server_worker(void *unused)
             {
                 c->current_packet_definition = NULL;
             }
-            else
-            {
-                free(c);
-            }
         }
 
         if (!no_viewer_request)
@@ -346,10 +344,6 @@ static int server_worker(void *unused)
             if (c->current_packet_definition->executor(c))
             {
                 c->current_packet_definition = NULL;
-            }
-            else
-            {
-                free(c);
             }
         }
     }

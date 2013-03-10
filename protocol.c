@@ -427,6 +427,9 @@ static bool req_get_tanks_executor(Client *c)
         response_body->direction_x = other_c->tank.direction.x;
         response_body->direction_y = other_c->tank.direction.y;
         response_body->direction_z = other_c->tank.direction.z;
+        response_body->orientation_x = other_c->tank.orientation.x;
+        response_body->orientation_y = other_c->tank.orientation.y;
+        response_body->orientation_z = other_c->tank.orientation.z;
         response_body->turret_x = other_c->tank.turret_direction.x;
         response_body->turret_y = other_c->tank.turret_direction.y;
         response_body->turret_z = other_c->tank.turret_direction.z;
@@ -482,6 +485,9 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
         response_body->direction_x = other_c->tank.direction.x;
         response_body->direction_y = other_c->tank.direction.y;
         response_body->direction_z = other_c->tank.direction.z;
+        response_body->orientation_x = other_c->tank.orientation.x;
+        response_body->orientation_y = other_c->tank.orientation.y;
+        response_body->orientation_z = other_c->tank.orientation.z;
         response_body->turret_x = other_c->tank.turret_direction.x;
         response_body->turret_y = other_c->tank.turret_direction.y;
         response_body->turret_z = other_c->tank.turret_direction.z;

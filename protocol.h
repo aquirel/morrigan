@@ -144,6 +144,7 @@ typedef struct ResGetTanksTankRecord
 {
     double x, y, z;
     double direction_x, direction_y, direction_z;
+    double orientation_x, orientation_y, orientation_z;
     double turret_x, turret_y, turret_z;
     double speed;
     uint8_t team;

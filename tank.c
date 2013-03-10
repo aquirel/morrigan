@@ -21,7 +21,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     {
         .position = { .x = position->x, .y = position->y, .z = position->z },
         .previous_position = { .x = position->x, .y = position->y, .z = position->z },
-        //.direction = { .x = 1, .y = 0, .z = 0 },
+        .direction = { .x = 1, .y = 0, .z = 0 },
         .orientation = { .x = top->x, .y = top->y, .z = top->z },
         .speed = 0,
         .bounding_primitives =
@@ -69,18 +69,36 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
         .turn_angle_target = 0
     };
 
-    Vector axis = { .x = 0.0, .y = 1.0, .z = 0.0 };
-    vector_rotate(top, &axis, M_PI_2, &tank->direction);
+    Vector default_top = { .x = 0, .y = 0, .z = 1 };
+    if (0 == memcmp(&default_top, top, sizeof(Vector)))
+    {
+        return;
+    }
+
+    Vector axis;
+    vector_vector_mul(&default_top, top, &axis);
+    VECTOR_NORMALIZE(&axis);
+    double angle = vector_angle(top, &default_top);
+    VECTOR_ROTATE(&tank->direction, &axis, angle);
+}
+
+void tank_destroy(Tank *tank)
+{
+    assert(tank && "Bad tank pointer.");
+    mtx_destroy(&tank->mtx);
 }
 
 bool tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
+    check(thrd_success == mtx_lock(&tank->mtx), "Failed to lock tank mutex.", "");
     tank_change_engine_power(tank);
     bool result = tank_move(tank, l);
     tank_change_turn(tank);
     tank_rotate_turret(tank);
+    check(thrd_success == mtx_unlock(&tank->mtx), "Failed to lock tank mutex.", "");
+    error:
     return result;
 }
 
@@ -235,15 +253,34 @@ bool tank_move(Tank *tank, const Landscape *l)
         vector_sub(&tank->position, &tank->previous_position, &t);
         double new_speed = vector_length(&t);
 
-        if (fabs(new_speed - k * tank->speed) < vector_eps)
+        if (fabs(new_speed - tank->speed) < vector_eps)
         {
             break;
         }
 
-        k = tank->speed / new_speed;
+        if (new_speed > tank->speed)
+        {
+            k -= k / 2.0;
+        }
+        else
+        {
+            k += k / 2.0;
+        }
     }
 
+    Vector old_orientation = tank->orientation;
     landscape_get_normal_at(l, tank->position.x, tank->position.y, &tank->orientation);
+
+    if (0 == memcmp(&old_orientation, &tank->orientation, sizeof(Vector)))
+    {
+        return true;
+    }
+
+    Vector axis;
+    vector_vector_mul(&old_orientation, &tank->orientation, &axis);
+    VECTOR_NORMALIZE(&axis);
+    double angle = vector_angle(&tank->orientation, &old_orientation);
+    VECTOR_ROTATE(&tank->direction, &axis, angle);
     return true;
 }
 

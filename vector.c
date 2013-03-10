@@ -135,7 +135,9 @@ Vector *vector_zero(Vector *v)
 double vector_angle(const Vector *v1, const Vector *v2)
 {
     assert(v1 && v2 && "Bad vector pointer.");
-    return vector_mul(v1, v2) / (vector_length(v1) * vector_length(v2));
+    double c = vector_mul(v1, v2) / (vector_length(v1) * vector_length(v2));
+    assert(fabs(c) <= 1.0 && "Bad cos value.");
+    return acos(c);
 }
 
 #if defined(VECTOR_TESTS)

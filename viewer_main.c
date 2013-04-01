@@ -602,14 +602,26 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     glTranslated(tank->x, tank->y, tank->z);
 
     Vector default_direction   = { .x = 1.0, .y = 0.0, .z = 0.0 },
+           default_orientation = { .x = 0.0, .y = 0.0, .z = 1.0 },
            tank_direction      = { .x = tank->direction_x, .y = tank->direction_y, .z = tank->direction_z },
+           tank_orientation    = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z },
            rotation_axis;
 
     if (0 != memcmp(&default_direction, &tank_direction, sizeof(Vector)))
     {
         vector_vector_mul(&default_direction, &tank_direction, &rotation_axis);
         VECTOR_NORMALIZE(&rotation_axis);
-        double angle = acos(vector_mul(&default_direction, &tank_direction)) * 180 / M_PI;
+        double angle = vector_angle(&default_direction, &tank_direction) * 180.0 / M_PI;
+        glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+        VECTOR_ROTATE(&default_orientation, &rotation_axis, angle / 180.0 * M_PI);
+    }
+
+    if (0 != memcmp(&default_orientation, &tank_orientation, sizeof(Vector)))
+    {
+        vector_vector_mul(&default_orientation, &tank_orientation, &rotation_axis);
+        VECTOR_NORMALIZE(&rotation_axis);
+        double angle = vector_angle(&default_orientation, &tank_orientation) * 180.0 / M_PI;
+        log_info("angle = %lf.", angle);
         glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
     }
 

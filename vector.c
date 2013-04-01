@@ -135,9 +135,35 @@ Vector *vector_zero(Vector *v)
 double vector_angle(const Vector *v1, const Vector *v2)
 {
     assert(v1 && v2 && "Bad vector pointer.");
-    double c = vector_mul(v1, v2) / (vector_length(v1) * vector_length(v2));
+
+    Vector _v1, _v2, _v3;
+
+    vector_normalize(v1, &_v1);
+    vector_normalize(v2, &_v2);
+
+    double c = vector_mul(&_v1, &_v2), // / (vector_length(v1) * vector_length(v2)),
+           s;
+
+    vector_vector_mul(&_v1, &_v2, &_v3);
+    s = vector_length(&_v3);
+
     assert(fabs(c) <= 1.0 && "Bad cos value.");
-    return acos(c);
+    assert(fabs(s) <= 1.0 && "Bad sin value.");
+
+    if (0.0 == s)
+    {
+        return c >= 0.0 ? 0.0 : M_PI;
+    }
+
+    if (0.0 == c)
+    {
+        return s >= 0.0 ? M_PI_2 : M_PI * 3.0 / 2.0;
+    }
+
+    double ac = acos(c),
+           as = asin(s);
+
+    return as < 0.0 ? 2.0 * M_PI - ac : ac;
 }
 
 #if defined(VECTOR_TESTS)

@@ -7,7 +7,7 @@ POC_PROJECT_VERSION = 7.00#
 POC_PROJECT_TYPE = 3#
 POC_PROJECT_OUTPUTDIR = build#
 POC_PROJECT_RESULTDIR = bin#
-POC_PROJECT_ARGUMENTS = #
+POC_PROJECT_ARGUMENTS = localhost#
 CC = pocc.exe#
 AS = poasm.exe#
 RC = porc.exe#
@@ -41,6 +41,7 @@ build\client_main.obj: \
 	client_net.h \
 	debug.h \
 	landscape.h \
+	morrigan.h \
 	net.h \
 	protocol.h \
 	tank.h \
@@ -90,6 +91,6 @@ build\matrix.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
-
 .EXCLUDEDFILES:
+
+.SILENT:

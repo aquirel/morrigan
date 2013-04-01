@@ -221,13 +221,13 @@ int main(void)
     landscape_set_height_at_node(l, 1, 0, 0.0);
     landscape_set_height_at_node(l, 1, 1, 1.0);
 
-    Vector n, v = { .x = -1, .y = 0, .z = 1 };
+    Vector n, v = { .x = -1.0 / 128.0, .y = 0, .z = 1 };
     VECTOR_NORMALIZE(&v);
 
     landscape_get_normal_at(l, 0.5, 0.5, &n);
     test_cond("Get normal 1.", vector_eq(&n, &v));
     landscape_get_normal_at(l, 0, 0, &n);
-    test_cond("Get normal 1.", vector_eq(&n, &v));
+    test_cond("Get normal 2.", vector_eq(&n, &v));
 
     landscape_destroy(l);
     test_report();

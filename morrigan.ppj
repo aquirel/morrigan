@@ -102,6 +102,7 @@ build\protocol.obj: \
 	dynamic_array.h \
 	game.h \
 	landscape.h \
+	morrigan.h \
 	net.h \
 	protocol.h \
 	server.h \
@@ -118,6 +119,7 @@ build\server.obj: \
 	debug.h \
 	dynamic_array.h \
 	landscape.h \
+	morrigan.h \
 	net.h \
 	protocol.h \
 	ring_buffer.h \
@@ -159,6 +161,7 @@ build\game.obj: \
 build\vector.obj: \
 	vector.c \
 	matrix.h \
+	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

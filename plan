@@ -1,4 +1,4 @@
-fix landscape tests.
+put isnormal() everywhere.
 test client.
     client api.
 

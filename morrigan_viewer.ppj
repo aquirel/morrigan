@@ -59,6 +59,7 @@ build\client_net.obj: \
 	client_net.h \
 	debug.h \
 	landscape.h \
+	morrigan.h \
 	net.h \
 	protocol.h \
 	tank.h \
@@ -81,6 +82,7 @@ build\landscape.obj: \
 build\vector.obj: \
 	vector.c \
 	matrix.h \
+	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

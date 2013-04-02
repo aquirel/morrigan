@@ -1,4 +1,3 @@
-put isnormal() everywhere.
 test client.
     client api.
 
@@ -7,3 +6,7 @@ game entities behaviour (shell).
 Port existing code (shell).
 shell viewer notifications
 move all to single thread?
+
+put isnormal() everywhere.
+cos and sin <= 1.
+

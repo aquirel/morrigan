@@ -607,6 +607,15 @@ void draw_tank(const ResGetTanksTankRecord *tank)
            tank_orientation    = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z },
            rotation_axis;
 
+    glBegin(GL_LINES);
+    glColor3d(1.0, 0.0, 0.0);
+    glVertex3d(0.0, 0.0, 0.0);
+    glVertex3d(tank_orientation.x * 16.0, tank_orientation.y * 16.0, tank_orientation.z * 16.0);
+    glColor3d(0.0, 1.0, 0.0);
+    glVertex3d(0.0, 0.0, 0.0);
+    glVertex3d(tank_direction.x * 16.0, tank_direction.y * 16.0, tank_direction.z * 16.0);
+    glEnd();
+
     if (0 != memcmp(&default_direction, &tank_direction, sizeof(Vector)))
     {
         vector_vector_mul(&default_direction, &tank_direction, &rotation_axis);
@@ -633,8 +642,11 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     {
         vector_vector_mul(&default_turret_look, &turret_look, &rotation_axis);
         VECTOR_NORMALIZE(&rotation_axis);
-        double angle = acos(vector_mul(&default_turret_look, &turret_look)) * 180 / M_PI;
+        double angle = vector_angle(&default_turret_look, &turret_look) * 180 / M_PI;
+        static Vector extent = TANK_BOUNDING_BOX_EXTENT;
+        glTranslated(0.0, 0.0, extent.z);
         glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+        glTranslated(0.0, 0.0, -extent.z);
     }
 
     glColor3dv((double *) &tank_colors[tank->team]);

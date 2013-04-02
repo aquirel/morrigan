@@ -296,9 +296,7 @@ void tank_rotate_turret(Tank *tank)
         return;
     }
 
-    double actual_angle = acos(vector_mul(&tank->turret_direction, &tank->turret_direction_target) /
-                               (vector_length(&tank->turret_direction) * vector_length(&tank->turret_direction_target)));
-
+    double actual_angle = vector_angle(&tank->turret_direction, &tank->turret_direction_target);
     if (fabs(actual_angle) <= TANK_MAX_TURRET_TURN_SPEED)
     {
         tank->turret_direction = tank->turret_direction_target;

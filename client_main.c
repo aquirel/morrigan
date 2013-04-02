@@ -22,13 +22,31 @@ int main(int argc, char *argv[])
 
     puts("Connected to server.");
 
-    while (EOF != getchar())
+    char c;
+    while (EOF != (c = getchar()))
     {
-        set_engine_power(&s, rand() % 100 - 10);
-        Vector look = { .x = (double) rand() / RAND_MAX, .y = (double) rand() / RAND_MAX, .z = (double) rand() / (4.0 * RAND_MAX) };
-        VECTOR_NORMALIZE(&look);
-        look_at(&s, &look);
-        turn(&s, -M_PI + ((double) rand() / RAND_MAX * 2.0 * M_PI));
+        switch (c)
+        {
+            case 'e':
+                set_engine_power(&s, rand() % 100 - 10);
+                break;
+
+            case 'l':
+            {
+                Vector look = { .x = (double) rand() / RAND_MAX, .y = (double) rand() / RAND_MAX, .z = (double) rand() / (4.0 * RAND_MAX) };
+                VECTOR_NORMALIZE(&look);
+                look_at(&s, &look);
+                break;
+            }
+
+            case 't':
+                turn(&s, -M_PI + ((double) rand() / RAND_MAX * 2.0 * M_PI));
+                break;
+
+            default:
+                printf("e - engine power; l - look; t - turn.\n");
+                break;
+        }
     }
 
     cleanup();

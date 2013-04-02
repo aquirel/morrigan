@@ -92,9 +92,10 @@ bool tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
+    bool result = true;
     check(thrd_success == mtx_lock(&tank->mtx), "Failed to lock tank mutex.", "");
     tank_change_engine_power(tank);
-    bool result = tank_move(tank, l);
+    result = tank_move(tank, l);
     tank_change_turn(tank);
     tank_rotate_turret(tank);
     check(thrd_success == mtx_unlock(&tank->mtx), "Failed to lock tank mutex.", "");
@@ -105,7 +106,7 @@ bool tank_tick(Tank *tank, const Landscape *l)
 void tank_turn(Tank *tank, double turn_angle)
 {
     assert(tank && "Bad tank pointer.");
-    assert(-M_PI <= turn_angle && turn_angle <= M_PI && "Bad turb angle.");
+    assert(-M_PI <= turn_angle && turn_angle <= M_PI && "Bad turn angle.");
     tank->turn_angle_target = turn_angle;
 }
 
@@ -182,12 +183,12 @@ void tank_change_turn(Tank *tank)
     if (fabs(tank->turn_angle_target) <= TANK_MAX_TURN_SPEED)
     {
         step_turn_angle = tank->turn_angle_target;
-        tank->turn_angle_target = 0;
+        tank->turn_angle_target = 0.0;
     }
     else
     {
         step_turn_angle = TANK_MAX_TURN_SPEED;
-        tank->turn_angle_target += (-1.0) * signbit(tank->turn_angle_target) * TANK_MAX_TURN_SPEED;
+        tank->turn_angle_target += (-1.0) * TANK_MAX_TURN_SPEED * (signbit(tank->turn_angle_target) ? -1.0 : 1.0);
     }
 
     VECTOR_ROTATE(&tank->direction, &tank->orientation, step_turn_angle);
@@ -266,6 +267,8 @@ bool tank_move(Tank *tank, const Landscape *l)
         {
             k += k / 2.0;
         }
+
+        break;
     }
 
     Vector old_orientation = tank->orientation;

@@ -621,7 +621,6 @@ void draw_tank(const ResGetTanksTankRecord *tank)
         vector_vector_mul(&default_orientation, &tank_orientation, &rotation_axis);
         VECTOR_NORMALIZE(&rotation_axis);
         double angle = vector_angle(&default_orientation, &tank_orientation) * 180.0 / M_PI;
-        log_info("angle = %lf.", angle);
         glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
     }
 

@@ -16,6 +16,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    srand(time(NULL));
+
     check(client_net_start(), "Failed to initialize net.", "");
     check(client_connect(&s, argv[1], true), "Failed to connect.", "");
     connected = true;

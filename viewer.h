@@ -47,15 +47,17 @@ void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_c
 void draw_landscape(const Landscape *l);
 void draw_tank_body(void);
 void draw_tank_turret(void);
+void draw_tank_gun(void);
 void draw_tank(const ResGetTanksTankRecord *tank);
 void draw_tanks(const ResGetTanksTankRecord *tanks, size_t tanks_count);
 
 double range_angle(double a);
 
-#define DISPLAY_LISTS_COUNT 3
+#define DISPLAY_LISTS_COUNT 4
 #define LANDSCAPE_DISPLAY_LIST   0
 #define TANK_BODY_DISPLAY_LIST   1
 #define TANK_TURRET_DISPLAY_LIST 2
+#define TANK_GUN_DISPLAY_LIST 3
 extern GLuint display_lists;
 
 #endif /* __VIEWER_H__ */

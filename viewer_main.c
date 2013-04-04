@@ -64,6 +64,11 @@ int main(int argc, char *argv[])
     draw_tank_turret();
     glEndList();
 
+    glNewList(display_lists + TANK_GUN_DISPLAY_LIST, GL_COMPILE);
+    check(GL_NO_ERROR == glGetError(), "Failed to create display list.", "");
+    draw_tank_gun();
+    glEndList();
+
     while (true)
     {
         bool need_redraw = false;

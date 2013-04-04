@@ -29,40 +29,33 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     glPushMatrix();
     glTranslated(tank->x, tank->y, tank->z);
 
-    Vector default_direction   = { .x = 1.0, .y = 0.0, .z = 0.0 },
-           default_orientation = { .x = 0.0, .y = 0.0, .z = 1.0 },
-           tank_direction      = { .x = tank->direction_x, .y = tank->direction_y, .z = tank->direction_z },
-           tank_orientation    = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z },
+    Vector tank_direction   = { .x = tank->direction_x,   .y = tank->direction_y,   .z = tank->direction_z   },
+           tank_orientation = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z },
            side;
 
     VECTOR_NORMALIZE(&tank_direction);
     VECTOR_NORMALIZE(&tank_orientation);
 
-    glBegin(GL_LINES);
-    glColor3d(1.0, 0.0, 0.0);
-    glVertex3d(0.0, 0.0, 0.0);
-    glVertex3d(tank_orientation.x * 16.0, tank_orientation.y * 16.0, tank_orientation.z * 16.0);
-    glColor3d(0.0, 1.0, 0.0);
-    glVertex3d(0.0, 0.0, 0.0);
-    glVertex3d(tank_direction.x * 16.0, tank_direction.y * 16.0, tank_direction.z * 16.0);
-    glEnd();
-
     vector_vector_mul(&tank_orientation, &tank_direction, &side);
     VECTOR_NORMALIZE(&side);
 
-    printf("%lf\n", vector_mul(&tank_orientation, &tank_direction));
-
     double m[] = {
-                     tank_direction.x,   tank_direction.y,   tank_direction.z,   0.0,
-                     side.x,             side.y,             side.z,             0.0,
-                     tank_orientation.x, tank_orientation.y, tank_orientation.z, 0.0,
-                     0.0,                0.0,                0.0,                1.0
-                 };
+        tank_direction.x,   tank_direction.y,   tank_direction.z,   0.0,
+        side.x,             side.y,             side.z,             0.0,
+        tank_orientation.x, tank_orientation.y, tank_orientation.z, 0.0,
+        0.0,                0.0,                0.0,                1.0
+    };
     glMultMatrixd(m);
 
     glCallList(display_lists + TANK_BODY_DISPLAY_LIST);
 
-    /*Vector default_turret_look = { .x = 1.0, .y = 0.0, .z = 0.0 },
+    glColor3dv((double *) &tank_colors[tank->team]);
+    glCallList(display_lists + TANK_TURRET_DISPLAY_LIST);
+
+
+    glTranslated(0, 0, TANK_BOUNDING_SPHERE_RADIUS / 2.0);
+
+    Vector default_turret_look = { .x = 1.0, .y = 0.0, .z = 0.0 },
            turret_look         = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z };
 
     if (0 != memcmp(&default_turret_look, &turret_look, sizeof(Vector)))
@@ -71,15 +64,10 @@ void draw_tank(const ResGetTanksTankRecord *tank)
         vector_vector_mul(&default_turret_look, &turret_look, &rotation_axis);
         VECTOR_NORMALIZE(&rotation_axis);
         double angle = vector_angle(&default_turret_look, &turret_look) * 180 / M_PI;
-        static Vector extent = TANK_BOUNDING_BOX_EXTENT;
-        glTranslated(0.0, 0.0, extent.z);
         glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
-        glTranslated(0.0, 0.0, -extent.z);
-    }*/
+    }
 
-    glColor3dv((double *) &tank_colors[tank->team]);
-
-    glCallList(display_lists + TANK_TURRET_DISPLAY_LIST);
+    glCallList(display_lists + TANK_GUN_DISPLAY_LIST);
 
     glPopMatrix();
 }
@@ -155,6 +143,18 @@ void draw_tank_body(void)
 void draw_tank_turret(void)
 {
     static Vector extent = TANK_BOUNDING_BOX_EXTENT;
+    GLUquadric *q = gluNewQuadric();
+    gluQuadricNormals(q, GLU_SMOOTH);
+    gluQuadricOrientation(q, GLU_OUTSIDE);
+    assert(q && "Failed to create quadric.");
+    glTranslated(0, 0, extent.z);
+    gluSphere(q, TANK_BOUNDING_SPHERE_RADIUS, 32, 32);
+    gluDeleteQuadric(q);
+}
+
+void draw_tank_gun(void)
+{
+    static Vector extent = TANK_BOUNDING_BOX_EXTENT;
     static double gun_radius = 0.25,
                   gun_length,
                   gun_slices = 8;
@@ -165,10 +165,6 @@ void draw_tank_turret(void)
     gluQuadricOrientation(q, GLU_OUTSIDE);
     assert(q && "Failed to create quadric.");
 
-    glTranslated(0, 0, extent.z);
-    gluSphere(q, TANK_BOUNDING_SPHERE_RADIUS, 32, 32);
-
-    glTranslated(0, 0, TANK_BOUNDING_SPHERE_RADIUS / 2);
     glRotated(90, 0, 0, 1);
     glRotated(90, 1, 0, 0);
     glColor3ub(0x35, 0x5e, 0x3b);

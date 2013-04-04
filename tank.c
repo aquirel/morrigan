@@ -12,8 +12,6 @@ void tank_change_engine_power(Tank *tank);
 bool tank_move(Tank *tank, const Landscape *l);
 void tank_rotate_turret(Tank *tank);
 
-void __rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation);
-
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team)
 {
     assert(tank && "Bad tank pointer.");
@@ -71,7 +69,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
         .turn_angle_target = 0
     };
 
-    __rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
+    tank_rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
 }
 
 void tank_destroy(Tank *tank)
@@ -165,25 +163,34 @@ double tank_get_heading(Tank *tank)
 void tank_change_turn(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
+    tank_change_turn_worker(&tank->turn_angle_target, TANK_MAX_TURN_SPEED, &tank->direction, &tank->orientation);
+}
 
-    if (vector_eps >= tank->turn_angle_target)
+void tank_change_turn_worker(double *turn_angle_target, double max_turn_speed, Vector *direction, Vector *orientation)
+{
+    assert(turn_angle_target && "Bad turn angle pointer.");
+    assert(isnormal(max_turn_speed) && "Bad turn max turn speed.");
+    assert(direction && "Bad direction pointer.");
+    assert(orientation && "Bad orientation pointer.");
+
+    if (vector_eps >= *turn_angle_target)
     {
         return;
     }
 
     double step_turn_angle;
-    if (fabs(tank->turn_angle_target) <= TANK_MAX_TURN_SPEED)
+    if (fabs(*turn_angle_target) <= max_turn_speed)
     {
-        step_turn_angle = tank->turn_angle_target;
-        tank->turn_angle_target = 0.0;
+        step_turn_angle = *turn_angle_target;
+        *turn_angle_target = 0.0;
     }
     else
     {
-        step_turn_angle = TANK_MAX_TURN_SPEED;
-        tank->turn_angle_target += (-1.0) * TANK_MAX_TURN_SPEED * (signbit(tank->turn_angle_target) ? -1.0 : 1.0);
+        step_turn_angle = max_turn_speed;
+        *turn_angle_target += (-1.0) * max_turn_speed * (signbit(*turn_angle_target) ? -1.0 : 1.0);
     }
 
-    VECTOR_ROTATE(&tank->direction, &tank->orientation, step_turn_angle);
+    VECTOR_ROTATE(direction, orientation, step_turn_angle);
 }
 
 void tank_change_engine_power(Tank *tank)
@@ -265,7 +272,7 @@ bool tank_move(Tank *tank, const Landscape *l)
 
     Vector old_orientation = tank->orientation;
     landscape_get_normal_at(l, tank->position.x, tank->position.y, &tank->orientation);
-    __rotate_direction(&tank->direction, &old_orientation, &tank->orientation);
+    tank_rotate_direction(&tank->direction, &old_orientation, &tank->orientation);
 
     return true;
 }
@@ -273,25 +280,34 @@ bool tank_move(Tank *tank, const Landscape *l)
 void tank_rotate_turret(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
+    tank_rotate_turret_worker(&tank->turret_direction_target, &tank->turret_direction, TANK_MAX_TURRET_TURN_SPEED);
+}
 
-    if (vector_eq(&tank->turret_direction_target, &tank->turret_direction))
+void tank_rotate_turret_worker(Vector *turret_direction_target, Vector *turret_direction, double max_turret_turn_speed)
+{
+    assert(turret_direction_target && "Bad target direction pointer.");
+    assert(turret_direction && "Bad direction pointer.");
+    assert(isnormal(max_turret_turn_speed) && "Bad max turn speed.");
+
+    if (vector_eq(turret_direction_target, turret_direction))
     {
         return;
     }
 
-    double actual_angle = vector_angle(&tank->turret_direction, &tank->turret_direction_target);
-    if (fabs(actual_angle) <= TANK_MAX_TURRET_TURN_SPEED)
+    double actual_angle = vector_angle(turret_direction, turret_direction_target);
+    if (fabs(actual_angle) <= max_turret_turn_speed)
     {
-        tank->turret_direction = tank->turret_direction_target;
+        *turret_direction = *turret_direction_target;
         return;
     }
 
     Vector axis;
-    vector_vector_mul(&tank->turret_direction, &tank->turret_direction_target, &axis);
-    vector_rotate(&tank->turret_direction, &axis, TANK_MAX_TURRET_TURN_SPEED, &tank->turret_direction);
+    vector_vector_mul(turret_direction, turret_direction_target, &axis);
+    VECTOR_NORMALIZE(&axis);
+    VECTOR_ROTATE(turret_direction, &axis, max_turret_turn_speed);
 }
 
-void __rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation)
+void tank_rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation)
 {
     assert(direction && old_orientation && orientation && "Bad orientation pointers.");
 

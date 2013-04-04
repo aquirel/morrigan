@@ -475,27 +475,30 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
 
     dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
-    for (size_t i = 0; i < clients_count; i++)
+    for (size_t i = 0; i < clients_count; i++, response_body++, response_header->tanks_count++)
     {
         Client *other_c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        response_body->x = other_c->tank.position.x;
-        response_body->y = other_c->tank.position.y;
-        response_body->z = other_c->tank.position.z;
-        response_body->direction_x = other_c->tank.direction.x;
-        response_body->direction_y = other_c->tank.direction.y;
-        response_body->direction_z = other_c->tank.direction.z;
-        response_body->orientation_x = other_c->tank.orientation.x;
-        response_body->orientation_y = other_c->tank.orientation.y;
-        response_body->orientation_z = other_c->tank.orientation.z;
-        response_body->turret_x = other_c->tank.turret_direction.x;
-        response_body->turret_y = other_c->tank.turret_direction.y;
-        response_body->turret_z = other_c->tank.turret_direction.z;
-        response_body->speed = other_c->tank.speed;
-        response_body->team = other_c->tank.team;
-
-        response_body++;
-        response_header->tanks_count++;
+        *response_body = (ResGetTanksTankRecord) {
+            .x               = other_c->tank.position.x,
+            .y               = other_c->tank.position.y,
+            .z               = other_c->tank.position.z,
+            .direction_x     = other_c->tank.direction.x,
+            .direction_y     = other_c->tank.direction.y,
+            .direction_z     = other_c->tank.direction.z,
+            .orientation_x   = other_c->tank.orientation.x,
+            .orientation_y   = other_c->tank.orientation.y,
+            .orientation_z   = other_c->tank.orientation.z,
+            .turret_x        = other_c->tank.turret_direction.x,
+            .turret_y        = other_c->tank.turret_direction.y,
+            .turret_z        = other_c->tank.turret_direction.z,
+            .target_turret_x = other_c->tank.turret_direction_target.x,
+            .target_turret_y = other_c->tank.turret_direction_target.y,
+            .target_turret_z = other_c->tank.turret_direction_target.z,
+            .target_turn     = other_c->tank.turn_angle_target,
+            .speed           = other_c->tank.speed,
+            .team            = other_c->tank.team
+        };
     }
     dynamic_array_unlock(clients);
 

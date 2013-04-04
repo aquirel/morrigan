@@ -33,7 +33,8 @@ bin\morrigan_viewer.exe: \
 	build\matrix.obj \
 	build\vector.obj \
 	build\viewer_draw.obj \
-	build\viewer_events.obj
+	build\viewer_events.obj \
+	build\tank.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -127,6 +128,19 @@ build\viewer_draw.obj: \
 	tank.h \
 	vector.h \
 	viewer.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build tank.obj.
+# 
+build\tank.obj: \
+	tank.c \
+	bounding.h \
+	debug.h \
+	landscape.h \
+	morrigan.h \
+	tank.h \
+	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

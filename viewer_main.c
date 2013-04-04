@@ -26,6 +26,9 @@ void cleanup(void);
 Uint32 timer_handler(Uint32 interval, void *param);
 Uint32 tanks_timer_handler(Uint32 interval, void *param);
 
+void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, const size_t tanks_count);
+void move_tank(const Landscape *l, ResGetTanksTankRecord *tank);
+
 int main(int argc, char *argv[])
 {
     if (2 > argc)
@@ -209,6 +212,8 @@ void cleanup(void)
 
 Uint32 timer_handler(Uint32 interval, void *param)
 {
+    move_tanks(l, tanks, tanks_count);
+
     SDL_Event event =
     {
         .user =
@@ -241,6 +246,65 @@ Uint32 tanks_timer_handler(Uint32 interval, void *param)
     check(0 == SDL_PushEvent(&event), "SDL_PushEvent() failed.", "");
     error:
     return interval;
+}
+
+void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, size_t tanks_count)
+{
+    assert(l && "Bad landscape pointer.");
+    assert(tanks && "Bad tanks pointer.");
+
+    for (size_t i = 0; i < tanks_count; i++)
+    {
+        move_tank(l, &tanks[i]);
+    }
+}
+
+void move_tank(const Landscape *l, ResGetTanksTankRecord *tank)
+{
+    assert(l && "Bad landscape pointer.");
+    assert(tank && "Bad tank pointer.");
+
+    Vector position    = { .x = tank->x, .y = tank->y, .z = tank->z },
+           direction   = { .x = tank->direction_x, .y = tank->direction_y, .z = tank->direction_z },
+           orientation = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z }, 
+           t;
+
+    vector_scale(&direction, tank->speed / SDL_DEFAULT_REPEAT_INTERVAL, &t);
+    VECTOR_ADD(&position, &t);
+
+    if (0.0 <= position.x &&
+        0.0 <= position.y &&
+        l->tile_size * l->landscape_size >= position.x &&
+        l->tile_size * l->landscape_size >= position.y)
+    {
+        Vector old_orientation = orientation;
+        landscape_get_normal_at(l, position.x, position.y, &orientation);
+        tank_rotate_direction(&direction, &old_orientation, &orientation);
+
+        tank_change_turn_worker(&tank->target_turn,
+                                TANK_MAX_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL,
+                                &direction,
+                                &orientation);
+
+        tank->x = position.x;
+        tank->y = position.y;
+        tank->z = position.z;
+        tank->direction_x = direction.x;
+        tank->direction_y = direction.y;
+        tank->direction_z = direction.z;
+        tank->orientation_x = orientation.x;
+        tank->orientation_y = orientation.y;
+        tank->orientation_z = orientation.z;
+
+        Vector turret_direction        = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z },
+               turret_direction_target = { .x = tank->target_turret_x, .y = tank->target_turret_y, .z = tank->target_turret_z };
+
+        tank_rotate_turret_worker(&turret_direction_target, &turret_direction, TANK_MAX_TURRET_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL);
+
+        tank->turret_x = turret_direction.x;
+        tank->turret_y = turret_direction.y;
+        tank->turret_z = turret_direction.z;
+    }
 }
 
 double range_angle(double a)

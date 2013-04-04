@@ -43,8 +43,8 @@ bool process_events(bool *need_redraw, Camera *camera)
                             v_pressed)
                         {
                             key_event = true;
-                            *need_redraw = true;
                         }
+                        *need_redraw = true;
                        break;
 
                     case TANKS_TIMER_EVENT_ID:

@@ -52,6 +52,10 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
 void tank_destroy(Tank *tank);
 bool tank_tick(Tank *tank, const Landscape *l);
 
+void tank_rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation);
+void tank_change_turn_worker(double *turn_angle_target, double max_turn_speed, Vector *direction, Vector *orientation);
+void tank_rotate_turret_worker(Vector *turret_direction_target, Vector *turret_direction, double max_turret_turn_speed);
+
 // Protocol functions.
 void tank_turn(Tank *tank, double turn_angle);
 void tank_look_at(Tank *tank, const Vector *look);

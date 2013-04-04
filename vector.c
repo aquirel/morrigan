@@ -105,22 +105,26 @@ Vector *vector_rotate(const Vector *v, const Vector *axis, double angle, Vector 
 {
     assert(v && axis && result && "Bad vector pointers.");
 
-    double x = axis->x;
-    double y = axis->y;
-    double z = axis->z;
-    double c = cos(angle);
-    double s = sin(angle);
+    double s   = sin(angle / 2.0),
+           c   = cos(angle / 2.0),
+           q_x = axis->x * s,
+           q_y = axis->y * s,
+           q_z = axis->z * s,
+           q_w = c,
+           q_l = sqrt(q_x * q_x + q_y * q_y + q_z * q_z + q_w * q_w);
 
-    Matrix rotation_matrix;
-    rotation_matrix.values[0][0] = c + (1 - c) * x * x;
-    rotation_matrix.values[0][1] = (1 - c) * x * y - s * z;
-    rotation_matrix.values[0][2] = (1 - c) * x * z + s * y;
-    rotation_matrix.values[1][0] = (1 - c) * y * x + s * z;
-    rotation_matrix.values[1][1] = c + (1 - c) * y * y;
-    rotation_matrix.values[1][2] = (1 - c) * y * z - s * x;
-    rotation_matrix.values[2][0] = (1 - c) * z * x - s * y;
-    rotation_matrix.values[2][1] = (1 - c) * z * y + s * x;
-    rotation_matrix.values[2][2] = c + (1 - c) * z * z;
+    q_x /= q_l;
+    q_y /= q_l;
+    q_z /= q_l;
+    q_w /= q_l;
+
+    Matrix rotation_matrix = {
+        .values = {
+            { 1.0 - 2.0 * q_y * q_y - 2.0 * q_z * q_z, 2.0 * q_x * q_y - 2.0 * q_z * q_w,       2.0 * q_x * q_z + 2.0 * q_y * q_w       },
+            { 2.0 * q_x * q_y + 2.0 * q_z * q_w,       1.0 - 2.0 * q_x * q_x - 2.0 * q_z * q_z, 2.0 * q_y * q_z - 2.0 * q_x * q_w       },
+            { 2.0 * q_x * q_z - 2.0 * q_y * q_w,       2.0 * q_y * q_z + 2.0 * q_x * q_w      , 1.0 - 2.0 * q_x * q_x - 2.0 * q_y * q_y }
+        }
+    };
 
     return matrix_vector_mul(&rotation_matrix, v, result);
 }
@@ -201,7 +205,12 @@ int main(void)
     test_cond("Test reflect.", vector_tolerance_eq(-1, t.x) && vector_tolerance_eq(1, t.y));
 
     vector_vector_mul(&a, &b, &t);
-    test_cond("Test vector mul.", vector_tolerance_eq(0, vector_mul(&a, &t)) && vector_tolerance_eq(0, vector_mul(&b, &t)));
+    test_cond("Test vector mul 1.", vector_tolerance_eq(0, vector_mul(&a, &t)) && vector_tolerance_eq(0, vector_mul(&b, &t)));
+
+    a = (Vector) { .x = 1, .y = 0, .z = 0 };
+    b = (Vector) { .x = 0, .y = 1, .z = 0 };
+    test_cond("Test vector mul 2.", 0.0 == vector_mul(&a, &b));
+    test_cond("Test vector angle.", M_PI_2 == vector_angle(&a, &b));
 
     vector_zero(&t);
     test_cond("Test zero.", 0 == t.x && 0 == t.y && 0 == t.z);
@@ -211,7 +220,8 @@ int main(void)
     b.x = b.y = 0;
     b.z = 1;
     vector_rotate(&a, &b, M_PI_2, &t);
-    test_cond("Test rotate.", vector_tolerance_eq(0, t.x) && vector_tolerance_eq(1, t.y) && vector_tolerance_eq(0, t.z));
+    test_cond("Test rotate 1.", vector_tolerance_eq(0, t.x) && vector_tolerance_eq(1, t.y) && vector_tolerance_eq(0, t.z));
+    test_cond("Test rotate 2.", M_PI_2 == vector_angle(&a, &b));
 
     test_report();
     return EXIT_SUCCESS;

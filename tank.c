@@ -12,6 +12,8 @@ void tank_change_engine_power(Tank *tank);
 bool tank_move(Tank *tank, const Landscape *l);
 void tank_rotate_turret(Tank *tank);
 
+void __rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation);
+
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team)
 {
     assert(tank && "Bad tank pointer.");
@@ -69,17 +71,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
         .turn_angle_target = 0
     };
 
-    Vector default_top = { .x = 0, .y = 0, .z = 1 };
-    if (0 == memcmp(&default_top, top, sizeof(Vector)))
-    {
-        return;
-    }
-
-    Vector axis;
-    vector_vector_mul(&default_top, top, &axis);
-    VECTOR_NORMALIZE(&axis);
-    double angle = vector_angle(top, &default_top);
-    VECTOR_ROTATE(&tank->direction, &axis, angle);
+    __rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
 }
 
 void tank_destroy(Tank *tank)
@@ -273,17 +265,8 @@ bool tank_move(Tank *tank, const Landscape *l)
 
     Vector old_orientation = tank->orientation;
     landscape_get_normal_at(l, tank->position.x, tank->position.y, &tank->orientation);
+    __rotate_direction(&tank->direction, &old_orientation, &tank->orientation);
 
-    if (0 == memcmp(&old_orientation, &tank->orientation, sizeof(Vector)))
-    {
-        return true;
-    }
-
-    Vector axis;
-    vector_vector_mul(&old_orientation, &tank->orientation, &axis);
-    VECTOR_NORMALIZE(&axis);
-    double angle = vector_angle(&tank->orientation, &old_orientation);
-    VECTOR_ROTATE(&tank->direction, &axis, angle);
     return true;
 }
 
@@ -306,4 +289,28 @@ void tank_rotate_turret(Tank *tank)
     Vector axis;
     vector_vector_mul(&tank->turret_direction, &tank->turret_direction_target, &axis);
     vector_rotate(&tank->turret_direction, &axis, TANK_MAX_TURRET_TURN_SPEED, &tank->turret_direction);
+}
+
+void __rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation)
+{
+    assert(direction && old_orientation && orientation && "Bad orientation pointers.");
+
+    if (0.0 == vector_mul(orientation, direction))
+    { // Already orthogonal.
+        return;
+    }
+
+    // Get orientation plane.
+    Vector normal;
+    vector_vector_mul(old_orientation, direction, &normal);
+    VECTOR_NORMALIZE(&normal);
+
+    // Project new orientation on old plane.
+    Vector p = *orientation, t;
+    vector_scale(&normal, vector_mul(&normal, &p), &t);
+    VECTOR_SUB(&p, &t);
+
+    // Rotate direction.
+    VECTOR_NORMALIZE(&p);
+    vector_rotate(&p, &normal, M_PI_2, direction);
 }

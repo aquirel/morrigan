@@ -20,8 +20,8 @@ ASFLAGS = -AIA32 -Gz #
 RCFLAGS = #
 LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB SDL.lib SDLmain.lib opengl32.lib glu32.lib glaux.lib#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
-INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include;..\sdl\include#
-LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\sdl\bin#
+INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include;..\_libz\sdl\SDL-1.2.15\include#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl#
 
 # 
 # Build morrigan_viewer.exe.
@@ -32,8 +32,8 @@ bin\morrigan_viewer.exe: \
 	build\main.obj \
 	build\matrix.obj \
 	build\vector.obj \
-	build\viewer_events.obj \
-	build\viewer_draw.obj
+	build\viewer_draw.obj \
+	build\viewer_events.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 

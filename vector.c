@@ -223,6 +223,15 @@ int main(void)
     test_cond("Test rotate 1.", vector_tolerance_eq(0, t.x) && vector_tolerance_eq(1, t.y) && vector_tolerance_eq(0, t.z));
     test_cond("Test rotate 2.", M_PI_2 == vector_angle(&a, &b));
 
+    a.x = 1.0;
+    a.y = 2.0;
+    a.z = 0.0;
+    t.x = 0.0;
+    t.y = 0.0;
+    t.z = 1.0;
+    vector_rotate(&a, &t, M_PI / 6.0, &b);;
+    test_cond("Test rotate 3.", vector_tolerance_eq(M_PI / 6.0, vector_angle(&a, &b)));
+
     test_report();
     return EXIT_SUCCESS;
 }

@@ -273,28 +273,34 @@ void enqueue_viewer(const ViewerClient *c)
 
 void notify_shutdown(void)
 {
-    dynamic_array_lock(clients);
-    while (dynamic_array_count(clients))
+    if (clients)
     {
-        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, 0);
-        dynamic_array_delete_at(clients, 0);
-        uint8_t response = req_bye;
-        respond((char *) &response, 1, &c->address);
-        tank_destroy(&c->tank);
-        free(c);
+        dynamic_array_lock(clients);
+        while (dynamic_array_count(clients))
+        {
+            Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, 0);
+            dynamic_array_delete_at(clients, 0);
+            uint8_t response = req_bye;
+            respond((char *) &response, 1, &c->address);
+            tank_destroy(&c->tank);
+            free(c);
+        }
+        dynamic_array_unlock(clients);
     }
-    dynamic_array_unlock(clients);
 
-    dynamic_array_lock(viewers);
-    while (dynamic_array_count(viewers))
+    if (viewers)
     {
-        ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, 0);
-        dynamic_array_delete_at(viewers, 0);
-        uint8_t response = req_bye;
-        respond((char *) &response, 1, &c->address);
-        free(c);
+        dynamic_array_lock(viewers);
+        while (dynamic_array_count(viewers))
+        {
+            ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, 0);
+            dynamic_array_delete_at(viewers, 0);
+            uint8_t response = req_bye;
+            respond((char *) &response, 1, &c->address);
+            free(c);
+        }
+        dynamic_array_unlock(viewers);
     }
-    dynamic_array_unlock(viewers);
 }
 
 static int server_worker(void *unused)

@@ -24,6 +24,12 @@ static int game_worker(void *unused);
 
 static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landscape, size_t clients_count);
 static void __tank_collision_detection(size_t i, Client *c);
+static void __perform_shooting(Client *client);
+static void __notify_in_radius(const Vector *origin, double radius, uint8_t message, Client *exclude);
+static Client *__shell_collision_detection(const Shell *shell);
+static void __tank_hit(Client *c, int amount);
+static void __shell_explode(Shell *shell, Client *exclude);
+
 static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
 
 bool game_start(const Landscape *l, DynamicArray *c)
@@ -101,14 +107,34 @@ static int game_worker(void *unused)
 
             __tank_collision_detection(i, c);
 
-            /* TODO: Perform shooting:
-                1. Analyze shoot flag.
-                2. Create shell (function).
-                3. Tick shells.
-                    4. Shell events (git ground, hit tank).
-                    5. Shell damage functions (hit tank, ground explosion).
-                6. Shell notifications (viewer & tank).
-            */
+            if (-1 == c->tank.fire_delay)
+            {
+                __perform_shooting(c);
+            }
+        }
+
+        for (size_t i = 0; i < dynamic_array_count(shells);)
+        {
+            Shell *shell = *DYNAMIC_ARRAY_GET(Shell **, shells, i);
+
+            bool result = shell_tick(shell, landscape);
+            Client *hit_tank = __shell_collision_detection(shell);
+
+            if (hit_tank)
+            {
+                __tank_hit(hit_tank, 0);
+            }
+
+            if (hit_tank || !result)
+            {
+                __shell_explode(shell, hit_tank);
+                dynamic_array_delete_at(shells, i);
+                free(shell);
+            }
+            else
+            {
+                i++;
+            }
         }
         dynamic_array_unlock(clients);
 
@@ -195,6 +221,186 @@ static void __tank_collision_detection(size_t i, Client *c)
             respond(&data, 1, &previous_c->address);
         }
     }
+}
+
+static void __perform_shooting(Client *client)
+{
+    assert(client && "Bad client pointer.");
+
+    Vector e = TANK_BOUNDING_BOX_EXTENT,
+           p = client->tank.position,
+           o = client->tank.orientation;
+
+    VECTOR_SCALE(&o, 2.0 * e.z + TANK_BOUNDING_SPHERE_RADIUS / 2.0);
+    VECTOR_ADD(&p, &o);
+
+    Vector default_turret_direction = { .x = 1, .y = 0, .z = 0 },
+           turret_direction = client->tank.direction,
+           rotation_axis;
+    double angle = vector_angle(&default_turret_direction, &client->tank.turret_direction);
+    if (0.0 != angle)
+    {
+        vector_vector_mul(&default_turret_direction, &turret_direction, &rotation_axis);
+        VECTOR_NORMALIZE(&rotation_axis);
+        VECTOR_ROTATE(&turret_direction, &rotation_axis, angle);
+    }
+
+    VECTOR_SCALE(&turret_direction, TANK_GUN_LENGTH);
+    VECTOR_ADD(&p, &turret_direction);
+
+    Shell *new_shell = NULL;
+    new_shell = shell_create(&p, &turret_direction);
+    check_mem(new_shell);
+
+    check(dynamic_array_push(shells, &new_shell), "Failed to add new shell.", "");
+
+    __notify_in_radius(&client->tank.position, NEAR_SHOOT_NOTIFICATION_RARIUS, not_near_shoot, client);
+
+    client->tank.fire_delay = TANK_FIRE_DELAY;
+
+    NotViewerShellEvent shoot_notification = {
+        .type = not_viewer_shoot,
+        .x = new_shell->position.x,
+        .y = new_shell->position.y,
+        .z = new_shell->position.z
+    };
+    notify_viewers(&shoot_notification);
+
+    error:
+    return;
+}
+
+static void __notify_in_radius(const Vector *origin, double radius, uint8_t message, Client *exclude)
+{
+    assert(origin && "Bad origin pointer.");
+
+    size_t clients_count = dynamic_array_count(clients);
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        if (cs_in_game != c->state || exclude == c)
+        {
+            continue;
+        }
+
+        Vector t;
+        vector_sub(origin, &c->tank.position, &t);
+
+        if (vector_length(&t) > radius)
+        {
+            continue;
+        }
+
+        respond(&message, sizeof(message), &c->address);
+    }
+}
+
+static Client *__shell_collision_detection(const Shell *shell)
+{
+    assert(shell && "Bad shell pointer.");
+
+    size_t clients_count = dynamic_array_count(clients);
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        if (cs_in_game != c->state)
+        {
+            continue;
+        }
+
+        if (intersection_test(&shell->bounding, &c->tank.bounding))
+        {
+            return c;
+        }
+    }
+
+    return NULL;
+}
+
+static void __tank_hit(Client *c, int amount)
+{
+    assert(c && "Bad client pointer.");
+
+    uint8_t response;
+    if (!amount)
+    {
+        amount = SHELL_HIT_AMOUNT;
+    }
+
+    c->tank.hp -= amount;
+    if (0 >= c->tank.hp)
+    {
+        c->tank.hp = 0;
+        response = not_death;
+    }
+    else
+    {
+        response = not_hit;
+    }
+
+    respond(&response, sizeof(response), &c->address);
+}
+
+static void __shell_explode(Shell *shell, Client *exclude)
+{
+    assert(shell && "Bad shell pointer.");
+
+    uint8_t response;
+    Vector t;
+
+    size_t clients_count = dynamic_array_count(clients);
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        if (cs_in_game != c->state || c == exclude)
+        {
+            continue;
+        }
+
+        vector_sub(&shell->position, &c->tank.position, &t);
+        double r = vector_length(&t);
+
+        if (r <= SHELL_EXPLOSION_RADIUS)
+        {
+            int damage_amount = SHELL_EXPLOSION_DAMAGE / (r * r);
+
+            if (!damage_amount)
+            {
+                response = not_near_explosion;
+            }
+            else
+            {
+                c->tank.hp -= damage_amount;
+                if (0 >= c->tank.hp)
+                {
+                    c->tank.hp = 0;
+                    response = not_death;
+                }
+                else
+                {
+                    response = not_explosion_damage;
+                }
+            }
+
+            respond(&response, sizeof(response), &c->address);
+        }
+        else if (r <= NEAR_EXPLOSION_NOTIFICATION_RARIUS)
+        {
+            response = not_near_explosion;
+            respond(&response, sizeof(response), &c->address);
+        }
+    }
+
+    NotViewerShellEvent explosion_notification = {
+        .type = not_viewer_explosion,
+        .x = shell->position.x,
+        .y = shell->position.y,
+        .z = shell->position.z
+    };
+    notify_viewers(&explosion_notification);
 }
 
 static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2)

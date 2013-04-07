@@ -1,6 +1,1 @@
-game entities behaviour (shell).
-Port existing code (shell).
-shell viewer notifications
-
-put isnormal() everywhere.
-cos and sin <= 1.
+ignore queries from dead (`dead' return code) except disconnect.

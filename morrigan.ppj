@@ -39,9 +39,9 @@ bin\morrigan.exe: \
 	build\protocol.obj \
 	build\ring_buffer.obj \
 	build\server.obj \
+	build\shell.obj \
 	build\tank.obj \
-	build\vector.obj \
-	build\shell.obj
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -217,6 +217,7 @@ build\tank.obj: \
 build\shell.obj: \
 	shell.c \
 	bounding.h \
+	debug.h \
 	landscape.h \
 	morrigan.h \
 	shell.h \

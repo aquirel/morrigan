@@ -2,12 +2,15 @@
 
 #include <assert.h>
 
+#include "debug.h"
 #include "shell.h"
 
-void shell_initialize(Shell *shell, const Vector *position, const Vector *direction)
+Shell *shell_create(const Vector *position, const Vector *direction)
 {
-    assert(shell && "Bad shell pointer.");
     assert(position && direction && "Bad geometry pointers.");
+
+    Shell *shell = NULL;
+    check_mem(shell = calloc(1, sizeof(Shell)));
 
     *shell = (Shell) {
         .position          = { .x = position->x, .y = position->y, .z = position->z },
@@ -23,6 +26,10 @@ void shell_initialize(Shell *shell, const Vector *position, const Vector *direct
             .data = { .radius = SHELL_RADIUS }
         }
     };
+
+    return shell;
+    error:
+    return NULL;
 }
 
 bool shell_tick(Shell *shell, const Landscape *l)
@@ -51,4 +58,3 @@ bool shell_tick(Shell *shell, const Landscape *l)
     double h = landscape_get_height_at(l, shell->position.x, shell->position.y);
     return h < shell->position.z;
 }
-

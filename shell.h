@@ -13,6 +13,9 @@
 #define SHELL_DEFAULT_SPEED 128.0
 #define SHELL_RADIUS 0.1
 #define SHELL_G_ACCELERATION 0.5
+#define SHELL_HIT_AMOUNT 20
+#define SHELL_EXPLOSION_DAMAGE 15
+#define SHELL_EXPLOSION_RADIUS 20
 
 typedef struct Shell
 {
@@ -23,8 +26,7 @@ typedef struct Shell
     double speed;
 } Shell;
 
-void shell_initialize(Shell *shell, const Vector *position, const Vector *direction);
+Shell *shell_create(const Vector *position, const Vector *direction);
 bool shell_tick(Shell *shell, const Landscape *landscape);
 
 #endif /* __SHELL_H__ */
-

@@ -30,6 +30,7 @@ ViewerClient *register_viewer(const SOCKADDR *address);
 bool unregister_viewer(const SOCKADDR *address);
 void enqueue_viwer(const ViewerClient *c);
 
+void notify_viewers(NotViewerShellEvent *notification);
 void notify_shutdown(void);
 
 #endif /* __SERVER_H__ */

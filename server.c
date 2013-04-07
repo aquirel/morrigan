@@ -4,11 +4,11 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
+#include "debug.h"
 #include "server.h"
 #include "protocol.h"
 #include "dynamic_array.h"
 #include "ring_buffer.h"
-#include "debug.h"
 
 static thrd_t worker_tid;
 static volatile atomic_bool working = false;
@@ -269,6 +269,20 @@ void enqueue_viewer(const ViewerClient *c)
     check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
     error:
     return;
+}
+
+void notify_viewers(NotViewerShellEvent *notification)
+{
+    assert(notification && "Bad notification pointer.");
+
+    dynamic_array_lock(viewers);
+    size_t viewer_count = dynamic_array_count(viewers);
+    for (size_t i = 0; i < viewer_count; i++)
+    {
+        ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, i);
+        respond((void *) notification, sizeof(NotViewerShellEvent), &c->address);
+    }
+    dynamic_array_unlock(viewers);
 }
 
 void notify_shutdown(void)

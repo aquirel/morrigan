@@ -52,7 +52,6 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     glColor3dv((double *) &tank_colors[tank->team]);
     glCallList(display_lists + TANK_TURRET_DISPLAY_LIST);
 
-
     glTranslated(0, 0, TANK_BOUNDING_SPHERE_RADIUS / 2.0);
 
     Vector default_turret_look = { .x = 1.0, .y = 0.0, .z = 0.0 },
@@ -156,9 +155,7 @@ void draw_tank_gun(void)
 {
     static Vector extent = TANK_BOUNDING_BOX_EXTENT;
     static double gun_radius = 0.25,
-                  gun_length,
                   gun_slices = 8;
-    gun_length = extent.x * 1.5;
 
     GLUquadric *q = gluNewQuadric();
     gluQuadricNormals(q, GLU_SMOOTH);
@@ -168,9 +165,9 @@ void draw_tank_gun(void)
     glRotated(90, 0, 0, 1);
     glRotated(90, 1, 0, 0);
     glColor3ub(0x35, 0x5e, 0x3b);
-    gluCylinder(q, gun_radius, gun_radius, gun_length, gun_slices, gun_slices);
+    gluCylinder(q, gun_radius, gun_radius, TANK_GUN_LENGTH, gun_slices, gun_slices);
 
-    glTranslated(0, 0, gun_length);
+    glTranslated(0, 0, TANK_GUN_LENGTH);
     gluDisk(q, 0.0, gun_radius, gun_slices, gun_slices);
 
     gluDeleteQuadric(q);

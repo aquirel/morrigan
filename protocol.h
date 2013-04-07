@@ -53,7 +53,14 @@ typedef enum Responses
 typedef enum Notifications
 {
     not_tank_hit_bound        = 0x80,
-    not_tank_collision        = 0x81
+    not_tank_collision        = 0x81,
+    not_near_shoot            = 0x82,
+    not_death                 = 0x83,
+    not_hit                   = 0x84,
+    not_near_explosion        = 0x85,
+    not_explosion_damage      = 0x86,
+    not_viewer_shoot          = 0x87,
+    not_viewer_explosion      = 0x88
 } Notifications;
 
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
@@ -152,5 +159,11 @@ typedef struct ResGetTanksTankRecord
     double speed;
     uint8_t team;
 } ResGetTanksTankRecord;
+
+typedef struct NotViewerShellEvent
+{
+    uint8_t type;
+    double x, y, z;
+} NotViewerShellEvent;
 
 #endif /* __PROTOCOL_H__ */

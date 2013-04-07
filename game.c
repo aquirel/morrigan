@@ -11,14 +11,19 @@
 #include "landscape.h"
 #include "protocol.h"
 #include "tank.h"
+#include "shell.h"
 
 static thrd_t worker_tid;
 static volatile atomic_bool working = false;
 
 const Landscape *landscape = NULL;
 static DynamicArray *clients = NULL;
+static DynamicArray *shells = NULL;
 
 static int game_worker(void *unused);
+
+static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landscape, size_t clients_count);
+static void __tank_collision_detection(size_t i, Client *c);
 static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
 
 bool game_start(const Landscape *l, DynamicArray *c)
@@ -30,6 +35,8 @@ bool game_start(const Landscape *l, DynamicArray *c)
     landscape = l;
     clients = c;
 
+    check_mem(shells = DYNAMIC_ARRAY_CREATE(Shell *, 16));
+
     working = true;
     check(thrd_success == thrd_create(&worker_tid, game_worker, NULL), "Failed to start game worker thread.", "");
 
@@ -37,6 +44,11 @@ bool game_start(const Landscape *l, DynamicArray *c)
     return true;
     error:
     thrd_detach(worker_tid);
+    if (shells)
+    {
+        dynamic_array_destroy(shells);
+        shells = NULL;
+    }
     log_info("error.", "");
     return false;
 }
@@ -48,6 +60,8 @@ void game_stop(void)
     log_info("wait for worker to stop.", "");
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
+    dynamic_array_destroy(shells);
+    shells = NULL;
     log_info("end.", "");
 }
 
@@ -76,39 +90,7 @@ static int game_worker(void *unused)
 
             if (cs_acknowledged == c->state)
             {
-                log_info("initializing new tank.", "");
-
-                size_t j;
-
-                do
-                {
-                    Vector position, top;
-
-                    position.x = rand() % (landscape->landscape_size * landscape->tile_size - 1);
-                    position.y = rand() % (landscape->landscape_size * landscape->tile_size - 1);
-                    position.z = landscape_get_height_at(landscape, position.x, position.y);
-
-                    landscape_get_normal_at(landscape, position.x, position.y, &top);
-                    tank_initialize(&c->tank, &position, &top, clients_count);
-
-                    for (j = 0; j < clients_count; j++)
-                    {
-                        if (i == j)
-                        {
-                            continue;
-                        }
-
-                        Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
-                        if (cs_in_game == previous_c->state &&
-                                          intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
-                        {
-                            break;
-                        }
-                    }
-                } while (j < clients_count);
-
-                check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
-                c->state = cs_in_game;
+                __game_tank_initialize(i, c, landscape, clients_count);
             }
 
             if (!tank_tick(&c->tank, landscape))
@@ -117,24 +99,16 @@ static int game_worker(void *unused)
                 respond(&data, 1, &c->address);
             }
 
-            for (size_t j = 0; j < i; j++)
-            {
-                if (i == j)
-                {
-                    continue;
-                }
+            __tank_collision_detection(i, c);
 
-                Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
-                if (cs_in_game == previous_c->state &&
-                    intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
-                {
-                    intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
-
-                    uint8_t data = not_tank_collision;
-                    respond(&data, 1, &c->address);
-                    respond(&data, 1, &previous_c->address);
-                }
-            }
+            /* TODO: Perform shooting:
+                1. Analyze shoot flag.
+                2. Create shell (function).
+                3. Tick shells.
+                    4. Shell events (git ground, hit tank).
+                    5. Shell damage functions (hit tank, ground explosion).
+                6. Shell notifications (viewer & tank).
+            */
         }
         dynamic_array_unlock(clients);
 
@@ -156,6 +130,71 @@ static int game_worker(void *unused)
     error:
     log_info("error.", "");
     return -1;
+}
+
+static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landscape, size_t clients_count)
+{
+    assert(c && "Bad client pointer.");
+
+    log_info("initializing new tank.", "");
+
+    size_t j;
+
+    do
+    {
+        Vector position, top;
+
+        position.x = rand() % (landscape->landscape_size * landscape->tile_size - 1);
+        position.y = rand() % (landscape->landscape_size * landscape->tile_size - 1);
+        position.z = landscape_get_height_at(landscape, position.x, position.y);
+
+        landscape_get_normal_at(landscape, position.x, position.y, &top);
+        tank_initialize(&c->tank, &position, &top, clients_count);
+
+        for (j = 0; j < clients_count; j++)
+        {
+            if (i == j)
+            {
+                continue;
+            }
+
+            Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
+            if (cs_in_game == previous_c->state &&
+                              intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+            {
+                break;
+            }
+        }
+    } while (j < clients_count);
+
+    check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
+    c->state = cs_in_game;
+
+    return true;
+    error:
+    return false;
+}
+
+static void __tank_collision_detection(size_t i, Client *c)
+{
+    for (size_t j = 0; j < i; j++)
+    {
+        if (i == j)
+        {
+            continue;
+        }
+
+        Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
+        if (cs_in_game == previous_c->state &&
+            intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+        {
+            intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
+
+            uint8_t data = not_tank_collision;
+            respond(&data, 1, &c->address);
+            respond(&data, 1, &previous_c->address);
+        }
+    }
 }
 
 static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2)

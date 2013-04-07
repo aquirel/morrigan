@@ -60,6 +60,7 @@ void tank_rotate_turret_worker(Vector *turret_direction_target, Vector *turret_d
 void tank_turn(Tank *tank, double turn_angle);
 void tank_look_at(Tank *tank, const Vector *look);
 void tank_set_engine_power(Tank *tank, int power);
+bool tank_shoot(Tank *tank);
 double tank_get_heading(Tank *tank);
 
 #endif /* __TANK_H__ */

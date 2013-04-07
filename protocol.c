@@ -237,7 +237,7 @@ static bool req_set_engine_power_executor(Client *c)
     assert(c && "Bad client pointer.");
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_set_engine_power(&c->tank, ((ReqSetEnginePower *) (&c->current_packet_buffer[1]))->engine_power);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     uint8_t response = req_set_engine_power;
     respond((char *) &response, 1, &c->address);
     error:
@@ -255,7 +255,7 @@ static bool req_turn_executor(Client *c)
     assert(c && "Bad client pointer.");
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_turn(&c->tank, ((ReqTurn *) (&c->current_packet_buffer[1]))->turn_angle);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     uint8_t response = req_turn;
     respond((char *) &response, 1, &c->address);
     error:
@@ -281,7 +281,7 @@ static bool req_look_at_executor(Client *c)
     ReqLookAt *p = ((ReqLookAt *) (&c->current_packet_buffer[1]));
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_look_at(&c->tank, &(Vector) { .x = p->x, .y = p->y, .z = p->z });
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     uint8_t response = req_look_at;
     respond((char *) &response, 1, &c->address);
     error:
@@ -306,8 +306,11 @@ static bool req_look_at_validator(const void *packet, size_t packet_size)
 static bool req_shoot_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
-    uint8_t response = req_shoot;
+    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    uint8_t response = tank_shoot(&c->tank) ? req_shoot : res_wait_shoot;
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, 1, &c->address);
+    error:
     return true;
 }
 
@@ -317,7 +320,7 @@ static bool req_get_heading_executor(Client *c)
     assert(c && "Bad client pointer.");
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHeading response = { .packet_id = req_get_heading, .heading = tank_get_heading(&c->tank) };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->address);
     error:
     return true;
@@ -328,7 +331,7 @@ static bool req_get_speed_executor(Client *c)
     assert(c && "Bad client pointer.");
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetSpeed response = { .packet_id = req_get_speed, .speed = c->tank.speed };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->address);
     error:
     return true;
@@ -339,7 +342,7 @@ static bool req_get_hp_executor(Client *c)
     assert(c && "Bad client pointer.");
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHP response = { .packet_id = req_get_hp, .hp = c->tank.hp };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->address);
     error:
     return true;
@@ -359,7 +362,7 @@ static bool req_get_map_executor(Client *c)
     int t_x, t_y;
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     landscape_get_tile(landscape, c->tank.position.x, c->tank.position.y, &t_x, &t_y);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
 
     for (int i = -TANK_OBSERVING_RANGE / 2; i < TANK_OBSERVING_RANGE / 2; i++)
     {
@@ -388,7 +391,7 @@ static bool req_get_normal_executor(Client *c)
     Vector t;
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     landscape_get_normal_at(landscape, c->tank.position.x, c->tank.position.y, &t);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to lock tank mutex.", "");
+    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     response.x = t.x;
     response.y = t.y;
     response.z = t.z;

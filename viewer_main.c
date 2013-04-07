@@ -277,6 +277,8 @@ void move_tank(const Landscape *l, ResGetTanksTankRecord *tank)
         l->tile_size * l->landscape_size >= position.x &&
         l->tile_size * l->landscape_size >= position.y)
     {
+        position.z = landscape_get_height_at(l, position.x, position.y);
+
         Vector old_orientation = orientation;
         landscape_get_normal_at(l, position.x, position.y, &orientation);
         tank_rotate_direction(&direction, &old_orientation, &orientation);

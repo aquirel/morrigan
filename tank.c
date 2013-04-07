@@ -84,6 +84,12 @@ bool tank_tick(Tank *tank, const Landscape *l)
 
     bool result = true;
     check(thrd_success == mtx_lock(&tank->mtx), "Failed to lock tank mutex.", "");
+
+    if (0 != tank->fire_delay && -1 != tank->fire_delay)
+    {
+        tank->fire_delay--;
+    }
+
     tank_change_engine_power(tank);
     result = tank_move(tank, l);
     tank_change_turn(tank);
@@ -134,6 +140,19 @@ void tank_set_engine_power(Tank *tank, int power)
     }
 
     tank->engine_power_target = power;
+}
+
+bool tank_shoot(Tank *tank)
+{
+    assert(tank && "Bad tank pointer.");
+
+    if (0 == tank->fire_delay)
+    {
+        tank->fire_delay = -1;
+        return true;
+    }
+
+    return false;
 }
 
 double tank_get_heading(Tank *tank)

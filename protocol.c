@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <threads.h>
 #include <stdatomic.h>
 
@@ -235,9 +237,18 @@ static bool req_viewer_bye_executor(ViewerClient *c)
 static bool req_set_engine_power_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_set_engine_power(&c->tank, ((ReqSetEnginePower *) (&c->current_packet_buffer[1]))->engine_power);
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
+
     uint8_t response = req_set_engine_power;
     respond((char *) &response, 1, &c->address);
     error:
@@ -253,9 +264,18 @@ static bool req_set_engine_power_validator(const void *packet, size_t packet_siz
 static bool req_turn_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_turn(&c->tank, ((ReqTurn *) (&c->current_packet_buffer[1]))->turn_angle);
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
+
     uint8_t response = req_turn;
     respond((char *) &response, 1, &c->address);
     error:
@@ -272,12 +292,20 @@ static bool req_turn_validator(const void *packet, size_t packet_size)
     }
 
     double turn_angle = ((ReqTurn *) (& ((const char *) packet)[1]))->turn_angle;
-    return __check_double(turn_angle, -180.0, 180.0);
+    return __check_double(turn_angle, -M_PI, M_PI);
 }
 
 static bool req_look_at_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     ReqLookAt *p = ((ReqLookAt *) (&c->current_packet_buffer[1]));
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_look_at(&c->tank, &(Vector) { .x = p->x, .y = p->y, .z = p->z });
@@ -306,6 +334,14 @@ static bool req_look_at_validator(const void *packet, size_t packet_size)
 static bool req_shoot_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     uint8_t response = tank_shoot(&c->tank) ? req_shoot : res_wait_shoot;
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
@@ -318,6 +354,14 @@ static bool req_shoot_executor(Client *c)
 static bool req_get_heading_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHeading response = { .packet_id = req_get_heading, .heading = tank_get_heading(&c->tank) };
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
@@ -329,6 +373,14 @@ static bool req_get_heading_executor(Client *c)
 static bool req_get_speed_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetSpeed response = { .packet_id = req_get_speed, .speed = c->tank.speed };
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
@@ -340,6 +392,14 @@ static bool req_get_speed_executor(Client *c)
 static bool req_get_hp_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHP response = { .packet_id = req_get_hp, .hp = c->tank.hp };
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
@@ -352,6 +412,14 @@ static bool req_get_hp_executor(Client *c)
 static bool req_get_map_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     char response[1 + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double)];
     memset(response, 0, sizeof(response));
     response[0] = (uint8_t) req_get_map;
@@ -387,6 +455,14 @@ static bool req_get_map_executor(Client *c)
 static bool req_get_normal_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     ResGetNormal response = { .packet_id = req_get_normal };
     Vector t;
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
@@ -403,6 +479,14 @@ static bool req_get_normal_executor(Client *c)
 static bool req_get_tanks_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
+
+    if (0 == c->tank.hp)
+    {
+        uint8_t response = res_dead;
+        respond((char *) &response, 1, &c->address);
+        return true;
+    }
+
     char response[sizeof(ResGetTanks) + MAX_CLIENTS * sizeof(ResGetTanksTankRecord)];
     memset(response, 0, sizeof(response));
 
@@ -437,6 +521,7 @@ static bool req_get_tanks_executor(Client *c)
         response_body->turret_y = other_c->tank.turret_direction.y;
         response_body->turret_z = other_c->tank.turret_direction.z;
         response_body->speed = other_c->tank.speed;
+        response_body->target_turn = other_c->tank.turn_angle_target;
         response_body->team = other_c->tank.team;
 
         response_body++;

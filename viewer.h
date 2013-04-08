@@ -22,7 +22,7 @@
 
 #include "morrigan.h"
 #include "landscape.h"
-#include "client_net.h"
+#include "client_protocol.h"
 
 #define TIMER_EVENT_ID 1
 #define TANKS_TIMER_EVENT_ID 2

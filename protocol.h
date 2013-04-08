@@ -102,6 +102,7 @@ typedef struct ViewerClient
 } ViewerClient;
 
 void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
+PacketDefinition *find_packet_by_id(PacketDefinition *protocol, size_t packet_count, uint8_t id);
 
 // Packet body definitions.
 typedef struct ReqSetEnginePower

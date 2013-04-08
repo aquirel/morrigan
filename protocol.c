@@ -74,9 +74,11 @@ static PacketDefinition RequestDefinitions[] =
     { .id = req_viewer_get_tanks, .validator = NULL, .executor = req_viewer_get_tanks_executor, .is_client_protocol = false }
 };
 
-static PacketDefinition *find_packet_by_id(uint8_t id)
+PacketDefinition *find_packet_by_id(PacketDefinition *protocol, size_t packet_count, uint8_t id)
 {
-    for (int i = 0; i < sizeof(RequestDefinitions) / sizeof(RequestDefinitions[0]); i++)
+    assert(protocol && packet_count && "Bad protocol definition.");
+
+    for (int i = 0; i < packet_count; i++)
     {
         if (id == RequestDefinitions[i].id)
         {

@@ -3,7 +3,6 @@
 #include "viewer.h"
 
 #include "debug.h"
-#include "client_net.h"
 #include "tank.h"
 
 SOCKET s = INVALID_SOCKET;

@@ -1,7 +1,7 @@
 ﻿// client_main.c - main() for client.
 
 #include "debug.h"
-#include "client_net.h"
+#include "client_protocol.h"
 
 SOCKET s = INVALID_SOCKET;
 bool connected = false;

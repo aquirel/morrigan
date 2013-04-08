@@ -38,7 +38,7 @@ bin\morrigan_client.exe: \
 build\client_main.obj: \
 	client_main.c \
 	bounding.h \
-	client_net.h \
+	client_protocol.h \
 	debug.h \
 	landscape.h \
 	morrigan.h \
@@ -91,6 +91,6 @@ build\matrix.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

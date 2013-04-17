@@ -1,2 +1,2 @@
-set packing in all structures.
+mov bstrlib to separate static library.
 viewer draw shooting and explosions.

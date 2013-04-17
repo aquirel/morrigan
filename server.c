@@ -108,6 +108,11 @@ void server_stop(void)
     fprintf(stderr, "server_stop end.\n");
 }
 
+DynamicArray *server_get_clients(void)
+{
+    return clients;
+}
+
 Client *find_client_by_address(const SOCKADDR *address)
 {
     dynamic_array_lock(clients);
@@ -319,6 +324,8 @@ void notify_shutdown(void)
 
 static int server_worker(void *unused)
 {
+    #pragma ref unused
+
     check(thrd_success == mtx_lock(&have_new_request_mutex), "Failed to lock request mutex.", "");
 
     while (working)

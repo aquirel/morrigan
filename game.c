@@ -5,9 +5,11 @@
 #include <stdatomic.h>
 #include <sys/time.h>
 #include <time.h>
+#include <process.h>
 
 #include "debug.h"
 #include "game.h"
+#include "server.h"
 #include "landscape.h"
 #include "protocol.h"
 #include "tank.h"
@@ -30,13 +32,13 @@ static Client *__shell_collision_detection(const Shell *shell);
 static void __tank_hit(Client *c, int amount);
 static void __shell_explode(Shell *shell, Client *exclude);
 
-static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
+static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
 
 bool game_start(const Landscape *l, DynamicArray *c)
 {
     log_info("start.", "");
     assert(l && "Bad landscape pointer.");
-    assert(c && "Bad clients array pointer.");
+    assert(c && "Bad clients pointer.");
 
     landscape = l;
     clients = c;
@@ -73,14 +75,15 @@ void game_stop(void)
 
 static int game_worker(void *unused)
 {
+    #pragma ref unused
     struct _timeval tick_start_time, tick_end_time;
     log_info("start.", "");
 
-    srand(time(NULL));
+    srand((unsigned) (time(NULL) ^ _getpid()));
 
     while (working)
     {
-        log_info("tick start.", "");
+        //log_info("tick start.", "");
         _gettimeofday(&tick_start_time, NULL);
 
         dynamic_array_lock(clients);
@@ -99,10 +102,18 @@ static int game_worker(void *unused)
                 __game_tank_initialize(i, c, landscape, clients_count);
             }
 
+            /*{
+                Tank *t = &(c->tank);
+                printf(">1>%u; %x\n", sizeof(Tank), (int) t);
+                printf(">1>%u; %u\n", _Alignof(mtx_t), _Alignof(Vector));
+                printf(">1>mtx = %x; position = %x; position.x = %x\n", (int) &t->mtx, (int) &t->position, (int) &t->position.x);
+                printf(">1>%lf; %lf; %lf\n", t->position.x, t->position.y, t->position.z);
+            }*/
+
             if (!tank_tick(&c->tank, landscape))
             {
                 uint8_t data = not_tank_hit_bound;
-                respond(&data, 1, &c->address);
+                respond((const char *) &data, 1, &c->address);
             }
 
             __tank_collision_detection(i, c);
@@ -140,15 +151,18 @@ static int game_worker(void *unused)
 
         _gettimeofday(&tick_end_time, NULL);
 
-        unsigned long long tick_length = __timeval_sub(&tick_end_time, &tick_start_time); // Microseconds.
+        unsigned long tick_length = __timeval_sub(&tick_end_time, &tick_start_time); // Microseconds.
         if (GAME_TICK_DURATION >= tick_length)
         {
             unsigned long long time_to_sleep = GAME_TICK_DURATION - tick_length;
-            struct timespec sleep_duration = { .tv_sec = time_to_sleep / 1000000, .tv_nsec = (time_to_sleep % 1000000) * 1000 };
+            struct timespec sleep_duration = {
+                .tv_sec = (time_t) (time_to_sleep / 1000000),
+                .tv_nsec = (long) ((time_to_sleep % 1000000) * 1000)
+            };
             check(0 == thrd_sleep(&sleep_duration, NULL), "Failed to sleep.", "");
         }
 
-        log_info("tick end.", "");
+        //log_info("tick end.", "");
     }
 
     log_info("end.", "");
@@ -170,8 +184,8 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
     {
         Vector position, top;
 
-        position.x = rand() % (landscape->landscape_size * landscape->tile_size - 1);
-        position.y = rand() % (landscape->landscape_size * landscape->tile_size - 1);
+        position.x = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
+        position.y = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
         position.z = landscape_get_height_at(landscape, position.x, position.y);
 
         landscape_get_normal_at(landscape, position.x, position.y, &top);
@@ -217,8 +231,8 @@ static void __tank_collision_detection(size_t i, Client *c)
             intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
 
             uint8_t data = not_tank_collision;
-            respond(&data, 1, &c->address);
-            respond(&data, 1, &previous_c->address);
+            respond((const char *) &data, 1, &c->address);
+            respond((const char *) &data, 1, &previous_c->address);
         }
     }
 }
@@ -264,6 +278,10 @@ static void __perform_shooting(Client *client)
         .y = new_shell->position.y,
         .z = new_shell->position.z
     };
+
+    printf("Shoot at: %lf; %lf; %lf\n", shoot_notification.x, shoot_notification.y, shoot_notification.z);
+    printf(">>>%u\n", sizeof(NotViewerShellEvent));
+
     notify_viewers(&shoot_notification);
 
     error:
@@ -292,7 +310,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
             continue;
         }
 
-        respond(&message, sizeof(message), &c->address);
+        respond((const char *) &message, sizeof(message), &c->address);
     }
 }
 
@@ -340,7 +358,7 @@ static void __tank_hit(Client *c, int amount)
         response = not_hit;
     }
 
-    respond(&response, sizeof(response), &c->address);
+    respond((const char *) &response, sizeof(response), &c->address);
 }
 
 static void __shell_explode(Shell *shell, Client *exclude)
@@ -365,7 +383,7 @@ static void __shell_explode(Shell *shell, Client *exclude)
 
         if (r <= SHELL_EXPLOSION_RADIUS)
         {
-            int damage_amount = SHELL_EXPLOSION_DAMAGE / (r * r);
+            int damage_amount = (int) (SHELL_EXPLOSION_DAMAGE / (r * r));
 
             if (!damage_amount)
             {
@@ -385,12 +403,12 @@ static void __shell_explode(Shell *shell, Client *exclude)
                 }
             }
 
-            respond(&response, sizeof(response), &c->address);
+            respond((const char *) &response, sizeof(response), &c->address);
         }
         else if (r <= NEAR_EXPLOSION_NOTIFICATION_RARIUS)
         {
             response = not_near_explosion;
-            respond(&response, sizeof(response), &c->address);
+            respond((const char *) &response, sizeof(response), &c->address);
         }
     }
 
@@ -403,10 +421,10 @@ static void __shell_explode(Shell *shell, Client *exclude)
     notify_viewers(&explosion_notification);
 }
 
-static unsigned long long __timeval_sub(struct _timeval *t1, struct _timeval *t2)
+static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2)
 {
     assert(t1 && t2 && "Bad time pointers.");
-    unsigned long long _t1 = t1->tv_sec * 1000000 + t1->tv_usec,
-                       _t2 = t2->tv_sec * 1000000 + t2->tv_usec;
+    unsigned long _t1 = t1->tv_sec * 1000000 + t1->tv_usec,
+                  _t2 = t2->tv_sec * 1000000 + t2->tv_usec;
     return _t1 - _t2;
 }

@@ -4,11 +4,12 @@
 #include <stdbool.h>
 #include <minmax.h>
 
+#include "morrigan.h"
 #include "bounding.h"
 #include "landscape.h"
 #include "debug.h"
 
-static inline void __assert_bounding(const Bounding *box, BoundingType bounding_type);
+static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
 {
@@ -206,6 +207,14 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
 {
     assert(b1 && b2 && "Bad bounding pointers.");
 
+    if (bounding_composite == b2->bounding_type &&
+        bounding_composite != b1->bounding_type)
+    {
+        const Bounding *t = b1;
+        b1 = b2;
+        b2 = t;
+    }
+
     if (bounding_composite == b1->bounding_type)
     {
         for (size_t i = 0; i < b1->data.composite_data.children_count; i++)
@@ -241,7 +250,7 @@ void intersection_resolve(const Bounding *b1, const Bounding *b2)
     memcpy(b2->origin, b2->previous_origin, sizeof(Vector));
 }
 
-static inline void __assert_bounding(const Bounding *b, BoundingType bounding_type)
+static void __assert_bounding(const Bounding *b, BoundingType bounding_type)
 {
     assert(b && "Bad bounding pointer.");
     assert(bounding_type == b->bounding_type && "Bad bounding type.");

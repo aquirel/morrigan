@@ -6,7 +6,7 @@
 #include "dynamic_array.h"
 #include "debug.h"
 
-static inline void __ring_buffer_assert(const RingBuffer *rb);
+static void __ring_buffer_assert(const RingBuffer *rb);
 
 RingBuffer *ring_buffer_create(size_t element_size, size_t buffer_capacity)
 {
@@ -84,13 +84,13 @@ void *ring_buffer_read(RingBuffer *rb)
     return result;
 }
 
-inline size_t ring_buffer_items_count(RingBuffer *rb)
+size_t ring_buffer_items_count(RingBuffer *rb)
 {
     __ring_buffer_assert(rb);
     return rb->array->element_count;
 }
 
-inline bool ring_buffer_is_full(RingBuffer *rb)
+bool ring_buffer_is_full(RingBuffer *rb)
 {
     return ring_buffer_items_count(rb) == rb->array->array_capacity;
 }
@@ -106,7 +106,7 @@ void ring_buffer_wait_not_empty(RingBuffer *rb)
     cnd_wait(&rb->buffer_not_empty, &rb->buffer_not_empty_mutex);
 }
 
-static inline void __ring_buffer_assert(const RingBuffer *rb)
+static void __ring_buffer_assert(const RingBuffer *rb)
 {
     assert(rb && "Bad ring buffer.");
     assert(rb->array && "Bad ring buffer.");

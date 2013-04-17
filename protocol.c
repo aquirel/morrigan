@@ -14,7 +14,7 @@
 #include "landscape.h"
 #include "debug.h"
 
-static inline bool __check_double(double v, double min, double max);
+static bool __check_double(double v, double min, double max);
 
 // Connecting.
 static bool req_hello_executor(Client *c);
@@ -45,6 +45,9 @@ static bool req_get_tanks_executor(Client *c);
 static bool req_viewer_get_map_executor(ViewerClient *c);
 static bool req_viewer_get_tanks_executor(ViewerClient *c);
 
+#pragma warn(push)
+#pragma warn(disable: 2145)
+
 static PacketDefinition RequestDefinitions[] =
 {
     // Connecting.
@@ -74,15 +77,17 @@ static PacketDefinition RequestDefinitions[] =
     { .id = req_viewer_get_tanks, .validator = NULL, .executor = req_viewer_get_tanks_executor, .is_client_protocol = false }
 };
 
-PacketDefinition *find_packet_by_id(PacketDefinition *protocol, size_t packet_count, uint8_t id)
+#pragma warn(pop)
+
+const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size_t packet_count, uint8_t id)
 {
     assert(protocol && packet_count && "Bad protocol definition.");
 
     for (int i = 0; i < packet_count; i++)
     {
-        if (id == RequestDefinitions[i].id)
+        if (id == protocol[i].id)
         {
-            return &RequestDefinitions[i];
+            return &protocol[i];
         }
     }
 
@@ -94,7 +99,7 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
     check(packet_size && PACKET_BUFFER >= packet_size, "Bad packet size.", "");
 
     uint8_t id = packet[0];
-    PacketDefinition *packet_definition = find_packet_by_id(id);
+    const PacketDefinition *packet_definition = find_packet_by_id(RequestDefinitions, sizeof(RequestDefinitions) / sizeof(RequestDefinitions[0]), id);
 
     if ((NULL == packet_definition && 1 == packet_size) ||
         (NULL != packet_definition && NULL != packet_definition->validator && !packet_definition->validator(packet, packet_size)))
@@ -403,7 +408,7 @@ static bool req_get_hp_executor(Client *c)
     }
 
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
-    ResGetHP response = { .packet_id = req_get_hp, .hp = c->tank.hp };
+    ResGetHP response = { .packet_id = req_get_hp, .hp = (uint8_t) c->tank.hp };
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->address);
     error:
@@ -429,7 +434,7 @@ static bool req_get_map_executor(Client *c)
     double (*response_height_map)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE] =
         (double (*)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE]) (&response[1]);
 
-    int t_x, t_y;
+    size_t t_x, t_y;
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     landscape_get_tile(landscape, c->tank.position.x, c->tank.position.y, &t_x, &t_y);
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
@@ -498,6 +503,7 @@ static bool req_get_tanks_executor(Client *c)
 
     ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
 
+    DynamicArray *clients = server_get_clients();
     dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
@@ -524,7 +530,7 @@ static bool req_get_tanks_executor(Client *c)
         response_body->turret_z = other_c->tank.turret_direction.z;
         response_body->speed = other_c->tank.speed;
         response_body->target_turn = other_c->tank.turn_angle_target;
-        response_body->team = other_c->tank.team;
+        response_body->team = (uint8_t) other_c->tank.team;
 
         response_body++;
         response_header->tanks_count++;
@@ -563,11 +569,20 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
 
     ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
 
+    DynamicArray *clients = server_get_clients();
     dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++, response_body++, response_header->tanks_count++)
     {
         Client *other_c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        /*{
+            Tank *t = &(other_c->tank);
+            printf(">2>%u; %x\n", sizeof(Tank), (int) t);
+            printf(">2>%u; %u\n", _Alignof(mtx_t), _Alignof(Vector));
+            printf(">2>mtx = %x; position = %x; position.x = %x\n", (int) &t->mtx, (int) &t->position, (int) &t->position.x);
+            printf(">2>%lf; %lf; %lf\n", t->position.x, t->position.y, t->position.z);
+        }*/
 
         *response_body = (ResGetTanksTankRecord) {
             .x               = other_c->tank.position.x,
@@ -587,7 +602,7 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
             .target_turret_z = other_c->tank.turret_direction_target.z,
             .target_turn     = other_c->tank.turn_angle_target,
             .speed           = other_c->tank.speed,
-            .team            = other_c->tank.team
+            .team            = (uint8_t) other_c->tank.team
         };
     }
     dynamic_array_unlock(clients);
@@ -596,7 +611,7 @@ static bool req_viewer_get_tanks_executor(ViewerClient *c)
     return true;
 }
 
-static inline bool __check_double(double v, double min, double max)
+static bool __check_double(double v, double min, double max)
 {
     return isfinite(v) && min <= v && v <= max;
 }

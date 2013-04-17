@@ -1,243 +1,48 @@
-﻿// client_net.c - client network interface implementation.
+// client_net.c - client protocol implementation.
 
 #include <assert.h>
-#include <stdint.h>
 
-#include "debug.h"
 #include "client_net.h"
-#include "protocol.h"
 
-bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *res);
+PacketDefinition client_protocol[25] = {
+    { .id = req_bye, .validator = NULL, .executor = NULL },
+    { .id = req_set_engine_power, .validator = NULL, .executor = NULL },
+    { .id = req_turn, .validator = NULL, .executor = NULL },
+    { .id = req_look_at, .validator = NULL, .executor = NULL },
+    { .id = req_shoot, .validator = NULL, .executor = NULL },
+    { .id = req_get_heading, .validator = NULL, .executor = NULL },
+    { .id = req_get_speed, .validator = NULL, .executor = NULL },
+    { .id = req_get_hp, .validator = NULL, .executor = NULL },
+    { .id = req_get_map, .validator = NULL, .executor = NULL },
+    { .id = req_get_normal, .validator = NULL, .executor = NULL },
+    { .id = req_get_tanks, .validator = NULL, .executor = NULL },
+    { .id = res_bad_request, .validator = NULL, .executor = NULL },
+    { .id = res_too_many_clients, .validator = NULL, .executor = NULL },
+    { .id = res_wait, .validator = NULL, .executor = NULL },
+    { .id = res_wait_shoot, .validator = NULL, .executor = NULL },
+    { .id = res_dead, .validator = NULL, .executor = NULL },
+    { .id = not_tank_hit_bound, .validator = NULL, .executor = NULL },
+    { .id = not_tank_collision, .validator = NULL, .executor = NULL },
+    { .id = not_near_shoot, .validator = NULL, .executor = NULL },
+    { .id = not_death, .validator = NULL, .executor = NULL },
+    { .id = not_hit, .validator = NULL, .executor = NULL },
+    { .id = not_near_explosion, .validator = NULL, .executor = NULL },
+    { .id = not_explosion_damage, .validator = NULL, .executor = NULL },
+    { .id = not_viewer_shoot, .validator = NULL, .executor = NULL },
+    { .id = not_viewer_explosion, .validator = NULL, .executor = NULL }
+};
 
-bool client_net_start(void)
+const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size_t packet_count, uint8_t id)
 {
-    WSADATA winsockData;
-    check(0 == WSAStartup(MAKEWORD(2, 2), &winsockData), "Failed to initialize winsock. Error: %d.", WSAGetLastError());
+    assert(protocol && packet_count && "Bad protocol definition.");
 
-    return true;
-
-    error:
-    WSACleanup();
-    return false;
-}
-
-void client_net_stop(void)
-{
-    WSACleanup();
-}
-
-bool client_connect(SOCKET *s, const char *address, bool is_client)
-{
-    assert(s && "Bad socket pointer.");
-    assert(address && "Bad address pointer.");
-
-    *s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    check(INVALID_SOCKET != *s, "Failed to create socket. Error: %d.", WSAGetLastError());
-
-    DWORD b = PACKET_BUFFER;
-    check(SOCKET_ERROR != setsockopt(*s, SOL_SOCKET, SO_RCVBUF, (const char *) &b, sizeof(DWORD)),
-          "Failed to socket set socket buffer. Error: %d.",
-          WSAGetLastError());
-    check(SOCKET_ERROR != setsockopt(*s, SOL_SOCKET, SO_SNDBUF, (const char *) &b, sizeof(DWORD)),
-          "Failed to socket set socket buffer. Error: %d.",
-          WSAGetLastError());
-
-    struct addrinfo *result = NULL, hints = { .ai_family = AF_INET };
-    check(0 == getaddrinfo(address, NULL, &hints, &result),
-          "getaddrinfo() failed. Error: %d.",
-          WSAGetLastError());
-
-    ((SOCKADDR_IN *) result->ai_addr)->sin_port = htons(PORT);
-
-    check(SOCKET_ERROR != connect(*s, result->ai_addr, result->ai_addrlen),
-          "connect() failed. Error: %d.",
-          WSAGetLastError());
-
-    freeaddrinfo(result);
-    result = NULL;
-
-    uint8_t req, res;
-    req = is_client ? req_hello : req_viewer_hello;
-
-    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
-    int received = 0;
-    check(__recv_timeout(s, &res, 1, 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(1 == received && res == req, "Connecting failed (stage 1).", "");
-
-    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
-    received = 0;
-    check(__recv_timeout(s, &res, 1, 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(1 == received && res == req, "Connecting failed (stage 2).", "");
-
-    return true;
-
-    error:
-    if (INVALID_SOCKET != *s)
+    for (int i = 0; i < packet_count; i++)
     {
-        closesocket(*s);
+        if (id == protocol[i].id)
+        {
+            return &protocol[i];
+        }
     }
 
-    if (!result)
-    {
-        freeaddrinfo(result);
-    }
-
-    return false;
-}
-
-bool client_disconnect(SOCKET *s, bool is_client)
-{
-    assert(s && "Bad socket pointer.");
-
-    uint8_t req;
-    req = is_client ? req_bye : req_viewer_bye;
-
-    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
-    closesocket(*s);
-
-    return true;
-    error:
-    closesocket(*s);
-    return false;
-}
-
-Landscape *client_get_landscape(SOCKET *s)
-{
-    assert(s && "Bad socket pointer.");
-
-    uint8_t req = req_viewer_get_map;
-    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
-
-    char buf[CLIENT_PACKET_BUFFER];
-    int received;
-    check(__recv_timeout(s, buf, PACKET_BUFFER, 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(received > 1 + 2 * sizeof(size_t), "Bad map response.", "");
-
-    check(req_viewer_get_map == (uint8_t) buf[0], "Bad map response.", "");
-
-    size_t landscape_size = *((size_t *) &buf[1]),
-           tile_size = *((size_t *) &buf[1 + sizeof(size_t)]);
-
-    Landscape *l = landscape_create(landscape_size, tile_size);
-    check_mem(l);
-
-    memcpy(l->height_map, &buf[1 + 2 * sizeof(size_t)], landscape_size * landscape_size * sizeof(double));
-    return l;
-
-    error:
     return NULL;
-}
-
-size_t client_get_tanks(SOCKET *s, ResGetTanksTankRecord tanks[MAX_CLIENTS])
-{
-    assert(s && "Bad socket pointer.");
-
-    uint8_t req = req_viewer_get_tanks;
-    check(SOCKET_ERROR != send(*s, &req, 1, 0), "send() failed. Error: %d.", WSAGetLastError());
-
-    char buf[CLIENT_PACKET_BUFFER];
-    int received;
-    check(__recv_timeout(s, buf, PACKET_BUFFER, 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(received >= 2 * sizeof(uint8_t), "Bad tanks response.", "");
-
-    check(req_viewer_get_tanks == (uint8_t) buf[0], "Bad tanks response.", "");
-    size_t tanks_count = (uint8_t) buf[1];
-
-    check(received == 2 * sizeof(uint8_t) + tanks_count * sizeof(ResGetTanksTankRecord), "Bad tanks response (stage 2).", "");
-
-    memcpy(tanks, &buf[2 * sizeof(uint8_t)], tanks_count * sizeof(ResGetTanksTankRecord));
-
-    return tanks_count;
-
-    error:
-    return 0;
-}
-
-bool set_engine_power(SOCKET *s, int engine_power)
-{
-    assert(s && "Bad socket pointer.");
-
-    char req_buf[1 + sizeof(ReqSetEnginePower)];
-    req_buf[0] = req_set_engine_power;
-    ReqSetEnginePower *req_body = (ReqSetEnginePower *) &req_buf[1];
-    req_body->engine_power = engine_power;
-    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
-
-    char receive_buf[1];
-    int received;
-
-    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(1 == received && req_set_engine_power == receive_buf[0], "Bad engine power response.", "");
-
-    return true;
-    error:
-    return false;
-}
-
-bool turn(SOCKET *s, double turn_angle)
-{
-    assert(s && "Bad socket pointer.");
-
-    char req_buf[1 + sizeof(ReqTurn)];
-    req_buf[0] = req_turn;
-    ReqTurn *req_body = (ReqTurn *) &req_buf[1];
-    req_body->turn_angle = turn_angle;
-    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
-
-    char receive_buf[1];
-    int received;
-
-    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(1 == received && req_turn == receive_buf[0], "Bad turn response.", "");
-
-    return true;
-    error:
-    return false;
-}
-
-bool look_at(SOCKET *s, Vector *look_direction)
-{
-    assert(s && "Bad socket pointer.");
-
-    char req_buf[1 + sizeof(ReqLookAt)];
-    req_buf[0] = req_look_at;
-    ReqLookAt *req_body = (ReqLookAt *) &req_buf[1];
-    req_body->x = look_direction->x;
-    req_body->y = look_direction->y;
-    req_body->z = look_direction->z;
-    check(SOCKET_ERROR != send(*s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
-
-    char receive_buf[1];
-    int received;
-
-    check(__recv_timeout(s, receive_buf, sizeof(receive_buf), 0, NET_TIMEOUT, &received), "Net timeout.", "");
-    check(1 == received && req_look_at == receive_buf[0], "Bad look at response.", "");
-
-    return true;
-    error:
-    return false;
-}
-
-bool __recv_timeout(SOCKET *s, char *buf, int len, int flags, int timeout, int *res)
-{
-    fd_set set;
-    FD_ZERO(&set);
-    FD_SET(*s, &set);
-
-    unsigned long long t = 1000 * timeout;
-
-    struct timeval tv = { .tv_sec = t / 1000000, .tv_usec = t % 1000000 };
-
-    switch (select(0, &set, NULL, NULL, &tv))
-    {
-        case SOCKET_ERROR:
-            fprintf(stderr, "Socket error while select(). Error: %d", WSAGetLastError());
-            return false;
-
-        case 0:
-            return false;
-    }
-
-    *res = recv(*s, buf, len, flags);
-    return true;
 }

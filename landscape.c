@@ -8,8 +8,8 @@
 #include "landscape.h"
 #include "debug.h"
 
-static inline void __validate_location(const Landscape *l, size_t x, size_t y);
-static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
+static void __validate_location(const Landscape *l, size_t x, size_t y);
+static void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
 
 Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
 {
@@ -20,13 +20,12 @@ Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
 
     int file_size = ftell(landscape_file);
     check(0 < file_size, "ftell() failed.", "");
-    int landscape_size = sqrt(file_size);
+    int landscape_size = (int) sqrt((double) file_size);
     fprintf(stderr, "landscape_size = %d.\n", landscape_size);
     check(file_size == landscape_size * landscape_size, "Landscape isn't square.", "");
 
     Landscape *l = NULL;
-    l = landscape_create(landscape_size, tile_size);
-    check_mem(l);
+    check_mem(l = landscape_create(landscape_size, tile_size));
 
     rewind(landscape_file);
 
@@ -51,6 +50,7 @@ Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
         if (l)
         {
             landscape_destroy(l);
+            l = NULL;
         }
     }
 
@@ -160,14 +160,14 @@ void landscape_get_tile(const Landscape *l, double x, double y, size_t *tile_x, 
     *tile_y = (size_t) (y / l->tile_size);
 }
 
-static inline void __validate_location(const Landscape *l, size_t x, size_t y)
+static void __validate_location(const Landscape *l, size_t x, size_t y)
 {
     assert(l && "Bad landscape pointer.");
     assert(x >= 0 && x <= l->landscape_size && "X value out of range.");
     assert(y >= 0 && y <= l->landscape_size && "Y value out of range.");
 }
 
-static inline void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c)
+static void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c)
 {
     assert(l && "Bad landscape pointer.");
     assert(x >= 0 && y >= 0 && "Negative position values.");
@@ -177,16 +177,16 @@ static inline void __get_location_triangle(const Landscape *l, double x, double 
     landscape_get_tile(l, x, y, &t_x, &t_y);
     __validate_location(l, t_x, t_y);
 
-    a->x = t_x + 1.0;
-    a->y = t_y;
+    a->x = (double) t_x + 1.0;
+    a->y = (double) t_y;
     a->z = landscape_get_height_at_node(l, (size_t) a->y, (size_t) a->x);
 
-    b->x = t_x;
-    b->y = t_y + 1.0;
+    b->x = (double) t_x;
+    b->y = (double) t_y + 1.0;
     b->z = landscape_get_height_at_node(l, (size_t) b->y, (size_t) b->x);
 
-    Vector c1 = { .x = t_x + 1, .y = t_y + 1, .z = 0 },
-           c2 = { .x = t_x, .y = t_y, .z = 0 };
+    Vector c1 = { .x = (double) (t_x + 1), .y = (double) (t_y + 1), .z = 0.0 },
+           c2 = { .x = (double) t_x, .y = (double) t_y, .z = 0.0 };
 
     *c = x - trunc(x) + y - trunc(y) < 1.0 ? c2 : c1;
     c->z = landscape_get_height_at_node(l, (size_t) c->y, (size_t) c->x);

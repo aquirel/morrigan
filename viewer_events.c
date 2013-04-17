@@ -35,6 +35,11 @@ bool process_events(bool *need_redraw, Camera *camera)
                 switch (event.user.code)
                 {
                     case TIMER_EVENT_ID:
+                        move_tanks(l, tanks, tanks_count);
+                        process_shells();
+
+                        while (client_protocol_process_event(&s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
+
                         if (w_pressed ||
                             s_pressed ||
                             a_pressed ||
@@ -48,6 +53,7 @@ bool process_events(bool *need_redraw, Camera *camera)
                        break;
 
                     case TANKS_TIMER_EVENT_ID:
+                        printf("Got %d tanks.\n", tanks_count = client_get_tanks(false, &s, tanks, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
                         *need_redraw = true;
                         break;
 

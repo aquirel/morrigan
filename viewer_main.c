@@ -1,8 +1,7 @@
 ﻿// viewer_main.c - main() for viewer.
 
-#include "viewer.h"
-
 #include "debug.h"
+#include "viewer.h"
 #include "tank.h"
 
 SOCKET s = INVALID_SOCKET;
@@ -11,6 +10,9 @@ bool connected = false;
 Landscape *l = NULL;
 ResGetTanksTankRecord tanks[MAX_CLIENTS];
 size_t tanks_count = 0;
+#define SHOOT_LIFETIME 100
+#define EXPLOSION_LIFETIME 100
+DynamicArray *shoots = NULL, *explosions = NULL;
 
 #define TANKS_POLL_INTERVAL 1000
 SDL_TimerID timer_id = NULL, tanks_timer_id = NULL;
@@ -25,8 +27,8 @@ void cleanup(void);
 Uint32 timer_handler(Uint32 interval, void *param);
 Uint32 tanks_timer_handler(Uint32 interval, void *param);
 
-void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, const size_t tanks_count);
 void move_tank(const Landscape *l, ResGetTanksTankRecord *tank);
+void process_shell_collection(DynamicArray *c, const size_t lifetime);
 
 int main(int argc, char *argv[])
 {
@@ -36,13 +38,17 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    check_mem(shoots = DYNAMIC_ARRAY_CREATE(NotViewerShellEvent *, 16));
+    check_mem(explosions = DYNAMIC_ARRAY_CREATE(NotViewerShellEvent *, 16));
+
     check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&s, argv[1], false), "Failed to connect.", "");
+    check(client_connect(&s, argv[1], false, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])), "Failed to connect.", "");
     connected = true;
 
     puts("Connected to server.");
 
-    l = client_get_landscape(&s);
+    l = client_get_landscape(&s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0]));
+    check(l, "Failed to get landscape.", "");
     puts("Loaded landscape.");
 
     camera.x = camera.y = l->landscape_size / 2.0 * l->tile_size;
@@ -200,6 +206,18 @@ void cleanup(void)
         connected = false;
     }
 
+    if (shoots)
+    {
+        dynamic_array_destroy(shoots);
+        shoots = NULL;
+    }
+
+    if (explosions)
+    {
+        dynamic_array_destroy(explosions);
+        explosions = NULL;
+    }
+
     static bool net_stopped = false;
     error:
     if (!net_stopped)
@@ -211,7 +229,7 @@ void cleanup(void)
 
 Uint32 timer_handler(Uint32 interval, void *param)
 {
-    move_tanks(l, tanks, tanks_count);
+    #pragma ref param
 
     SDL_Event event =
     {
@@ -230,7 +248,7 @@ Uint32 timer_handler(Uint32 interval, void *param)
 
 Uint32 tanks_timer_handler(Uint32 interval, void *param)
 {
-    printf("Got %d tanks.\n", tanks_count = client_get_tanks(&s, tanks));
+    #pragma ref param
 
     SDL_Event event =
     {
@@ -265,7 +283,7 @@ void move_tank(const Landscape *l, ResGetTanksTankRecord *tank)
 
     Vector position    = { .x = tank->x, .y = tank->y, .z = tank->z },
            direction   = { .x = tank->direction_x, .y = tank->direction_y, .z = tank->direction_z },
-           orientation = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z }, 
+           orientation = { .x = tank->orientation_x, .y = tank->orientation_y, .z = tank->orientation_z },
            t;
 
     vector_scale(&direction, tank->speed / SDL_DEFAULT_REPEAT_INTERVAL, &t);
@@ -306,6 +324,33 @@ void move_tank(const Landscape *l, ResGetTanksTankRecord *tank)
         tank->turret_y = turret_direction.y;
         tank->turret_z = turret_direction.z;
     }
+}
+
+void process_shell_collection(DynamicArray *c, const size_t lifetime)
+{
+    assert(c && "Bad shell event collection.");
+
+    size_t count = dynamic_array_count(c);
+    for (size_t i = 0; i < count;)
+    {
+        NotViewerShellEvent *e = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, c, i);
+
+        if (lifetime < e->type)
+        {
+            dynamic_array_delete_at(c, i);
+        }
+        else
+        {
+            e->type++;
+            i++;
+        }
+    }
+}
+
+void process_shells(void)
+{
+    //process_shell_collection(shoots, SHOOT_LIFETIME);
+    //process_shell_collection(explosions, EXPLOSION_LIFETIME);
 }
 
 double range_angle(double a)

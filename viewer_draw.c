@@ -143,9 +143,9 @@ void draw_tank_turret(void)
 {
     static Vector extent = TANK_BOUNDING_BOX_EXTENT;
     GLUquadric *q = gluNewQuadric();
+    assert(q && "Failed to create quadric.");
     gluQuadricNormals(q, GLU_SMOOTH);
     gluQuadricOrientation(q, GLU_OUTSIDE);
-    assert(q && "Failed to create quadric.");
     glTranslated(0, 0, extent.z);
     gluSphere(q, TANK_BOUNDING_SPHERE_RADIUS, 32, 32);
     gluDeleteQuadric(q);
@@ -153,9 +153,8 @@ void draw_tank_turret(void)
 
 void draw_tank_gun(void)
 {
-    static Vector extent = TANK_BOUNDING_BOX_EXTENT;
-    static double gun_radius = 0.25,
-                  gun_slices = 8;
+    static double gun_radius = 0.25;
+    static size_t gun_slices = 8;
 
     GLUquadric *q = gluNewQuadric();
     gluQuadricNormals(q, GLU_SMOOTH);
@@ -190,10 +189,10 @@ void draw_landscape(const Landscape *l)
     {
         for (size_t j = 0; j < ls - 1; j++)
         {
-            double x  = j * ts,
-                   xp = x + ts,
-                   y  = i * ts,
-                   yp = y + ts;
+            double x  = (double) (j * ts),
+                   xp = (double) (x + ts),
+                   y  = (double) (i * ts),
+                   yp = (double) (y + ts);
 
             double h00 = landscape_get_height_at_node(l, i, j),
                    h01 = landscape_get_height_at_node(l, i, j + 1),
@@ -244,6 +243,59 @@ void draw_landscape(const Landscape *l)
     }
 }
 
+void draw_shoots(DynamicArray *shoots)
+{
+    assert(shoots && "Bad shoots pointer.");
+
+    size_t c = dynamic_array_count(shoots);
+    for (size_t i = 0; i < c; i++)
+    {
+        NotViewerShellEvent *shoot = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, shoots, i);
+        draw_shoot(shoot);
+    }
+}
+
+void draw_explosions(DynamicArray *explosions)
+{
+    assert(explosions && "Bad explosions pointer.");
+
+    size_t c = dynamic_array_count(explosions);
+    for (size_t i = 0; i < c; i++)
+    {
+        NotViewerShellEvent *explosion = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, explosions, i);
+        draw_explosion(explosion);
+    }
+}
+
+void draw_shoot(const NotViewerShellEvent *shoot)
+{
+    draw_explosion(shoot);
+}
+
+void draw_explosion(const NotViewerShellEvent *explosion)
+{
+    const double explosion_radius = 20.0;
+    assert(explosion && "Bad explosion pointer.");
+
+    glPushMatrix();
+    glTranslated(explosion->x, explosion->y, explosion->z);
+
+    GLUquadric *q = NULL;
+    q = gluNewQuadric();
+    if (q)
+    {
+        gluQuadricNormals(q, GLU_SMOOTH);
+        gluQuadricOrientation(q, GLU_OUTSIDE);
+
+        glColor4d(0.8, 0.0, 0.0, 0.5);
+        gluSphere(q, explosion_radius / (1.0 + explosion->type), 32, 32);
+
+        gluDeleteQuadric(q);
+    }
+
+    glPopMatrix();
+}
+
 void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_count)
 {
     glClearColor(0, 0, 0, 0);
@@ -269,7 +321,7 @@ void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_c
     GLfloat light_specular[] = { 0.4, 0.4, 0.4, 1.0 };
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
-    GLfloat light_position[] = { ts * ls / 2.0, ts * ls / 2.0, 512.0, 1.0 };
+    GLfloat light_position[] = { ts * ls / 2.0F, ts * ls / 2.0F, 512.0F, 1.0F };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
@@ -278,6 +330,9 @@ void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_c
     glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
 
     draw_tanks(tanks, tanks_count);
+
+    draw_shoots(shoots);
+    draw_explosions(explosions);
 
     glPopMatrix();
 

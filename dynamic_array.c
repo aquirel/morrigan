@@ -5,7 +5,7 @@
 #include "dynamic_array.h"
 #include "debug.h"
 
-static inline void __dynamic_array_assert(const DynamicArray *a);
+static void __dynamic_array_assert(const DynamicArray *a);
 
 DynamicArray *dynamic_array_create(size_t element_size, size_t array_capacity)
 {
@@ -139,7 +139,7 @@ void dynamic_array_unlock(DynamicArray *a)
     return;
 }
 
-static inline void __dynamic_array_assert(const DynamicArray *a)
+static void __dynamic_array_assert(const DynamicArray *a)
 {
     assert(a && "Bad array.");
     assert(a->data && "Bad array.");

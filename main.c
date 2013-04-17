@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <process.h>
 
 #include "bstrlib.h"
 
@@ -17,30 +18,33 @@
 #include "landscape.h"
 #include "debug.h"
 
-void stop(void);
+void stop(int unused);
 
 static Landscape *l = NULL;
 static bstring input = NULL;
 
-int main(const int argc, const char const *argv[], const char const *envp[])
+//int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
+    #pragma ref argv
+    #pragma ref argc
     puts("Starting morrigan.");
 
     check(SIG_ERR != signal(SIGINT, stop), "Failed to set signal handler.", "");
     check(SIG_ERR != signal(SIGTERM, stop), "Failed to set signal handler.", "");
 
-    srand(time(NULL));
+    srand((unsigned) (time(NULL) ^ _getpid()));
 
     l = landscape_load("land.dat", 32, 1.0);
     check(l, "Failed to load landscape.", "");
     check(net_start(), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");
-    check(game_start(l, clients), "Failed to start game.", "");
+    check(game_start(l, server_get_clients()), "Failed to start game.", "");
 
     do
     {
         printf(">");
-        input = bgets(getchar, NULL, '\n');
+        input = bgets(fgetc, stdin, '\n');
 
         if (NULL == input || 0 == strcmp("exit\n", bdata(input)))
         {
@@ -51,17 +55,19 @@ int main(const int argc, const char const *argv[], const char const *envp[])
         input = NULL;
     } while(true);
 
-    stop();
+    stop(0);
     return EXIT_SUCCESS;
 
     error:
     fprintf(stderr, "Error exit.\n");
-    stop();
+    stop(0);
     return EXIT_FAILURE;
 }
 
-void stop(void)
+void stop(int unused)
 {
+    #pragma ref unused
+
     puts("Stopping morrigan.");
     if (input)
     {

@@ -50,6 +50,8 @@ bool net_start(void)
 
 static int net_worker(void *unused)
 {
+    #pragma ref unused
+
     char buf[PACKET_BUFFER];
     SOCKADDR sender_address;
     int sender_address_size = sizeof(sender_address);

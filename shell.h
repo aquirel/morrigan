@@ -4,6 +4,8 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 
+#pragma message("__SHELL_H__")
+
 #include <stdbool.h>
 
 #include "vector.h"
@@ -17,6 +19,8 @@
 #define SHELL_EXPLOSION_DAMAGE 15
 #define SHELL_EXPLOSION_RADIUS 20
 
+#pragma pack(push, 8)
+
 typedef struct Shell
 {
     Vector position;
@@ -25,6 +29,8 @@ typedef struct Shell
     Bounding bounding;
     double speed;
 } Shell;
+
+#pragma pack(pop)
 
 Shell *shell_create(const Vector *position, const Vector *direction);
 bool shell_tick(Shell *shell, const Landscape *landscape);

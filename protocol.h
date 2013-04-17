@@ -4,6 +4,8 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
+#pragma message("__PROTOCOL_H__")
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -67,6 +69,8 @@ typedef enum Notifications
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);
 typedef bool (*packet_execution_handler)(void *c);
 
+#pragma pack(push, 4)
+
 typedef struct PacketDefinition
 {
     uint8_t id;
@@ -75,12 +79,16 @@ typedef struct PacketDefinition
     bool is_client_protocol;
 } PacketDefinition;
 
+#pragma pack(pop)
+
 typedef enum ClientState
 {
     cs_connected,
     cs_acknowledged,
     cs_in_game
 } ClientState;
+
+#pragma pack(push, 8)
 
 typedef struct Client
 {
@@ -89,7 +97,7 @@ typedef struct Client
     Tank tank;
     char current_packet_buffer[PACKET_BUFFER];
     size_t current_packet_size;
-    PacketDefinition *current_packet_definition;
+    const PacketDefinition *current_packet_definition;
 } Client;
 
 typedef struct ViewerClient
@@ -98,11 +106,17 @@ typedef struct ViewerClient
     SOCKADDR address;
     char current_packet_buffer[PACKET_BUFFER];
     size_t current_packet_size;
-    PacketDefinition *current_packet_definition;
+    const PacketDefinition *current_packet_definition;
 } ViewerClient;
 
+#pragma pack(pop)
+
 void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
-PacketDefinition *find_packet_by_id(PacketDefinition *protocol, size_t packet_count, uint8_t id);
+const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size_t packet_count, uint8_t id);
+
+#pragma pack(push, 1)
+#pragma warn(push)
+#pragma warn(disable: 2185)
 
 // Packet body definitions.
 typedef struct ReqSetEnginePower
@@ -167,5 +181,8 @@ typedef struct NotViewerShellEvent
     uint8_t type;
     double x, y, z;
 } NotViewerShellEvent;
+
+#pragma warn(pop)
+#pragma pack(pop)
 
 #endif /* __PROTOCOL_H__ */

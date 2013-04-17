@@ -15,7 +15,7 @@ AS = poasm.exe#
 RC = porc.exe#
 LINK = polink.exe#
 SIGN = posign.exe#
-CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Ze -Gi -J -D_X86_ -D_M_IX86 #
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob0 -fp:precise -W2 -Gd -Ze -Gi -D_X86_ -D_M_IX86 #
 ASFLAGS = -AIA32 -Gz #
 RCFLAGS = #
 LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB SDL.lib SDLmain.lib opengl32.lib glu32.lib glaux.lib#
@@ -28,13 +28,15 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl#
 #
 bin\morrigan_viewer.exe: \
     build\client_protocol.obj \
+    build\dynamic_array.obj \
     build\landscape.obj \
     build\main.obj \
     build\matrix.obj \
     build\tank.obj \
     build\vector.obj \
     build\viewer_draw.obj \
-    build\viewer_events.obj
+    build\viewer_events.obj \
+    build\viewer_net.obj
     $(LINK) $(LINKFLAGS) -out:"$@" $**
 
 #
@@ -43,7 +45,6 @@ bin\morrigan_viewer.exe: \
 build\main.obj: \
     viewer_main.c \
     bounding.h \
-    client_net.h \
     debug.h \
     landscape.h \
     net.h \
@@ -76,6 +77,7 @@ build\landscape.obj: \
     landscape.c \
     debug.h \
     landscape.h \
+    morrigan.h \
     vector.h
     $(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -104,14 +106,16 @@ build\matrix.obj: \
 build\viewer_events.obj: \
     viewer_events.c \
     bounding.h \
-    client_net.h \
+    client_protocol.h \
+    dynamic_array.h \
     landscape.h \
     morrigan.h \
     net.h \
     protocol.h \
     tank.h \
     vector.h \
-    viewer.h
+    viewer.h \
+    viewer_net.h
     $(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 #
@@ -120,14 +124,16 @@ build\viewer_events.obj: \
 build\viewer_draw.obj: \
     viewer_draw.c \
     bounding.h \
-    client_net.h \
+    client_protocol.h \
+    dynamic_array.h \
     landscape.h \
     morrigan.h \
     net.h \
     protocol.h \
     tank.h \
     vector.h \
-    viewer.h
+    viewer.h \
+    viewer_net.h
     $(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 #
@@ -141,6 +147,35 @@ build\tank.obj: \
     morrigan.h \
     tank.h \
     vector.h
+    $(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+#
+# Build viewer_net.obj.
+#
+build\viewer_net.obj: \
+    viewer_net.c \
+    bounding.h \
+    client_protocol.h \
+    debug.h \
+    dynamic_array.h \
+    landscape.h \
+    morrigan.h \
+    net.h \
+    protocol.h \
+    tank.h \
+    vector.h \
+    viewer.h \
+    viewer_net.h
+    $(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+#
+# Build dynamic_array.obj.
+#
+build\dynamic_array.obj: \
+    dynamic_array.c \
+    debug.h \
+    dynamic_array.h \
+    morrigan.h
     $(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

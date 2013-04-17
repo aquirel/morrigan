@@ -4,11 +4,15 @@
 #ifndef __DYNAMIC_ARRAY_H__
 #define __DYNAMIC_ARRAY_H__
 
+#pragma message("__DYNAMIC_ARRAY_H__")
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <threads.h>
 
 #include "morrigan.h"
+
+#pragma pack(push, 4)
 
 typedef struct DynamicArray
 {
@@ -18,6 +22,8 @@ typedef struct DynamicArray
     mtx_t guard_mutex;
     char *data;
 } DynamicArray;
+
+#pragma pack(pop)
 
 DynamicArray *dynamic_array_create(size_t element_size, size_t element_count);
 #define DYNAMIC_ARRAY_CREATE(element_type, element_count) dynamic_array_create(sizeof(element_type), (element_count))

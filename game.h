@@ -4,6 +4,8 @@
 #ifndef __GAME_H__
 #define __GAME_H__
 
+#pragma message("__GAME_H__")
+
 #include <stdbool.h>
 
 #include "morrigan.h"

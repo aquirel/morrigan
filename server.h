@@ -4,6 +4,8 @@
 #ifndef __SERVER_H__
 #define __SERVER_H__
 
+#pragma message("__SERVER_H__")
+
 #include <winsock2.h>
 
 #include "morrigan.h"
@@ -13,11 +15,10 @@
 #define MAX_CLIENTS 16
 #define MAX_VIEWERS 4
 
-extern DynamicArray *clients;
-extern DynamicArray *viewers;
-
 bool server_start(void);
 void server_stop(void);
+
+DynamicArray *server_get_clients(void);
 
 Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);

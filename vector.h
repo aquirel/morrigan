@@ -4,16 +4,22 @@
 #ifndef __VECTOR_H__
 #define __VECTOR_H__
 
+#pragma message("__VECTOR_H__")
+
 #include <stdbool.h>
 
 #include "morrigan.h"
 
 extern double vector_eps;
 
+#pragma pack(push, 4)
+
 typedef struct Vector
 {
     double x, y, z;
 } Vector;
+
+#pragma pack(pop)
 
 bool vector_tolerance_eq(double v1, double v2);
 bool vector_eq(const Vector *v1, const Vector *v2);

@@ -38,6 +38,8 @@
 #ifndef __TESTHELP_H__
 #define __TESTHELP_H__
 
+#pragma message("__TESTHELP_H__")
+
 int __failed_tests = 0;
 int __test_num = 0;
 

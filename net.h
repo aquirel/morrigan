@@ -4,6 +4,8 @@
 #ifndef __NET_H__
 #define __NET_H__
 
+#pragma message("__NET_H__")
+
 #include <stdbool.h>
 
 #include <winsock2.h>

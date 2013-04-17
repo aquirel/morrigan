@@ -4,6 +4,8 @@
 #ifndef __BOUNDING_H__
 #define __BOUNDING_H__
 
+#pragma message("__BOUNDING_H__")
+
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -24,6 +26,8 @@ typedef enum Axis
     axis_y,
     axis_z
 } Axis;
+
+#pragma pack(push, 4)
 
 typedef struct Bounding Bounding;
 
@@ -48,6 +52,8 @@ typedef struct Bounding
         CompositeBoundingData composite_data;
     } data;
 } Bounding;
+
+#pragma pack(pop)
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b);
 bool box_intersects_with_landscape(const Landscape *l, const Bounding *box);

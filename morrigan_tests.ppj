@@ -1,5 +1,5 @@
 ﻿CC = pocc.exe#
-CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob1 -fp:precise -W2 -Gd -Gi -DTESTS#
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob0 -fp:precise -W2 -Gd -Gi -DTESTS#
 INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
 LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 

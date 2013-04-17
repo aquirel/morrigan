@@ -4,6 +4,8 @@
 #ifndef __LANDSCAPE_H__
 #define __LANDSCAPE_H__
 
+#pragma message("__LANDSCAPE_H__")
+
 #include <stdlib.h>
 
 #include "morrigan.h"
@@ -11,12 +13,16 @@
 
 #define TILE_SIZE 16
 
+#pragma pack(push, 4)
+
 typedef struct Landscape
 {
     size_t landscape_size;
     size_t tile_size;
     double *height_map;
 } Landscape;
+
+#pragma pack(pop)
 
 Landscape *landscape_load(const char *filename, size_t tile_size, double scale);
 Landscape *landscape_create(size_t landscape_size, size_t tile_size);

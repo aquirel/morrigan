@@ -4,10 +4,14 @@
 #ifndef __RING_BUFFER_H__
 #define __RING_BUFFER_H__
 
+#pragma message("__RING_BUFFER_H__")
+
 #include <threads.h>
 
 #include "morrigan.h"
 #include "dynamic_array.h"
+
+#pragma pack(push, 4)
 
 typedef struct RingBuffer
 {
@@ -18,14 +22,16 @@ typedef struct RingBuffer
     mtx_t buffer_not_empty_mutex;
 } RingBuffer;
 
+#pragma pack(pop)
+
 RingBuffer *ring_buffer_create(size_t element_size, size_t buffer_capacity);
 #define RING_BUFFER_CREATE(element_type, buffer_capacity) ring_buffer_create(sizeof(element_type), (buffer_capacity))
 void ring_buffer_destroy(RingBuffer *rb);
 bool ring_buffer_write(RingBuffer *rb, const void *data);
 void *ring_buffer_read(RingBuffer *rb);
 #define RING_BUFFER_READ(element_type, rb) ((element_type) ring_buffer_read(rb))
-inline size_t ring_buffer_items_count(RingBuffer *rb);
-inline bool ring_buffer_is_full(RingBuffer *rb);
+size_t ring_buffer_items_count(RingBuffer *rb);
+bool ring_buffer_is_full(RingBuffer *rb);
 bool ring_buffer_is_empty(RingBuffer *rb);
 void ring_buffer_wait_not_empty(RingBuffer *rb);
 

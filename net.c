@@ -52,6 +52,8 @@ static int __net_worker(void *unused)
 {
     #pragma ref unused
 
+    log_info("start. tid: %u", GetCurrentThreadId());
+
     char buf[PACKET_BUFFER];
     SOCKADDR sender_address;
     int sender_address_size = sizeof(sender_address);

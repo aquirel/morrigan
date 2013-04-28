@@ -287,6 +287,7 @@ static int __server_worker(void *unused)
 {
     #pragma ref unused
 
+    log_info("start. tid: %u", GetCurrentThreadId());
     check(thrd_success == mtx_lock(&have_new_request_mutex), "Failed to lock request mutex.", "");
 
     RingBuffer *buffers_to_monitor[] = { client_requests, viewer_requests };
@@ -294,8 +295,9 @@ static int __server_worker(void *unused)
 
     while (working)
     {
-        size_t processed_requests;
+        check(thrd_success == cnd_wait(&have_new_request_signal, &have_new_request_mutex), "Failed to wait request signal.", "");
 
+        size_t processed_requests;
         do
         {
             processed_requests = 0;
@@ -319,8 +321,6 @@ static int __server_worker(void *unused)
                 processed_requests++;
             }
         } while (processed_requests);
-
-        check(thrd_success == cnd_wait(&have_new_request_signal, &have_new_request_mutex), "Failed to wait request signal.", "");
     }
 
     return 0;

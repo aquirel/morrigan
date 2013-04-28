@@ -83,7 +83,7 @@ static int __game_worker(void *unused)
 {
     #pragma ref unused
     struct _timeval tick_start_time, tick_end_time;
-    log_info("start.", "");
+    log_info("start. tid: %u", GetCurrentThreadId());
 
     srand((unsigned) (time(NULL) ^ _getpid()));
 
@@ -114,12 +114,20 @@ static int __game_worker(void *unused)
                 respond((const char *) &data, 1, &c->network_client.address);
             }
 
-            __tank_collision_detection(i, c);
-
             if (-1 == c->tank.fire_delay)
             {
                 __perform_shooting(c);
             }
+        }
+
+        for (size_t i = 0; i < clients_count; i++)
+        {
+            Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+            if (cs_in_game != c->network_client.state)
+            {
+                continue;
+            }
+            __tank_collision_detection(i, c);
         }
 
         for (size_t i = 0; i < dynamic_array_count(shells);)
@@ -208,8 +216,10 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
     check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
     c->network_client.state = cs_in_game;
 
+    log_info("initializing new tank finished.", "");
     return true;
     error:
+    log_info("initializing new tank error!", "");
     return false;
 }
 

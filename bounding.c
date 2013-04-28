@@ -268,7 +268,7 @@ static void __box_get_vertices(const Bounding *box, Vector *vertices)
             (i & (1 << j) ? vector_add : vector_sub)(&v, &e[j], &v);
         }
 
-        vertices[i] = v;
+        vector_add(&p, &v, &vertices[i]);
     }
 }
 

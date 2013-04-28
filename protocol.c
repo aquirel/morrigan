@@ -195,9 +195,9 @@ static bool __req_hello_executor(Client *c)
 static bool __req_bye_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
-    unregister_client(&c->network_client.address);
     uint8_t response = req_bye;
     respond((char *) &response, 1, &c->network_client.address);
+    unregister_client(&c->network_client.address);
     puts("Client disconnected.");
     return false;
 }
@@ -220,9 +220,9 @@ static bool __req_viewer_hello_executor(ViewerClient *c)
 static bool __req_viewer_bye_executor(ViewerClient *c)
 {
     assert(c && "Bad viewer client pointer.");
-    unregister_viewer(&c->network_client.address);
     uint8_t response = req_viewer_bye;
     respond((char *) &response, 1, &c->network_client.address);
+    unregister_viewer(&c->network_client.address);
     puts("Viewer disconnected.");
     return false;
 }

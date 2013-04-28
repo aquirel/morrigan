@@ -7,66 +7,62 @@
 #include "landscape.h"
 #include "debug.h"
 
-void tank_change_turn(Tank *tank);
-void tank_change_engine_power(Tank *tank);
-bool tank_move(Tank *tank, const Landscape *l);
-void tank_rotate_turret(Tank *tank);
+static void __tank_change_turn(Tank *tank);
+static void __tank_change_engine_power(Tank *tank);
+static bool __tank_move(Tank *tank, const Landscape *l);
+static void __tank_rotate_turret(Tank *tank);
 
 void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int team)
 {
     assert(tank && "Bad tank pointer.");
     assert(position && top && "Bad geometry pointers.");
 
-    *tank = (Tank)
-    {
-        .position = { .x = position->x, .y = position->y, .z = position->z },
+    *tank = (Tank) {
+        .position          = { .x = position->x, .y = position->y, .z = position->z },
         .previous_position = { .x = position->x, .y = position->y, .z = position->z },
-        .direction = { .x = 1, .y = 0, .z = 0 },
-        .orientation = { .x = top->x, .y = top->y, .z = top->z },
-        .speed = 0,
-        .bounding_primitives =
-        {
+        .direction         = { .x  = 1, .y = 0, .z = 0 },
+        .orientation       = { .x = top->x, .y = top->y, .z = top->z },
+        .speed             = 0,
+        .bounding_primitives = {
             {
-                .origin = &tank->position,
+                .origin          = &tank->position,
                 .previous_origin = &tank->previous_position,
-                .orientation = &tank->orientation,
-                .direction = &tank->direction,
-                .offset = { .x = 0, .y = 0, .z = 0 },
-                .bounding_type = bounding_box,
-                .data = { .extent = TANK_BOUNDING_BOX_EXTENT }
+                .orientation     = &tank->orientation,
+                .direction       = &tank->direction,
+                .offset          = { .x = 0, .y = 0, .z = 0 },
+                .bounding_type   = bounding_box,
+                .data            = { .extent = TANK_BOUNDING_BOX_EXTENT }
             },
             {
-                .origin = &tank->position,
+                .origin          = &tank->position,
                 .previous_origin = &tank->previous_position,
-                .orientation = &tank->orientation,
-                .direction = &tank->direction,
-                .offset = { .x = 0, .y = 0, .z = TANK_BOUNDING_SPHERE_RADIUS },
-                .bounding_type = bounding_sphere,
-                .data = { .radius = TANK_BOUNDING_SPHERE_RADIUS }
+                .orientation     = &tank->orientation,
+                .direction       = &tank->direction,
+                .offset          = { .x = 0, .y = 0, .z = TANK_BOUNDING_SPHERE_RADIUS },
+                .bounding_type   = bounding_sphere,
+                .data            = { .radius = TANK_BOUNDING_SPHERE_RADIUS }
             }
         },
-        .bounding =
-        {
-            .origin = &tank->position,
-            .previous_origin = &tank->previous_position,
-            .orientation = &tank->orientation,
-            .direction = &tank->direction,
-            .offset = { .x = 0, .y = 0, .z = 0 },
-            .bounding_type = bounding_composite,
-            .data.composite_data =
-            {
-                .children = tank->bounding_primitives,
+        .bounding = {
+            .origin              = &tank->position,
+            .previous_origin     = &tank->previous_position,
+            .orientation         = &tank->orientation,
+            .direction           = &tank->direction,
+            .offset              = { .x = 0, .y = 0, .z = 0 },
+            .bounding_type       = bounding_composite,
+            .data.composite_data = {
+                .children       = tank->bounding_primitives,
                 .children_count = TANK_BOUNDING_PRIMITIVES
             }
         },
-        .hp = TANK_HP,
-        .team = team,
-        .engine_power = 0,
-        .engine_power_target = 0,
-        .fire_delay = 0,
-        .turret_direction = { .x = 1, .y = 0, .z = 0 },
+        .hp                      = TANK_HP,
+        .team                    = team,
+        .engine_power            = 0,
+        .engine_power_target     = 0,
+        .fire_delay              = 0,
+        .turret_direction        = { .x = 1, .y = 0, .z = 0 },
         .turret_direction_target = { .x = 1, .y = 0, .z = 0 },
-        .turn_angle_target = 0
+        .turn_angle_target       = 0
     };
 
     tank_rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
@@ -90,10 +86,10 @@ bool tank_tick(Tank *tank, const Landscape *l)
         tank->fire_delay--;
     }
 
-    tank_change_engine_power(tank);
-    result = tank_move(tank, l);
-    tank_change_turn(tank);
-    tank_rotate_turret(tank);
+    __tank_change_engine_power(tank);
+    result = __tank_move(tank, l);
+    __tank_change_turn(tank);
+    __tank_rotate_turret(tank);
     check(thrd_success == mtx_unlock(&tank->mtx), "Failed to lock tank mutex.", "");
     error:
     return result;
@@ -139,7 +135,7 @@ void tank_set_engine_power(Tank *tank, int power)
         power = TANK_MAX_ENGINE_POWER;
     }
 
-    tank->engine_power_target = power;
+    tank->engine_power_target = (double) power;
 }
 
 bool tank_shoot(Tank *tank)
@@ -179,7 +175,7 @@ double tank_get_heading(Tank *tank)
     return 0.0;
 }
 
-void tank_change_turn(Tank *tank)
+static void __tank_change_turn(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
     tank_change_turn_worker(&tank->turn_angle_target, TANK_MAX_TURN_SPEED, &tank->direction, &tank->orientation);
@@ -192,7 +188,7 @@ void tank_change_turn_worker(double *turn_angle_target, double max_turn_speed, V
     assert(direction && "Bad direction pointer.");
     assert(orientation && "Bad orientation pointer.");
 
-    if (vector_eps >= *turn_angle_target)
+    if (vector_tolerance_eq(0, *turn_angle_target))
     {
         return;
     }
@@ -205,14 +201,14 @@ void tank_change_turn_worker(double *turn_angle_target, double max_turn_speed, V
     }
     else
     {
-        step_turn_angle = max_turn_speed;
+        step_turn_angle = max_turn_speed * (signbit(*turn_angle_target) ? -1.0 : 1.0);
         *turn_angle_target += (-1.0) * max_turn_speed * (signbit(*turn_angle_target) ? -1.0 : 1.0);
     }
 
     VECTOR_ROTATE(direction, orientation, step_turn_angle);
 }
 
-void tank_change_engine_power(Tank *tank)
+static void __tank_change_engine_power(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
 
@@ -221,7 +217,7 @@ void tank_change_engine_power(Tank *tank)
         return;
     }
 
-    if (abs(tank->engine_power_target - tank->engine_power) <= TANK_ENGINE_POWER_CHANGE_STEP)
+    if (fabs(tank->engine_power_target - tank->engine_power) <= TANK_ENGINE_POWER_CHANGE_STEP)
     {
         tank->engine_power = tank->engine_power_target;
         return;
@@ -237,7 +233,7 @@ void tank_change_engine_power(Tank *tank)
     }
 }
 
-bool tank_move(Tank *tank, const Landscape *l)
+static bool __tank_move(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
@@ -272,7 +268,7 @@ bool tank_move(Tank *tank, const Landscape *l)
         vector_sub(&tank->position, &tank->previous_position, &t);
         double new_speed = vector_length(&t);
 
-        if (fabs(new_speed - tank->speed) < vector_eps)
+        if (vector_tolerance_eq(new_speed, tank->speed))
         {
             break;
         }
@@ -296,7 +292,7 @@ bool tank_move(Tank *tank, const Landscape *l)
     return true;
 }
 
-void tank_rotate_turret(Tank *tank)
+static void __tank_rotate_turret(Tank *tank)
 {
     assert(tank && "Bad tank pointer.");
     tank_rotate_turret_worker(&tank->turret_direction_target, &tank->turret_direction, TANK_MAX_TURRET_TURN_SPEED);
@@ -313,17 +309,38 @@ void tank_rotate_turret_worker(Vector *turret_direction_target, Vector *turret_d
         return;
     }
 
-    double actual_angle = vector_angle(turret_direction, turret_direction_target);
-    if (fabs(actual_angle) <= max_turret_turn_speed)
+    Vector axis;
+    double angle;
+
+    Vector d = *turret_direction,
+           t = *turret_direction_target;
+    d.z = t.z = 0.0;
+    VECTOR_NORMALIZE(&d);
+    VECTOR_NORMALIZE(&t);
+
+    if (!vector_eq(&d, &t))
     {
-        *turret_direction = *turret_direction_target;
-        return;
+        angle = vector_angle(&d, &t);
+    }
+    else
+    {
+        d = *turret_direction;
+        t = *turret_direction_target;
+        VECTOR_NORMALIZE(&d);
+        VECTOR_NORMALIZE(&t);
+        angle = vector_angle(&d, &t);
     }
 
-    Vector axis;
-    vector_vector_mul(turret_direction, turret_direction_target, &axis);
+    vector_vector_mul(&d, &t, &axis);
     VECTOR_NORMALIZE(&axis);
-    VECTOR_ROTATE(turret_direction, &axis, max_turret_turn_speed);
+
+    if (fabs(angle) > max_turret_turn_speed)
+    {
+        angle = max_turret_turn_speed * (signbit(angle) ? -1.0 : 1.0);
+    }
+
+    VECTOR_ROTATE(turret_direction, &axis, angle);
+    VECTOR_NORMALIZE(turret_direction);
 }
 
 void tank_rotate_direction(Vector *direction, const Vector *old_orientation, const Vector *orientation)

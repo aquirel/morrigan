@@ -15,21 +15,19 @@ AS = poasm.exe#
 RC = porc.exe#
 LINK = polink.exe#
 SIGN = posign.exe#
-CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob0 -fp:precise -W2 -Gd -Ze -Gi -D_X86_ -D_M_IX86#
+CCFLAGS = -std:C11 -Tx86-coff -Zi -MT -Ob0 -fp:precise -W2 -Gd -Ze -Gi -D_X86_ -D_M_IX86 #
 ASFLAGS = -AIA32 -Gd #
 RCFLAGS = #
-LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB#
+LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB bstrlib.lib#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
 INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
-LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;lib#
 
 # 
 # Build morrigan.exe.
 # 
 bin\morrigan.exe: \
 	build\bounding.obj \
-	build\bstraux.obj \
-	build\bstrlib.obj \
 	build\dynamic_array.obj \
 	build\game.obj \
 	build\landscape.obj \
@@ -41,7 +39,8 @@ bin\morrigan.exe: \
 	build\server.obj \
 	build\shell.obj \
 	build\tank.obj \
-	build\vector.obj
+	build\vector.obj \
+	build\protocol_utils.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -59,23 +58,6 @@ build\dynamic_array.obj: \
 	debug.h \
 	dynamic_array.h \
 	morrigan.h
-	$(CC) $(CCFLAGS) "$!" -Fo"$@"
-
-# 
-# Build bstraux.obj.
-# 
-build\bstraux.obj: \
-	bstraux.c \
-	bstraux.h \
-	bstrlib.h
-	$(CC) $(CCFLAGS) "$!" -Fo"$@"
-
-# 
-# Build bstrlib.obj.
-# 
-build\bstrlib.obj: \
-	bstrlib.c \
-	bstrlib.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -108,6 +90,7 @@ build\protocol.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	server.h \
 	tank.h \
 	vector.h
@@ -152,6 +135,7 @@ build\game.obj: \
 	dynamic_array.h \
 	game.h \
 	landscape.h \
+	matrix.h \
 	morrigan.h \
 	net.h \
 	protocol.h \
@@ -227,6 +211,21 @@ build\shell.obj: \
 	landscape.h \
 	morrigan.h \
 	shell.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build protocol_utils.obj.
+# 
+build\protocol_utils.obj: \
+	protocol_utils.c \
+	bounding.h \
+	landscape.h \
+	morrigan.h \
+	net.h \
+	protocol.h \
+	protocol_utils.h \
+	tank.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

@@ -4,7 +4,7 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#pragma message("__DEBUG_H__")
+//#pragma message("__DEBUG_H__")
 
 #include <stdio.h>
 #include <errno.h>

@@ -4,7 +4,7 @@
 #ifndef __LANDSCAPE_H__
 #define __LANDSCAPE_H__
 
-#pragma message("__LANDSCAPE_H__")
+//#pragma message("__LANDSCAPE_H__")
 
 #include <stdlib.h>
 

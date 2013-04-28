@@ -4,7 +4,7 @@
 #ifndef __CLIENT_NET_H__
 #define __CLIENT_NET_H__
 
-#pragma message("__CLIENT_NET_H__")
+//#pragma message("__CLIENT_NET_H__")
 
 #include "protocol.h"
 

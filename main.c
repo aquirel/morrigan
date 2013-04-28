@@ -9,7 +9,7 @@
 #include <time.h>
 #include <process.h>
 
-#include "bstrlib.h"
+#include "lib/bstrlib.h"
 
 #include "net.h"
 #include "protocol.h"
@@ -18,7 +18,7 @@
 #include "landscape.h"
 #include "debug.h"
 
-void stop(int unused);
+static void __stop(int unused);
 
 static Landscape *l = NULL;
 static bstring input = NULL;
@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
     #pragma ref argc
     puts("Starting morrigan.");
 
-    check(SIG_ERR != signal(SIGINT, stop), "Failed to set signal handler.", "");
-    check(SIG_ERR != signal(SIGTERM, stop), "Failed to set signal handler.", "");
+    check(SIG_ERR != signal(SIGINT, __stop), "Failed to set signal handler.", "");
+    check(SIG_ERR != signal(SIGTERM, __stop), "Failed to set signal handler.", "");
 
     srand((unsigned) (time(NULL) ^ _getpid()));
 
@@ -55,16 +55,16 @@ int main(int argc, char *argv[])
         input = NULL;
     } while(true);
 
-    stop(0);
+    __stop(0);
     return EXIT_SUCCESS;
 
     error:
     fprintf(stderr, "Error exit.\n");
-    stop(0);
+    __stop(0);
     return EXIT_FAILURE;
 }
 
-void stop(int unused)
+static void __stop(int unused)
 {
     #pragma ref unused
 

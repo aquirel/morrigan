@@ -84,18 +84,18 @@ void *ring_buffer_read(RingBuffer *rb)
     return result;
 }
 
-size_t ring_buffer_items_count(RingBuffer *rb)
+size_t ring_buffer_items_count(const RingBuffer *rb)
 {
     __ring_buffer_assert(rb);
     return rb->array->element_count;
 }
 
-bool ring_buffer_is_full(RingBuffer *rb)
+bool ring_buffer_is_full(const RingBuffer *rb)
 {
     return ring_buffer_items_count(rb) == rb->array->array_capacity;
 }
 
-bool ring_buffer_is_empty(RingBuffer *rb)
+bool ring_buffer_is_empty(const RingBuffer *rb)
 {
     return 0 == ring_buffer_items_count(rb);
 }

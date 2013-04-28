@@ -2,8 +2,16 @@
 
 #include "viewer.h"
 
-bool process_events(bool *need_redraw, Camera *camera)
+static double __range_angle(double a);
+
+bool process_events(bool *need_redraw, Camera *camera, SOCKET *s, ResGetTanksTankRecord *tanks, size_t *tanks_count)
 {
+    assert(need_redraw && "Bad redraw flag pointer.");
+    assert(camera && "Bad camera pointer.");
+    assert(s && "Bad socket pointer.");
+    assert(tanks && "Bad tanks pointer.");
+    assert(tanks_count && "Bad tanks count pointer.");
+
     static bool w_pressed = false,
                 s_pressed = false,
                 a_pressed = false,
@@ -35,10 +43,10 @@ bool process_events(bool *need_redraw, Camera *camera)
                 switch (event.user.code)
                 {
                     case TIMER_EVENT_ID:
-                        move_tanks(l, tanks, tanks_count);
+                        //move_tanks(l, tanks, tanks_count);
                         process_shells();
 
-                        while (client_protocol_process_event(&s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
+                        while (client_protocol_process_event(s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
 
                         if (w_pressed ||
                             s_pressed ||
@@ -53,7 +61,8 @@ bool process_events(bool *need_redraw, Camera *camera)
                        break;
 
                     case TANKS_TIMER_EVENT_ID:
-                        printf("Got %d tanks.\n", tanks_count = client_get_tanks(false, &s, tanks, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
+                        *tanks_count = client_get_tanks(false, s, tanks, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0]));
+                        //printf("Got %d tanks.\n", tanks_count);
                         *need_redraw = true;
                         break;
 
@@ -64,89 +73,51 @@ bool process_events(bool *need_redraw, Camera *camera)
                 break;
 
             case SDL_KEYDOWN:
-                key_event = true;
-
-                switch (event.key.keysym.sym)
-                {
-                    case SDLK_ESCAPE:
-                        return false;
-
-                    case SDLK_f:
-                    case SDLK_HOME:
-                    case SDLK_PAGEUP:
-                        f_pressed = true;
-                        break;
-
-                    case SDLK_v:
-                    case SDLK_END:
-                    case SDLK_PAGEDOWN:
-                        v_pressed = true;
-                        break;
-
-                    case SDLK_w:
-                    case SDLK_UP:
-                        w_pressed = true;
-                        break;
-
-                    case SDLK_s:
-                    case SDLK_DOWN:
-                        s_pressed = true;
-                        break;
-
-                    case SDLK_a:
-                    case SDLK_LEFT:
-                        a_pressed = true;
-                        break;
-
-                    case SDLK_d:
-                    case SDLK_RIGHT:
-                        d_pressed = true;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
             case SDL_KEYUP:
-                key_event = true;
-
-                switch (event.key.keysym.sym)
                 {
-                    case SDLK_f:
-                    case SDLK_HOME:
-                    case SDLK_PAGEUP:
-                        f_pressed = false;
-                        break;
+                    key_event = true;
+                    bool keydown = event.type == SDL_KEYDOWN;
 
-                    case SDLK_v:
-                    case SDLK_END:
-                    case SDLK_PAGEDOWN:
-                        v_pressed = false;
-                        break;
+                    switch (event.key.keysym.sym)
+                    {
+                        case SDLK_ESCAPE:
+                            return false;
 
-                    case SDLK_w:
-                    case SDLK_UP:
-                        w_pressed = false;
-                        break;
+                        case SDLK_f:
+                        case SDLK_HOME:
+                        case SDLK_PAGEUP:
+                            f_pressed = keydown;
+                            break;
 
-                    case SDLK_s:
-                    case SDLK_DOWN:
-                        s_pressed = false;
-                        break;
+                        case SDLK_v:
+                        case SDLK_END:
+                        case SDLK_PAGEDOWN:
+                            v_pressed = keydown;
+                            break;
 
-                    case SDLK_a:
-                    case SDLK_LEFT:
-                        a_pressed = false;
-                        break;
+                        case SDLK_w:
+                        case SDLK_UP:
+                            w_pressed = keydown;
+                            break;
 
-                    case SDLK_d:
-                    case SDLK_RIGHT:
-                        d_pressed = false;
-                        break;
+                        case SDLK_s:
+                        case SDLK_DOWN:
+                            s_pressed = keydown;
+                            break;
 
-                    default:
-                        break;
+                        case SDLK_a:
+                        case SDLK_LEFT:
+                            a_pressed = keydown;
+                            break;
+
+                        case SDLK_d:
+                        case SDLK_RIGHT:
+                            d_pressed = keydown;
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
                 break;
 
@@ -158,8 +129,8 @@ bool process_events(bool *need_redraw, Camera *camera)
                     camera->horizontal_angle -= xrel * camera->mouse_sensitivity;
                     camera->vertical_angle += yrel * camera->mouse_sensitivity;
 
-                    camera->horizontal_angle = range_angle(camera->horizontal_angle);
-                    camera->vertical_angle = range_angle(camera->vertical_angle);
+                    camera->horizontal_angle = __range_angle(camera->horizontal_angle);
+                    camera->vertical_angle = __range_angle(camera->vertical_angle);
 
                     SDL_WarpMouse(camera->mouse_prev_x = camera->w / 2, camera->mouse_prev_y = camera->h / 2);
                     *need_redraw = true;
@@ -216,4 +187,18 @@ bool process_events(bool *need_redraw, Camera *camera)
     } while (SDL_PollEvent(&event));
 
     return true;
+}
+
+static double __range_angle(double a)
+{
+    if (a < 0.0)
+    {
+        return 360.0;
+    }
+    else if (a > 360.0)
+    {
+        return 0.0;
+    }
+
+    return a;
 }

@@ -4,7 +4,7 @@
 #ifndef __RING_BUFFER_H__
 #define __RING_BUFFER_H__
 
-#pragma message("__RING_BUFFER_H__")
+//#pragma message("__RING_BUFFER_H__")
 
 #include <threads.h>
 
@@ -30,9 +30,9 @@ void ring_buffer_destroy(RingBuffer *rb);
 bool ring_buffer_write(RingBuffer *rb, const void *data);
 void *ring_buffer_read(RingBuffer *rb);
 #define RING_BUFFER_READ(element_type, rb) ((element_type) ring_buffer_read(rb))
-size_t ring_buffer_items_count(RingBuffer *rb);
-bool ring_buffer_is_full(RingBuffer *rb);
-bool ring_buffer_is_empty(RingBuffer *rb);
+size_t ring_buffer_items_count(const RingBuffer *rb);
+bool ring_buffer_is_full(const RingBuffer *rb);
+bool ring_buffer_is_empty(const RingBuffer *rb);
 void ring_buffer_wait_not_empty(RingBuffer *rb);
 
 #endif /* __RING_BUFFER_H__ */

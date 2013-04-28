@@ -3,43 +3,29 @@
 #include "debug.h"
 #include "viewer.h"
 
-bool not_viewer_shell_event_validator(const void *packet, size_t packet_size);
-bool not_viewer_shoot_executor(const void *packet);
-bool not_viewer_explosion_executor(const void *packet);
-
+static bool __not_viewer_shell_event_validator(const void *packet, size_t packet_size);
 static void __shell_event_executor(const void *packet, DynamicArray *notification_collection);
+static bool __not_viewer_shoot_executor(const void *packet);
+static bool __not_viewer_explosion_executor(const void *packet);
 
 #pragma warn(push)
 #pragma warn(disable: 2145)
 
 PacketDefinition viewer_protocol[6] = {
-    { .id = req_viewer_hello },
-    { .id = req_viewer_bye },
-    { .id = req_viewer_get_map },
-    { .id = req_viewer_get_tanks },
-    { .id = not_viewer_shoot, .validator = not_viewer_shell_event_validator, .executor = not_viewer_shoot_executor },
-    { .id = not_viewer_explosion, .validator = not_viewer_shell_event_validator, .executor = not_viewer_explosion_executor }
+    { .id = req_viewer_hello                                                                                                   },
+    { .id = req_viewer_bye                                                                                                     },
+    { .id = req_viewer_get_map                                                                                                 },
+    { .id = req_viewer_get_tanks                                                                                               },
+    { .id = not_viewer_shoot,     .validator = __not_viewer_shell_event_validator, .executor = __not_viewer_shoot_executor     },
+    { .id = not_viewer_explosion, .validator = __not_viewer_shell_event_validator, .executor = __not_viewer_explosion_executor }
 };
 
 #pragma warn(pop)
 
-const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size_t packet_count, uint8_t id)
+static bool __not_viewer_shell_event_validator(const void *packet, size_t packet_size)
 {
-    assert(protocol && packet_count && "Bad protocol definition.");
+    assert(packet && "Bad packet body pointer.");
 
-    for (int i = 0; i < packet_count; i++)
-    {
-        if (id == protocol[i].id)
-        {
-            return &protocol[i];
-        }
-    }
-
-    return NULL;
-}
-
-bool not_viewer_shell_event_validator(const void *packet, size_t packet_size)
-{
     if (sizeof(NotViewerShellEvent) != packet_size)
     {
         return false;
@@ -50,17 +36,19 @@ bool not_viewer_shell_event_validator(const void *packet, size_t packet_size)
     return isnormal(p->x) && isnormal(p->y) && isnormal(p->z);
 }
 
-bool not_viewer_shoot_executor(const void *packet)
+static bool __not_viewer_shoot_executor(const void *packet)
 {
+    assert(packet && "Bad packet body pointer.");
     printf("Got shoot!\n");
-    __shell_event_executor(packet, shoots);
+    __shell_event_executor(packet, viewer_get_shoots());
     return true;
 }
 
-bool not_viewer_explosion_executor(const void *packet)
+static bool __not_viewer_explosion_executor(const void *packet)
 {
+    assert(packet && "Bad packet body pointer.");
     printf("Got explosion!\n");
-    __shell_event_executor(packet, explosions);
+    __shell_event_executor(packet, viewer_get_explosions());
     return true;
 }
 
@@ -77,7 +65,7 @@ static void __shell_event_executor(const void *packet, DynamicArray *notificatio
     new_event->y = p->y;
     new_event->z = p->z;
 
-    printf("Shell event at: %lf; %lf; %lf\n", new_event->x, new_event->y, new_event->z);
+    //printf("Shell event at: %lf; %lf; %lf\n", new_event->x, new_event->y, new_event->z);
 
     dynamic_array_push(notification_collection, &new_event);
 

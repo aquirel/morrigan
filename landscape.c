@@ -209,10 +209,10 @@ int main(void)
     landscape_set_height_at_node(l, 1, 1, 0.2);
 
     test_cond("Get height 1.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 0)));
-    test_cond("Get height 2.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 256 - vector_eps)));
-    test_cond("Get height 3.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - vector_eps, 0)));
-    test_cond("Get height 4.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - vector_eps, 256 - vector_eps)));
-    test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 128 - vector_eps, 0)));
+    test_cond("Get height 2.", vector_tolerance_eq(0.1, landscape_get_height_at(l, 0, 256 - VECTOR_EPS)));
+    test_cond("Get height 3.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - VECTOR_EPS, 0)));
+    test_cond("Get height 4.", vector_tolerance_eq(0.2, landscape_get_height_at(l, 256 - VECTOR_EPS, 256 - VECTOR_EPS)));
+    test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 128 - VECTOR_EPS, 0)));
 
     landscape_destroy(l);
     l = landscape_create(2, 128);

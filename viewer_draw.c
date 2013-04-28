@@ -2,10 +2,11 @@
 
 #include "viewer.h"
 
-void draw_tank(const ResGetTanksTankRecord *tank)
+static void __draw_shell_event(const NotViewerShellEvent *e, double radius, double delay);
+
+static void __draw_tank(const ResGetTanksTankRecord *tank, const GLuint *display_lists)
 {
-    static Vector tank_colors[] =
-    {
+    static Vector tank_colors[] = {
         { 0.0,  0.0,  0.0  },
         { 0.0,  0.0,  0.5  },
         { 0.0,  0.5,  0.0  },
@@ -25,6 +26,7 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     };
 
     assert(tank && "Bad tank pointer.");
+    assert(display_lists && "Bad display lists pointer.");
 
     glPushMatrix();
     glTranslated(tank->x, tank->y, tank->z);
@@ -47,26 +49,37 @@ void draw_tank(const ResGetTanksTankRecord *tank)
     };
     glMultMatrixd(m);
 
-    glCallList(display_lists + TANK_BODY_DISPLAY_LIST);
+    glColor4ub(0x35, 0x5e, 0x3b, tank->hp ? 0xff : 64);
+    glCallList(*display_lists + TANK_BODY_DISPLAY_LIST);
 
-    glColor3dv((double *) &tank_colors[tank->team]);
-    glCallList(display_lists + TANK_TURRET_DISPLAY_LIST);
+    glColor4d(tank_colors[tank->team].x, tank_colors[tank->team].y, tank_colors[tank->team].z, tank->hp ? 1.0 : 0.25);
+    glCallList(*display_lists + TANK_TURRET_DISPLAY_LIST);
 
     glTranslated(0, 0, TANK_BOUNDING_SPHERE_RADIUS / 2.0);
 
-    Vector default_turret_look = { .x = 1.0, .y = 0.0, .z = 0.0 },
+    Vector default_turret_look = { .x = 1, .y = 0, .z = 0 },
            turret_look         = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z };
 
     if (0 != memcmp(&default_turret_look, &turret_look, sizeof(Vector)))
     {
-        static Vector rotation_axis;
-        vector_vector_mul(&default_turret_look, &turret_look, &rotation_axis);
-        VECTOR_NORMALIZE(&rotation_axis);
-        double angle = vector_angle(&default_turret_look, &turret_look) * 180 / M_PI;
-        glRotated(angle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+        vector_get_orthogonal(&turret_look, &side);
+        VECTOR_NORMALIZE(&side);
+
+        Vector top;
+        vector_vector_mul(&turret_look, &side, &top);
+        VECTOR_NORMALIZE(&top);
+
+        double m[] = {
+            turret_look.x,      turret_look.y,      turret_look.z,      0,
+            side.x,             side.y,             side.z,             0,
+            top.x,              top.y,              top.z,              0,
+            0,                  0,                  0,                  1
+        };
+        glMultMatrixd(m);
     }
 
-    glCallList(display_lists + TANK_GUN_DISPLAY_LIST);
+    glColor4ub(0x35, 0x5e, 0x3b, tank->hp ? 0xff : 64);
+    glCallList(*display_lists + TANK_GUN_DISPLAY_LIST);
 
     glPopMatrix();
 }
@@ -96,8 +109,6 @@ void draw_tank_body(void)
     vector_scale(&bottom, extent.z, &scaled_bottom);
 
     glTranslated(0, 0, extent.z);
-
-    glColor3ub(0x35, 0x5e, 0x3b);
 
     glBegin(GL_QUADS);
     // Front face.
@@ -163,7 +174,7 @@ void draw_tank_gun(void)
 
     glRotated(90, 0, 0, 1);
     glRotated(90, 1, 0, 0);
-    glColor3ub(0x35, 0x5e, 0x3b);
+
     gluCylinder(q, gun_radius, gun_radius, TANK_GUN_LENGTH, gun_slices, gun_slices);
 
     glTranslated(0, 0, TANK_GUN_LENGTH);
@@ -172,16 +183,21 @@ void draw_tank_gun(void)
     gluDeleteQuadric(q);
 }
 
-void draw_tanks(const ResGetTanksTankRecord *tanks, size_t tanks_count)
+static void __draw_tanks(const ResGetTanksTankRecord *tanks, size_t tanks_count, const GLuint *display_lists)
 {
+    assert(tanks && "Bad tanks pointer.");
+    assert(display_lists && "Bad display lists pointer.");
+
     for (size_t i = 0; i < tanks_count; i++)
     {
-        draw_tank(&tanks[i]);
+        __draw_tank(&tanks[i], display_lists);
     }
 }
 
 void draw_landscape(const Landscape *l)
 {
+    assert(l && "Bad landscape pointer.");
+
     size_t ls = l->landscape_size,
            ts = l->tile_size;
 
@@ -243,42 +259,37 @@ void draw_landscape(const Landscape *l)
     }
 }
 
-void draw_shoots(DynamicArray *shoots)
+static void __draw_shell_events(const DynamicArray *shell_events, void (*f)(const NotViewerShellEvent *e))
 {
-    assert(shoots && "Bad shoots pointer.");
+    assert(shell_events && "Bad shell events array pointer.");
+    assert(f && "Bad draw callback.");
 
-    size_t c = dynamic_array_count(shoots);
+    size_t c = dynamic_array_count(shell_events);
     for (size_t i = 0; i < c; i++)
     {
-        NotViewerShellEvent *shoot = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, shoots, i);
-        draw_shoot(shoot);
+        NotViewerShellEvent *e = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, shell_events, i);
+        f(e);
     }
 }
 
-void draw_explosions(DynamicArray *explosions)
+static void __draw_shoot(const NotViewerShellEvent *shoot)
 {
-    assert(explosions && "Bad explosions pointer.");
-
-    size_t c = dynamic_array_count(explosions);
-    for (size_t i = 0; i < c; i++)
-    {
-        NotViewerShellEvent *explosion = *DYNAMIC_ARRAY_GET(NotViewerShellEvent **, explosions, i);
-        draw_explosion(explosion);
-    }
+    assert(shoot && "Bad shoot pointer.");
+    __draw_shell_event(shoot, 3.0, 8.0);
 }
 
-void draw_shoot(const NotViewerShellEvent *shoot)
+static void __draw_explosion(const NotViewerShellEvent *explosion)
 {
-    draw_explosion(shoot);
-}
-
-void draw_explosion(const NotViewerShellEvent *explosion)
-{
-    const double explosion_radius = 20.0;
     assert(explosion && "Bad explosion pointer.");
+    __draw_shell_event(explosion, 5.0, 16.0);
+}
+
+static void __draw_shell_event(const NotViewerShellEvent *e, double radius, double delay)
+{
+    assert(e && "Bad shell event pointer.");
 
     glPushMatrix();
-    glTranslated(explosion->x, explosion->y, explosion->z);
+    glTranslated(e->x, e->y, e->z);
 
     GLUquadric *q = NULL;
     q = gluNewQuadric();
@@ -288,7 +299,7 @@ void draw_explosion(const NotViewerShellEvent *explosion)
         gluQuadricOrientation(q, GLU_OUTSIDE);
 
         glColor4d(0.8, 0.0, 0.0, 0.5);
-        gluSphere(q, explosion_radius / (1.0 + explosion->type), 32, 32);
+        gluSphere(q, radius / (1.0 + e->type / delay), 32, 32);
 
         gluDeleteQuadric(q);
     }
@@ -296,17 +307,30 @@ void draw_explosion(const NotViewerShellEvent *explosion)
     glPopMatrix();
 }
 
-void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_count)
+void draw(const Landscape *l,
+          const ResGetTanksTankRecord *tanks,
+          size_t tanks_count,
+          const Camera *camera,
+          const GLuint *display_lists,
+          const DynamicArray *shoots,
+          const DynamicArray *explosions)
 {
+    assert(l && "Bad lanscape pointer.");
+    assert(tanks && "Bad tanks pointer.");
+    assert(camera && "Bad camera pointer.");
+    assert(display_lists && "Bad display lists pointer.");
+    assert(shoots && "Bad shoots array pointer.");
+    assert(explosions && "Bad explosions array pointer.");
+
     glClearColor(0, 0, 0, 0);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();
 
-    glRotated(-camera.vertical_angle, 1.0, 0.0, 0.0);
-    glRotated(camera.horizontal_angle, 0.0, 0.0, 1.0);
-    glTranslated(-camera.x, -camera.y, -camera.z);
+    glRotated(-camera->vertical_angle, 1.0, 0.0, 0.0);
+    glRotated(camera->horizontal_angle, 0.0, 0.0, 1.0);
+    glTranslated(-camera->x, -camera->y, -camera->z);
 
     size_t ls = l->landscape_size,
            ts = l->tile_size;
@@ -327,12 +351,12 @@ void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_c
     GLfloat specular_material_parameters[] = { 0.1, 0.1, 0.1, 1.0 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material_parameters);
 
-    glCallList(display_lists + LANDSCAPE_DISPLAY_LIST);
+    glCallList(*display_lists + LANDSCAPE_DISPLAY_LIST);
 
-    draw_tanks(tanks, tanks_count);
+    __draw_tanks(tanks, tanks_count, display_lists);
 
-    draw_shoots(shoots);
-    draw_explosions(explosions);
+    __draw_shell_events(shoots, __draw_shoot);
+    __draw_shell_events(explosions, __draw_explosion);
 
     glPopMatrix();
 

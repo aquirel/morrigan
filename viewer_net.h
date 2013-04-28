@@ -4,7 +4,7 @@
 #ifndef __VIEWER_NET_H__
 #define __VIEWER_NET_H__
 
-#pragma message("__VIEWER_NET_H__")
+//#pragma message("__VIEWER_NET_H__")
 
 #include "protocol.h"
 

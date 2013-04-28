@@ -4,7 +4,7 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 
-#pragma message("__SHELL_H__")
+//#pragma message("__SHELL_H__")
 
 #include <stdbool.h>
 
@@ -12,7 +12,7 @@
 #include "landscape.h"
 #include "bounding.h"
 
-#define SHELL_DEFAULT_SPEED 128.0
+#define SHELL_DEFAULT_SPEED 768.0
 #define SHELL_RADIUS 0.1
 #define SHELL_G_ACCELERATION 0.5
 #define SHELL_HIT_AMOUNT 20

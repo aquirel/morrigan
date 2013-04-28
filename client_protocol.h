@@ -4,7 +4,7 @@
 #ifndef __CLIENT_PROTOCOL_H__
 #define __CLIENT_PROTOCOL_H__
 
-#pragma message("__CLIENT_PROTOCOL_H__")
+//#pragma message("__CLIENT_PROTOCOL_H__")
 
 #include <stdbool.h>
 #include <stdint.h>

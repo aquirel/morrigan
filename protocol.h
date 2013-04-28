@@ -4,7 +4,7 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
-#pragma message("__PROTOCOL_H__")
+//#pragma message("__PROTOCOL_H__")
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -90,29 +90,29 @@ typedef enum ClientState
 
 #pragma pack(push, 8)
 
-typedef struct Client
+typedef struct NetworkClient
 {
     ClientState state;
     SOCKADDR address;
-    Tank tank;
     char current_packet_buffer[PACKET_BUFFER];
     size_t current_packet_size;
     const PacketDefinition *current_packet_definition;
+} NetworkClient;
+
+typedef struct Client
+{
+    NetworkClient network_client;
+    Tank tank;
 } Client;
 
 typedef struct ViewerClient
 {
-    ClientState state;
-    SOCKADDR address;
-    char current_packet_buffer[PACKET_BUFFER];
-    size_t current_packet_size;
-    const PacketDefinition *current_packet_definition;
+    NetworkClient network_client;
 } ViewerClient;
 
 #pragma pack(pop)
 
 void handle_packet(const char *packet, size_t packet_size, const SOCKADDR *sender_address);
-const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size_t packet_count, uint8_t id);
 
 #pragma pack(push, 1)
 #pragma warn(push)
@@ -174,6 +174,7 @@ typedef struct ResGetTanksTankRecord
     double target_turn;
     double speed;
     uint8_t team;
+    uint8_t hp;
 } ResGetTanksTankRecord;
 
 typedef struct NotViewerShellEvent

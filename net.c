@@ -15,7 +15,7 @@ static thrd_t worker_tid;
 static volatile atomic_bool working = false;
 static SOCKET s = INVALID_SOCKET;
 
-static int net_worker(void *unused);
+static int __net_worker(void *unused);
 
 bool net_start(void)
 {
@@ -37,7 +37,7 @@ bool net_start(void)
     check(SOCKET_ERROR != bind(s, (const SOCKADDR *) &s_address, sizeof(s_address)), "Failed to bind socket. Error: %d.", WSAGetLastError());
 
     working = true;
-    check(thrd_success == thrd_create(&worker_tid, net_worker, NULL), "Failed to start network worker thread.", "");
+    check(thrd_success == thrd_create(&worker_tid, __net_worker, NULL), "Failed to start network worker thread.", "");
 
     return true;
 
@@ -48,7 +48,7 @@ bool net_start(void)
     return false;
 }
 
-static int net_worker(void *unused)
+static int __net_worker(void *unused)
 {
     #pragma ref unused
 

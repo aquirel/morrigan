@@ -1,2 +1,10 @@
-mov bstrlib to separate static library.
-viewer draw shooting and explosions.
+rewrite bounding tests.
+    polygon(s) - segment test.
+
+shell through the wall.
+
+move client protocol to struct (remove protocol and count in calls).
+    protocol, count, socket
+
+--
+test client protocol.

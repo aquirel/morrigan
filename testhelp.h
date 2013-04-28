@@ -38,10 +38,10 @@
 #ifndef __TESTHELP_H__
 #define __TESTHELP_H__
 
-#pragma message("__TESTHELP_H__")
+//#pragma message("__TESTHELP_H__")
 
-int __failed_tests = 0;
-int __test_num = 0;
+static int __failed_tests = 0;
+static int __test_num = 0;
 
 #define test_cond(descr,_c) do { \
     __test_num++; printf("%d - %s: ", __test_num, descr); \

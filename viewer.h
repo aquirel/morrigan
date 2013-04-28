@@ -4,7 +4,7 @@
 #ifndef __VIEWER_H__
 #define __VIEWER_H__
 
-#pragma message("__VIEWER_H__")
+//#pragma message("__VIEWER_H__")
 
 #include <assert.h>
 #include <stdlib.h>
@@ -32,11 +32,9 @@
 #include "dynamic_array.h"
 #include "landscape.h"
 #include "protocol.h"
+#include "protocol_utils.h"
 #include "client_protocol.h"
 #include "viewer_net.h"
-
-#define TIMER_EVENT_ID 1
-#define TANKS_TIMER_EVENT_ID 2
 
 #pragma pack(push, 8)
 
@@ -52,41 +50,34 @@ typedef struct Camera
 
 #pragma pack(pop)
 
-extern SOCKET s;
-extern Camera camera;
-
-extern Landscape *l;
-extern ResGetTanksTankRecord tanks[MAX_CLIENTS];
-extern size_t tanks_count;
-
-extern DynamicArray *shoots;
-extern DynamicArray *explosions;
-
 // viewer_events.c
-bool process_events(bool *need_redraw, Camera *camera);
-void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, const size_t tanks_count);
+bool process_events(bool *need_redraw, Camera *camera, SOCKET *s, ResGetTanksTankRecord *tanks, size_t *tanks_count);
+//void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, const size_t tanks_count);
 void process_shells(void);
 
+DynamicArray *viewer_get_shoots(void);
+DynamicArray *viewer_get_explosions(void);
+
 // viewer_draw.c
-void draw(const Landscape *l, const ResGetTanksTankRecord *tanks, size_t tanks_count);
 void draw_landscape(const Landscape *l);
 void draw_tank_body(void);
 void draw_tank_turret(void);
 void draw_tank_gun(void);
-void draw_tank(const ResGetTanksTankRecord *tank);
-void draw_tanks(const ResGetTanksTankRecord *tanks, size_t tanks_count);
-void draw_shoot(const NotViewerShellEvent *shoot);
-void draw_shoots(DynamicArray *shoots);
-void draw_explosion(const NotViewerShellEvent *explosion);
-void draw_explosions(DynamicArray *explosions);
+void draw(const Landscape *l,
+          const ResGetTanksTankRecord *tanks,
+          size_t tanks_count,
+          const Camera *camera,
+          const GLuint *display_lists,
+          const DynamicArray *shoots,
+          const DynamicArray *explosions);
 
-double range_angle(double a);
+#define TIMER_EVENT_ID 1
+#define TANKS_TIMER_EVENT_ID 2
 
 #define DISPLAY_LISTS_COUNT 4
 #define LANDSCAPE_DISPLAY_LIST   0
 #define TANK_BODY_DISPLAY_LIST   1
 #define TANK_TURRET_DISPLAY_LIST 2
-#define TANK_GUN_DISPLAY_LIST 3
-extern GLuint display_lists;
+#define TANK_GUN_DISPLAY_LIST    3
 
 #endif /* __VIEWER_H__ */

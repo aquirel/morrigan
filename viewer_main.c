@@ -4,31 +4,28 @@
 #include "viewer.h"
 #include "tank.h"
 
-SOCKET s = INVALID_SOCKET;
-bool connected = false;
+static SOCKET s = INVALID_SOCKET;
+static bool connected = false;
 
-Landscape *l = NULL;
-ResGetTanksTankRecord tanks[MAX_CLIENTS];
-size_t tanks_count = 0;
+static Landscape *l = NULL;
+static ResGetTanksTankRecord tanks[MAX_CLIENTS];
+static size_t tanks_count = 0;
+
 #define SHOOT_LIFETIME 100
-#define EXPLOSION_LIFETIME 100
-DynamicArray *shoots = NULL, *explosions = NULL;
+#define EXPLOSION_LIFETIME 250
+static DynamicArray *shoots = NULL, *explosions = NULL;
 
-#define TANKS_POLL_INTERVAL 1000
-SDL_TimerID timer_id = NULL, tanks_timer_id = NULL;
+#define TANKS_POLL_INTERVAL 100
+static SDL_TimerID timer_id = NULL, tanks_timer_id = NULL;
 
-Camera camera;
+static Camera camera;
 
-GLuint display_lists = 0;
+static GLuint display_lists = 0;
 
-bool init_video(Camera *camera);
-void cleanup(void);
+static bool __init_video(Camera *camera);
+static void __cleanup(void);
 
-Uint32 timer_handler(Uint32 interval, void *param);
-Uint32 tanks_timer_handler(Uint32 interval, void *param);
-
-void move_tank(const Landscape *l, ResGetTanksTankRecord *tank);
-void process_shell_collection(DynamicArray *c, const size_t lifetime);
+static Uint32 __timer_handler(Uint32 interval, void *param);
 
 int main(int argc, char *argv[])
 {
@@ -53,7 +50,7 @@ int main(int argc, char *argv[])
 
     camera.x = camera.y = l->landscape_size / 2.0 * l->tile_size;
 
-    check(init_video(&camera), "Failed to init video.", "");
+    check(__init_video(&camera), "Failed to init video.", "");
 
     check(0 != (display_lists = glGenLists(DISPLAY_LISTS_COUNT)), "Failed to create display list.", "");
 
@@ -80,26 +77,26 @@ int main(int argc, char *argv[])
     while (true)
     {
         bool need_redraw = false;
-        if (!process_events(&need_redraw, &camera))
+        if (!process_events(&need_redraw, &camera, &s, tanks, &tanks_count))
         {
             break;
         }
 
         if (need_redraw)
         {
-            draw(l, tanks, tanks_count);
+            draw(l, tanks, tanks_count, &camera, &display_lists, shoots, explosions);
         }
     }
 
-    cleanup();
+    __cleanup();
     return 0;
 
     error:
-    cleanup();
+    __cleanup();
     return -1;
 }
 
-bool init_video(Camera *camera)
+static bool __init_video(Camera *camera)
 {
     assert(camera && "Bad camera pointer.");
 
@@ -125,8 +122,8 @@ bool init_video(Camera *camera)
     */
     check(NULL != SDL_SetVideoMode(camera->w, camera->h, camera->bpp, SDL_HWSURFACE | SDL_SWSURFACE | SDL_OPENGL), "Failed to set video mode.", "");
     SDL_ShowCursor(SDL_DISABLE);
-    check(NULL != (timer_id = SDL_AddTimer(SDL_DEFAULT_REPEAT_INTERVAL, timer_handler, NULL)), "Failed to setup timer.", "");
-    check(NULL != (tanks_timer_id = SDL_AddTimer(TANKS_POLL_INTERVAL, tanks_timer_handler, NULL)), "Failed to setup tanks timer.", "");
+    check(NULL != (timer_id = SDL_AddTimer(SDL_DEFAULT_REPEAT_INTERVAL, __timer_handler, (void *) TIMER_EVENT_ID)), "Failed to setup timer.", "");
+    check(NULL != (tanks_timer_id = SDL_AddTimer(TANKS_POLL_INTERVAL, __timer_handler, (void *) TANKS_TIMER_EVENT_ID)), "Failed to setup tanks timer.", "");
 
     glLineWidth(1.0);
 
@@ -169,7 +166,7 @@ bool init_video(Camera *camera)
     return false;
 }
 
-void cleanup(void)
+static void __cleanup(void)
 {
     if (SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_TIMER))
     {
@@ -227,16 +224,14 @@ void cleanup(void)
     }
 }
 
-Uint32 timer_handler(Uint32 interval, void *param)
+static Uint32 __timer_handler(Uint32 interval, void *param)
 {
-    #pragma ref param
-
     SDL_Event event =
     {
         .user =
         {
             .type = SDL_USEREVENT,
-            .code = TIMER_EVENT_ID,
+            .code = (int) param,
             .data1 = NULL,
             .data2 = NULL
         }
@@ -246,26 +241,7 @@ Uint32 timer_handler(Uint32 interval, void *param)
     return interval;
 }
 
-Uint32 tanks_timer_handler(Uint32 interval, void *param)
-{
-    #pragma ref param
-
-    SDL_Event event =
-    {
-        .user =
-        {
-            .type = SDL_USEREVENT,
-            .code = TANKS_TIMER_EVENT_ID,
-            .data1 = NULL,
-            .data2 = NULL
-        }
-    };
-    check(0 == SDL_PushEvent(&event), "SDL_PushEvent() failed.", "");
-    error:
-    return interval;
-}
-
-void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, size_t tanks_count)
+/*void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, size_t tanks_count)
 {
     assert(l && "Bad landscape pointer.");
     assert(tanks && "Bad tanks pointer.");
@@ -289,42 +265,44 @@ void move_tank(const Landscape *l, ResGetTanksTankRecord *tank)
     vector_scale(&direction, tank->speed / SDL_DEFAULT_REPEAT_INTERVAL, &t);
     VECTOR_ADD(&position, &t);
 
-    if (0.0 <= position.x &&
-        0.0 <= position.y &&
-        l->tile_size * l->landscape_size >= position.x &&
-        l->tile_size * l->landscape_size >= position.y)
+    if (!(0.0 <= position.x &&
+          0.0 <= position.y &&
+          l->tile_size * l->landscape_size >= position.x &&
+          l->tile_size * l->landscape_size >= position.y))
     {
-        position.z = landscape_get_height_at(l, position.x, position.y);
-
-        Vector old_orientation = orientation;
-        landscape_get_normal_at(l, position.x, position.y, &orientation);
-        tank_rotate_direction(&direction, &old_orientation, &orientation);
-
-        tank_change_turn_worker(&tank->target_turn,
-                                TANK_MAX_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL,
-                                &direction,
-                                &orientation);
-
-        tank->x = position.x;
-        tank->y = position.y;
-        tank->z = position.z;
-        tank->direction_x = direction.x;
-        tank->direction_y = direction.y;
-        tank->direction_z = direction.z;
-        tank->orientation_x = orientation.x;
-        tank->orientation_y = orientation.y;
-        tank->orientation_z = orientation.z;
-
-        Vector turret_direction        = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z },
-               turret_direction_target = { .x = tank->target_turret_x, .y = tank->target_turret_y, .z = tank->target_turret_z };
-
-        tank_rotate_turret_worker(&turret_direction_target, &turret_direction, TANK_MAX_TURRET_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL);
-
-        tank->turret_x = turret_direction.x;
-        tank->turret_y = turret_direction.y;
-        tank->turret_z = turret_direction.z;
+        return;
     }
-}
+
+    position.z = landscape_get_height_at(l, position.x, position.y);
+
+    Vector old_orientation = orientation;
+    landscape_get_normal_at(l, position.x, position.y, &orientation);
+    tank_rotate_direction(&direction, &old_orientation, &orientation);
+
+    tank_change_turn_worker(&tank->target_turn,
+                            TANK_MAX_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL,
+                            &direction,
+                            &orientation);
+
+    tank->x = position.x;
+    tank->y = position.y;
+    tank->z = position.z;
+    tank->direction_x = direction.x;
+    tank->direction_y = direction.y;
+    tank->direction_z = direction.z;
+    tank->orientation_x = orientation.x;
+    tank->orientation_y = orientation.y;
+    tank->orientation_z = orientation.z;
+
+    Vector turret_direction        = { .x = tank->turret_x, .y = tank->turret_y, .z = tank->turret_z },
+           turret_direction_target = { .x = tank->target_turret_x, .y = tank->target_turret_y, .z = tank->target_turret_z };
+
+    tank_rotate_turret_worker(&turret_direction_target, &turret_direction, TANK_MAX_TURRET_TURN_SPEED / SDL_DEFAULT_REPEAT_INTERVAL);
+
+    tank->turret_x = turret_direction.x;
+    tank->turret_y = turret_direction.y;
+    tank->turret_z = turret_direction.z;
+}*/
 
 void process_shell_collection(DynamicArray *c, const size_t lifetime)
 {
@@ -338,6 +316,7 @@ void process_shell_collection(DynamicArray *c, const size_t lifetime)
         if (lifetime < e->type)
         {
             dynamic_array_delete_at(c, i);
+            count--;
         }
         else
         {
@@ -349,20 +328,17 @@ void process_shell_collection(DynamicArray *c, const size_t lifetime)
 
 void process_shells(void)
 {
-    //process_shell_collection(shoots, SHOOT_LIFETIME);
-    //process_shell_collection(explosions, EXPLOSION_LIFETIME);
+    process_shell_collection(shoots, SHOOT_LIFETIME);
+    process_shell_collection(explosions, EXPLOSION_LIFETIME);
 }
 
-double range_angle(double a)
+DynamicArray *viewer_get_shoots(void)
 {
-    if (a < 0.0)
-    {
-        return 360.0;
-    }
-    else if (a > 360.0)
-    {
-        return 0.0;
-    }
-
-    return a;
+    return shoots;
 }
+
+DynamicArray *viewer_get_explosions(void)
+{
+    return explosions;
+}
+

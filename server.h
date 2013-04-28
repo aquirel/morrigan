@@ -4,7 +4,7 @@
 #ifndef __SERVER_H__
 #define __SERVER_H__
 
-#pragma message("__SERVER_H__")
+//#pragma message("__SERVER_H__")
 
 #include <winsock2.h>
 
@@ -24,12 +24,11 @@ Client *find_client_by_address(const SOCKADDR *address);
 Client *register_client(const SOCKADDR *address);
 bool unregister_client(const SOCKADDR *address);
 void enqueue_client(const Client *c);
-void enqueue_viewer(const ViewerClient *c);
 
 ViewerClient *find_viewer_by_address(const SOCKADDR *address);
 ViewerClient *register_viewer(const SOCKADDR *address);
 bool unregister_viewer(const SOCKADDR *address);
-void enqueue_viwer(const ViewerClient *c);
+void enqueue_viewer(const ViewerClient *c);
 
 void notify_viewers(NotViewerShellEvent *notification);
 void notify_shutdown(void);

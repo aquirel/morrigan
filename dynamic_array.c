@@ -117,7 +117,7 @@ void dynamic_array_delete_at(DynamicArray *a, size_t i)
     memset(a->data + a->element_count * a->element_size, 0, a->element_size);
 }
 
-size_t dynamic_array_count(DynamicArray *a)
+size_t dynamic_array_count(const DynamicArray *a)
 {
     __dynamic_array_assert(a);
     return a->element_count;

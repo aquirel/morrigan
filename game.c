@@ -8,6 +8,7 @@
 #include <process.h>
 
 #include "debug.h"
+#include "matrix.h"
 #include "game.h"
 #include "server.h"
 #include "landscape.h"
@@ -18,11 +19,11 @@
 static thrd_t worker_tid;
 static volatile atomic_bool working = false;
 
-const Landscape *landscape = NULL;
+static const Landscape *landscape = NULL;
 static DynamicArray *clients = NULL;
 static DynamicArray *shells = NULL;
 
-static int game_worker(void *unused);
+static int __game_worker(void *unused);
 
 static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landscape, size_t clients_count);
 static void __tank_collision_detection(size_t i, Client *c);
@@ -46,7 +47,7 @@ bool game_start(const Landscape *l, DynamicArray *c)
     check_mem(shells = DYNAMIC_ARRAY_CREATE(Shell *, 16));
 
     working = true;
-    check(thrd_success == thrd_create(&worker_tid, game_worker, NULL), "Failed to start game worker thread.", "");
+    check(thrd_success == thrd_create(&worker_tid, __game_worker, NULL), "Failed to start game worker thread.", "");
 
     log_info("end.", "");
     return true;
@@ -73,7 +74,12 @@ void game_stop(void)
     log_info("end.", "");
 }
 
-static int game_worker(void *unused)
+const Landscape *game_get_landscape(void)
+{
+    return landscape;
+}
+
+static int __game_worker(void *unused)
 {
     #pragma ref unused
     struct _timeval tick_start_time, tick_end_time;
@@ -92,28 +98,20 @@ static int game_worker(void *unused)
         {
             Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-            if (cs_connected == c->state)
+            if (cs_connected == c->network_client.state)
             {
                 continue;
             }
 
-            if (cs_acknowledged == c->state)
+            if (cs_acknowledged == c->network_client.state)
             {
                 __game_tank_initialize(i, c, landscape, clients_count);
             }
 
-            /*{
-                Tank *t = &(c->tank);
-                printf(">1>%u; %x\n", sizeof(Tank), (int) t);
-                printf(">1>%u; %u\n", _Alignof(mtx_t), _Alignof(Vector));
-                printf(">1>mtx = %x; position = %x; position.x = %x\n", (int) &t->mtx, (int) &t->position, (int) &t->position.x);
-                printf(">1>%lf; %lf; %lf\n", t->position.x, t->position.y, t->position.z);
-            }*/
-
             if (!tank_tick(&c->tank, landscape))
             {
                 uint8_t data = not_tank_hit_bound;
-                respond((const char *) &data, 1, &c->address);
+                respond((const char *) &data, 1, &c->network_client.address);
             }
 
             __tank_collision_detection(i, c);
@@ -199,7 +197,7 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
             }
 
             Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
-            if (cs_in_game == previous_c->state &&
+            if (cs_in_game == previous_c->network_client.state &&
                               intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
             {
                 break;
@@ -208,7 +206,7 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
     } while (j < clients_count);
 
     check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
-    c->state = cs_in_game;
+    c->network_client.state = cs_in_game;
 
     return true;
     error:
@@ -225,14 +223,14 @@ static void __tank_collision_detection(size_t i, Client *c)
         }
 
         Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
-        if (cs_in_game == previous_c->state &&
+        if (cs_in_game == previous_c->network_client.state &&
             intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
         {
             intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
 
             uint8_t data = not_tank_collision;
-            respond((const char *) &data, 1, &c->address);
-            respond((const char *) &data, 1, &previous_c->address);
+            respond((const char *) &data, 1, &c->network_client.address);
+            respond((const char *) &data, 1, &previous_c->network_client.address);
         }
     }
 }
@@ -249,18 +247,35 @@ static void __perform_shooting(Client *client)
     VECTOR_ADD(&p, &o);
 
     Vector default_turret_direction = { .x = 1, .y = 0, .z = 0 },
-           turret_direction = client->tank.direction,
-           rotation_axis;
-    double angle = vector_angle(&default_turret_direction, &client->tank.turret_direction);
-    if (0.0 != angle)
+           turret_direction         = client->tank.direction;
+
+    if (0 != memcmp(&default_turret_direction, &client->tank.turret_direction, sizeof(Vector)))
     {
-        vector_vector_mul(&default_turret_direction, &turret_direction, &rotation_axis);
-        VECTOR_NORMALIZE(&rotation_axis);
-        VECTOR_ROTATE(&turret_direction, &rotation_axis, angle);
+        turret_direction = client->tank.turret_direction;
+
+        Vector side;
+        vector_vector_mul(&client->tank.orientation, &client->tank.direction, &side);
+        VECTOR_NORMALIZE(&side);
+
+        Vector top;
+        vector_vector_mul(&client->tank.direction, &side, &top);
+        VECTOR_NORMALIZE(&top);
+
+        Matrix m = {
+            .values = {
+                { client->tank.direction.x, side.x, top.x },
+                { client->tank.direction.y, side.y, top.y },
+                { client->tank.direction.z, side.z, top.z }
+            }
+        };
+
+        matrix_vector_mul(&m, &turret_direction, &turret_direction);
     }
 
+    VECTOR_NORMALIZE(&turret_direction);
     VECTOR_SCALE(&turret_direction, TANK_GUN_LENGTH);
     VECTOR_ADD(&p, &turret_direction);
+    VECTOR_NORMALIZE(&turret_direction);
 
     Shell *new_shell = NULL;
     new_shell = shell_create(&p, &turret_direction);
@@ -268,9 +283,9 @@ static void __perform_shooting(Client *client)
 
     check(dynamic_array_push(shells, &new_shell), "Failed to add new shell.", "");
 
-    __notify_in_radius(&client->tank.position, NEAR_SHOOT_NOTIFICATION_RARIUS, not_near_shoot, client);
-
     client->tank.fire_delay = TANK_FIRE_DELAY;
+
+    __notify_in_radius(&client->tank.position, NEAR_SHOOT_NOTIFICATION_RARIUS, not_near_shoot, client);
 
     NotViewerShellEvent shoot_notification = {
         .type = not_viewer_shoot,
@@ -279,11 +294,9 @@ static void __perform_shooting(Client *client)
         .z = new_shell->position.z
     };
 
-    printf("Shoot at: %lf; %lf; %lf\n", shoot_notification.x, shoot_notification.y, shoot_notification.z);
-    printf(">>>%u\n", sizeof(NotViewerShellEvent));
-
     notify_viewers(&shoot_notification);
 
+    //printf("Shoot at: %lf; %lf; %lf\n", shoot_notification.x, shoot_notification.y, shoot_notification.z);
     error:
     return;
 }
@@ -297,7 +310,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->state || exclude == c)
+        if (cs_in_game != c->network_client.state || exclude == c)
         {
             continue;
         }
@@ -310,7 +323,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
             continue;
         }
 
-        respond((const char *) &message, sizeof(message), &c->address);
+        respond((const char *) &message, sizeof(message), &c->network_client.address);
     }
 }
 
@@ -323,7 +336,7 @@ static Client *__shell_collision_detection(const Shell *shell)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->state)
+        if (cs_in_game != c->network_client.state)
         {
             continue;
         }
@@ -358,7 +371,7 @@ static void __tank_hit(Client *c, int amount)
         response = not_hit;
     }
 
-    respond((const char *) &response, sizeof(response), &c->address);
+    respond((const char *) &response, sizeof(response), &c->network_client.address);
 }
 
 static void __shell_explode(Shell *shell, Client *exclude)
@@ -373,7 +386,7 @@ static void __shell_explode(Shell *shell, Client *exclude)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->state || c == exclude)
+        if (cs_in_game != c->network_client.state || c == exclude)
         {
             continue;
         }
@@ -403,12 +416,12 @@ static void __shell_explode(Shell *shell, Client *exclude)
                 }
             }
 
-            respond((const char *) &response, sizeof(response), &c->address);
+            respond((const char *) &response, sizeof(response), &c->network_client.address);
         }
         else if (r <= NEAR_EXPLOSION_NOTIFICATION_RARIUS)
         {
             response = not_near_explosion;
-            respond((const char *) &response, sizeof(response), &c->address);
+            respond((const char *) &response, sizeof(response), &c->network_client.address);
         }
     }
 

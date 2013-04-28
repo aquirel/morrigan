@@ -8,11 +8,9 @@
 #include "vector.h"
 #include "matrix.h"
 
-double vector_eps = 1e-5;
-
 bool vector_tolerance_eq(double v1, double v2)
 {
-    return fabs(v1 - v2) <= vector_eps;
+    return fabs(v1 - v2) <= VECTOR_EPS;
 }
 
 bool vector_eq(const Vector *v1, const Vector *v2)
@@ -136,6 +134,23 @@ Vector *vector_zero(Vector *v)
     return v;
 }
 
+Vector *vector_get_orthogonal(const Vector *v, Vector *result)
+{
+    assert(v && result && "Bad vector pointers.");
+
+    Vector axis = { .x = 1, .y = 0, .z = 0 };
+    double angle = vector_angle(&axis, v);
+    if (vector_tolerance_eq(0, angle) ||
+        vector_tolerance_eq(M_PI, angle))
+    {
+        axis.x = 0;
+        axis.y = 1;
+    }
+
+    vector_vector_mul(v, &axis, result);
+    return result;
+}
+
 double vector_angle(const Vector *v1, const Vector *v2)
 {
     assert(v1 && v2 && "Bad vector pointer.");
@@ -145,14 +160,17 @@ double vector_angle(const Vector *v1, const Vector *v2)
     vector_normalize(v1, &_v1);
     vector_normalize(v2, &_v2);
 
-    double c = vector_mul(&_v1, &_v2), // / (vector_length(v1) * vector_length(v2)),
+    double c = vector_mul(&_v1, &_v2) / (vector_length(&_v1) * vector_length(&_v2)),
            s;
 
     vector_vector_mul(&_v1, &_v2, &_v3);
     s = vector_length(&_v3);
 
-    assert(fabs(c) <= 1.0 && "Bad cos value.");
-    assert(fabs(s) <= 1.0 && "Bad sin value.");
+    if (c > 1.0)       c = 1.0;
+    else if (c < -1.0) c = -1.0;
+
+    if (s > 1.0)       s = 1.0;
+    else if (s < -1.0) s = -1.0;
 
     if (0.0 == s)
     {
@@ -231,6 +249,14 @@ int main(void)
     t.z = 1.0;
     vector_rotate(&a, &t, M_PI / 6.0, &b);;
     test_cond("Test rotate 3.", vector_tolerance_eq(M_PI / 6.0, vector_angle(&a, &b)));
+
+    vector_get_orthogonal(&a, &b);
+    test_cond("Test get any orthogonal 1.", vector_tolerance_eq(0, vector_mul(&a, &b)));
+    a.x = -1;
+    a.y = 0;
+    a.z = 0;
+    vector_get_orthogonal(&a, &b);
+    test_cond("Test get any orthogonal 2.", vector_tolerance_eq(0, vector_mul(&a, &b)));
 
     test_report();
     return EXIT_SUCCESS;

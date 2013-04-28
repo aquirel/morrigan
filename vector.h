@@ -4,13 +4,13 @@
 #ifndef __VECTOR_H__
 #define __VECTOR_H__
 
-#pragma message("__VECTOR_H__")
+//#pragma message("__VECTOR_H__")
 
 #include <stdbool.h>
 
 #include "morrigan.h"
 
-extern double vector_eps;
+#define VECTOR_EPS 1e-5
 
 #pragma pack(push, 4)
 
@@ -46,6 +46,7 @@ Vector *vector_rotate(const Vector *v, const Vector *axis, double angle, Vector 
 #define VECTOR_ROTATE(v, axis, angle) vector_rotate((v), (axis), (angle), (v))
 
 Vector *vector_zero(Vector *v);
+Vector *vector_get_orthogonal(const Vector *v, Vector *result);
 double vector_angle(const Vector *v1, const Vector *v2);
 
 #endif /* __VECTOR_H__ */

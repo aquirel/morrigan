@@ -4,7 +4,7 @@
 #ifndef __BOUNDING_H__
 #define __BOUNDING_H__
 
-#pragma message("__BOUNDING_H__")
+//#pragma message("__BOUNDING_H__")
 
 #include <stdbool.h>
 #include <stdlib.h>

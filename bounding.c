@@ -9,6 +9,9 @@
 #include "landscape.h"
 #include "debug.h"
 
+static void __bounding_get_effective_position(const Bounding *b, Vector *result);
+static double __get_vector_coord(const Vector *v, Axis axis);
+static void __box_get_vertices(const Bounding *box, Vector *vertices);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
@@ -41,12 +44,16 @@ bool box_intersects_with_landscape(const Landscape *l, const Bounding *box)
     assert(l && "Bad landscape pointer.");
     __assert_bounding(box, bounding_box);
 
-    double h = landscape_get_height_at(l, box->origin->x, box->origin->y);
+    Vector p;
+    __bounding_get_effective_position(box, &p);
+    // TODO: Here get 8 vertices of box.
+
+    double h = landscape_get_height_at(l, p.x, p.y);
     Vector t;
     vector_scale(box->orientation, box->data.extent.z, &t);
-    vector_sub(box->origin, &t, &t);
-    vector_add(&t, &box->offset, &t);
-    return h > t.z;
+    VECTOR_SUB(&p, &t);
+
+    return h >= p.z;
 }
 
 bool sphere_intersects_with_landscape(const Landscape *l, const Bounding *sphere)
@@ -54,10 +61,12 @@ bool sphere_intersects_with_landscape(const Landscape *l, const Bounding *sphere
     assert(l && "Bad landscape pointer.");
     __assert_bounding(sphere, bounding_sphere);
 
-    double h = landscape_get_height_at(l, sphere->origin->x, sphere->origin->y);
-    Vector t = *sphere->origin;
-    vector_add(&t, &sphere->offset, &t);
-    return h > t.z - sphere->data.radius;
+    Vector p;
+    __bounding_get_effective_position(sphere, &p);
+    // TODO: Fix it.
+
+    double h = landscape_get_height_at(l, p.x, p.y);
+    return h >= p.z - sphere->data.radius;
 }
 
 bool composite_intersects_with_landscape(const Landscape *l, const Bounding *composite)
@@ -108,62 +117,30 @@ void project_box_on_axis(const Bounding *box, Axis axis, double *projection_star
     __assert_bounding(box, bounding_box);
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    double p;
+    Vector vertices[8];
+    __box_get_vertices(box, vertices);
 
-    switch(axis)
+    int min_index = 0,
+        max_index = 0;
+
+    for (size_t v = 1; v < 8; v++)
     {
-        case axis_x:
-            p = box->origin->x + box->offset.x;
-            break;
+        double current_min = __get_vector_coord(&vertices[min_index], axis),
+               current_max = __get_vector_coord(&vertices[max_index], axis),
+               new_value   = __get_vector_coord(&vertices[v], axis);
 
-        case axis_y:
-            p = box->origin->y + box->offset.y;
-            break;
-
-        case axis_z:
-            p = box->origin->z + box->offset.z;
-            break;
-
-        default:
-            sentinel("Bad axis value.", "");
+        if (new_value < current_min)
+        {
+            min_index = v;
+        }
+        else if (new_value > current_max)
+        {
+            max_index = v;
+        }
     }
 
-    Vector t1, t2, t3, t;
-    vector_scale(box->direction, box->data.extent.x, &t1);
-    vector_vector_mul(box->direction, box->orientation, &t2);
-    vector_scale(&t2, box->data.extent.y, &t2);
-    vector_scale(box->orientation, box->data.extent.z, &t3);
-
-    vector_add(&t1, &t2, &t);
-    vector_add(&t, &t3, &t);
-
-    double e;
-
-    switch(axis)
-    {
-        case axis_x:
-            e = t.x;
-            break;
-
-        case axis_y:
-            e = t.y;
-            break;
-
-        case axis_z:
-            e = t.z;
-            break;
-
-        default:
-            sentinel("Bad axis value.", "");
-    }
-
-    double p1 = p + e, p2 = p - e;
-    *projection_start = min(p1, p2);
-    *projection_end = max(p1, p2);
-
-    return;
-    error:
-    assert(false);
+    *projection_start = __get_vector_coord(&vertices[min_index], axis);
+    *projection_end   = __get_vector_coord(&vertices[max_index], axis);
 }
 
 void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projection_start, double *projection_end)
@@ -171,31 +148,13 @@ void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projectio
     __assert_bounding(sphere, bounding_sphere);
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    double p;
+    Vector p;
+    __bounding_get_effective_position(sphere, &p);
 
-    switch(axis)
-    {
-        case axis_x:
-            p = sphere->origin->x + sphere->offset.x;
-            break;
+    double c = __get_vector_coord(&p, axis);
 
-        case axis_y:
-            p = sphere->origin->y + sphere->offset.y;
-
-        case axis_z:
-            p = sphere->origin->z + sphere->offset.z;
-            break;
-
-        default:
-            sentinel("Bad axis value.", "");
-    }
-
-    *projection_start = p - sphere->data.radius;
-    *projection_end = p + sphere->data.radius;
-
-    return;
-    error:
-    assert(false);
+    *projection_start = c - sphere->data.radius;
+    *projection_end   = c + sphere->data.radius;
 }
 
 bool projections_are_intersecting(double projection1_start, double projection1_end, double projection2_start, double projection2_end)
@@ -248,6 +207,95 @@ void intersection_resolve(const Bounding *b1, const Bounding *b2)
     assert(b1 && b2 && "Bad bounding pointers.");
     memcpy(b1->origin, b1->previous_origin, sizeof(Vector));
     memcpy(b2->origin, b2->previous_origin, sizeof(Vector));
+}
+
+static void __bounding_get_effective_position(const Bounding *b, Vector *result)
+{
+    assert(b && "Bad bounding pointer.");
+    assert(b->origin && b->orientation && b->direction && "Bad bounding data.");
+    assert(result && "Bad result pointer.");
+
+    Vector p = *b->origin,
+           t,
+           side;
+    vector_vector_mul(b->orientation, b->direction, &side);
+    VECTOR_NORMALIZE(&side);
+
+    double sx, sy, sz;
+    vector_scale(b->direction, b->offset.x, &t);
+    sx = vector_length(&t);
+    vector_scale(&side, b->offset.y, &t);
+    sy = vector_length(&t);
+    vector_scale(b->orientation, b->offset.z, &t);
+    sz = vector_length(&t);
+
+    p.x += sx;
+    p.y += sy;
+    p.z += sz;
+
+    *result = p;
+}
+
+static void __box_get_vertices(const Bounding *box, Vector *vertices)
+{
+    __assert_bounding(box, bounding_box);
+    assert(vertices && "Bad vertices pointer.");
+
+    Vector p;
+    __bounding_get_effective_position(box, &p);
+
+    Vector e[3];
+
+    e[0] = *box->direction; // d.
+    VECTOR_NORMALIZE(&e[0]);
+    VECTOR_SCALE(&e[0], box->data.extent.x);
+
+    vector_vector_mul(box->orientation, box->direction, &e[1]); // s.
+    VECTOR_NORMALIZE(&e[1]);
+    VECTOR_SCALE(&e[1], box->data.extent.y);
+
+    e[2] = *box->orientation; // t.
+    VECTOR_NORMALIZE(&e[2]);
+    VECTOR_SCALE(&e[2], box->data.extent.z);
+
+    for (size_t i = 0; i < 8; i++)
+    {
+        Vector v;
+        vector_zero(&v);
+
+        for (size_t j = 0; j < 3; j++)
+        {
+            (i & (1 << j) ? vector_add : vector_sub)(&v, &e[j], &v);
+        }
+
+        vertices[i] = v;
+    }
+}
+
+static double __get_vector_coord(const Vector *v, Axis axis)
+{
+    assert(v && "Bad vector pointer.");
+
+    switch(axis)
+    {
+        case axis_x:
+            return v->x;
+            break;
+
+        case axis_y:
+            return v->y;
+            break;
+
+        case axis_z:
+            return v->z;
+            break;
+
+        default:
+            sentinel("Bad axis value.", "");
+    }
+
+    error:
+    assert(false);
 }
 
 static void __assert_bounding(const Bounding *b, BoundingType bounding_type)

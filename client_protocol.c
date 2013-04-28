@@ -4,10 +4,11 @@
 
 #include "debug.h"
 #include "protocol.h"
+#include "protocol_utils.h"
 #include "client_protocol.h"
 
-bool __recv_timeout(SOCKET *s, char *buf, int length, int flags, int timeout, int *received);
-bool __process_packet(void *buf, size_t length, const PacketDefinition *packets, size_t packet_count);
+static bool __recv_timeout(SOCKET *s, char *buf, int length, int flags, int timeout, int *received);
+static bool __process_packet(void *buf, size_t length, const PacketDefinition *packets, size_t packet_count);
 
 bool client_net_start(void)
 {
@@ -26,7 +27,7 @@ void client_net_stop(void)
     WSACleanup();
 }
 
-bool __recv_timeout(SOCKET *s, char *buf, int length, int flags, int timeout, int *received)
+static bool __recv_timeout(SOCKET *s, char *buf, int length, int flags, int timeout, int *received)
 {
     assert(s && "Bad socket pointer.");
     assert(buf && "Bad buffer pointer.");
@@ -69,7 +70,7 @@ bool __recv_timeout(SOCKET *s, char *buf, int length, int flags, int timeout, in
     return false;
 }
 
-bool __process_packet(void *buf, size_t length, const PacketDefinition *packets, size_t packet_count)
+static bool __process_packet(void *buf, size_t length, const PacketDefinition *packets, size_t packet_count)
 {
     assert(buf && "Bad buffer pointer.");
     assert(length && "Bad buffer length.");

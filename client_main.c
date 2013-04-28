@@ -39,6 +39,8 @@ static bstring input = NULL;
 static int __network_worker(void *unused);
 static void __cleanup(void);
 
+static void __look_executor(Vector *current_look, const Vector *axis, double angle);
+
 int main(int argc, char *argv[])
 {
     if (2 > argc)
@@ -162,39 +164,19 @@ static int __network_worker(void *unused)
                     break;
 
                 case cmd_look_left:
-                    {
-                        Vector axis = { .x = 0, .y = 0, .z = 1 };
-                        VECTOR_ROTATE(&current_look, &axis, -2.5 / 180.0 * M_PI);
-                        VECTOR_NORMALIZE(&current_look);
-                        look_at(&s, &current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
-                    }
+                    __look_executor(&current_look, &(Vector) { .x = 0, .y = 0, .z = 1 }, -2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_look_right:
-                    {
-                        Vector axis = { .x = 0, .y = 0, .z = 1 };
-                        VECTOR_ROTATE(&current_look, &axis, 2.5 / 180.0 * M_PI);
-                        VECTOR_NORMALIZE(&current_look);
-                        look_at(&s, &current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
-                    }
+                    __look_executor(&current_look, &(Vector) { .x = 0, .y = 0, .z = 1 }, 2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_look_up:
-                    {
-                        Vector axis = { .x = 0, .y = 1, .z = 0 };
-                        VECTOR_ROTATE(&current_look, &axis, -2.5 / 180.0 * M_PI);
-                        VECTOR_NORMALIZE(&current_look);
-                        look_at(&s, &current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
-                    }
+                    __look_executor(&current_look, &(Vector) { .x = 0, .y = 1, .z = 0 }, -2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_look_down:
-                    {
-                        Vector axis = { .x = 0, .y = 1, .z = 0 };
-                        VECTOR_ROTATE(&current_look, &axis, 2.5 / 180.0 * M_PI);
-                        VECTOR_NORMALIZE(&current_look);
-                        look_at(&s, &current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
-                    }
+                    __look_executor(&current_look, &(Vector) { .x = 0, .y = 1, .z = 0 }, 2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_turn_left:
@@ -224,6 +206,16 @@ static int __network_worker(void *unused)
     }
 
     return 0;
+}
+
+static void __look_executor(Vector *current_look, const Vector *axis, double angle)
+{
+    assert(current_look && "Bad current look pointer.");
+    assert(axis && "Bad axis pointer.");
+
+    VECTOR_ROTATE(current_look, axis, angle);
+    VECTOR_NORMALIZE(current_look);
+    look_at(&s, current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
 }
 
 static void __cleanup(void)

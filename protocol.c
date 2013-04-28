@@ -15,6 +15,14 @@
 #include "landscape.h"
 #include "debug.h"
 
+static void __packet_processor(NetworkClient *c,
+                               const SOCKADDR *address,
+                               NetworkClient *(*registrator)(const SOCKADDR *),
+                               void *packet_buffer,
+                               size_t packet_size,
+                               const PacketDefinition *packet_definition,
+                               void (*enqueuer)(const NetworkClient *),
+                               uint8_t hello_packet);
 static bool __check_double(double v, double min, double max);
 
 // Connecting.
@@ -98,82 +106,84 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
     Client *c = find_client_by_address(sender_address);
     ViewerClient *vc = find_viewer_by_address(sender_address);
 
-    // TODO: Remove if.
+    if (c && vc ||
+        packet_definition->is_client_protocol && NULL != vc ||
+        !packet_definition->is_client_protocol && NULL != c)
+    {
+        uint8_t response = res_bad_request;
+        respond((char *) &response, 1, sender_address);
+        return;
+    }
+
     if (packet_definition->is_client_protocol)
     {
-        if (NULL != vc)
-        {
-            uint8_t response = res_bad_request;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        if (NULL == c)
-        {
-            c = register_client(sender_address);
-            if (NULL == c)
-            {
-                uint8_t response = res_too_many_clients;
-                respond((char *) &response, 1, sender_address);
-                return;
-            }
-
-            uint8_t response = req_hello;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        if (c->network_client.current_packet_definition)
-        {
-            uint8_t response = res_wait;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        memcpy(c->network_client.current_packet_buffer, packet, PACKET_BUFFER);
-        c->network_client.current_packet_size = packet_size;
-        c->network_client.current_packet_definition = packet_definition;
-        enqueue_client(c);
+        __packet_processor((NetworkClient *) c,
+                           sender_address,
+                           register_client,
+                           (void *) packet,
+                           packet_size,
+                           packet_definition,
+                           enqueue_client,
+                           req_hello);
     }
     else
     {
-        if (NULL != c)
-        {
-            uint8_t response = res_bad_request;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        if (NULL == vc)
-        {
-            vc = register_viewer(sender_address);
-            if (NULL == vc)
-            {
-                uint8_t response = res_too_many_clients;
-                respond((char *) &response, 1, sender_address);
-                return;
-            }
-
-            uint8_t response = req_viewer_hello;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        if (vc->network_client.current_packet_definition)
-        {
-            uint8_t response = res_wait;
-            respond((char *) &response, 1, sender_address);
-            return;
-        }
-
-        memcpy(vc->network_client.current_packet_buffer, packet, PACKET_BUFFER);
-        vc->network_client.current_packet_size = packet_size;
-        vc->network_client.current_packet_definition = packet_definition;
-        enqueue_viewer(vc);
+        __packet_processor((NetworkClient *) vc,
+                           sender_address,
+                           register_viewer,
+                           (void *) packet,
+                           packet_size,
+                           packet_definition,
+                           enqueue_viewer,
+                           req_viewer_hello);
     }
 
     error:
     return;
+}
+
+static void __packet_processor(NetworkClient *c,
+                               const SOCKADDR *address,
+                               NetworkClient *(*registrator)(const SOCKADDR *),
+                               void *packet_buffer,
+                               size_t packet_size,
+                               const PacketDefinition *packet_definition,
+                               void (*enqueuer)(const NetworkClient *),
+                               uint8_t hello_packet)
+{
+    assert(address && "Bad address pointer.");
+    assert(registrator && "Bad registrator callback.");
+    assert(packet_buffer && "Bad packet buffer pointer.");
+    assert(packet_size && "Bad packet size.");
+    assert(packet_definition && "Bad packet definition pointer.");
+    assert(enqueuer && "Bad enqueuer callback.");
+
+    if (NULL == c)
+    {
+        c = registrator(address);
+        if (NULL == c)
+        {
+            uint8_t response = res_too_many_clients;
+            respond((char *) &response, 1, address);
+            return;
+        }
+
+        uint8_t response = hello_packet;
+        respond((char *) &response, 1, address);
+        return;
+    }
+
+    if (c->current_packet_definition)
+    {
+        uint8_t response = res_wait;
+        respond((char *) &response, 1, address);
+        return;
+    }
+
+    memcpy(c->current_packet_buffer, packet_buffer, PACKET_BUFFER);
+    c->current_packet_size = packet_size;
+    c->current_packet_definition = packet_definition;
+    enqueuer(c);
 }
 
 // Connecting.

@@ -21,14 +21,14 @@ void server_stop(void);
 DynamicArray *server_get_clients(void);
 
 Client *find_client_by_address(const SOCKADDR *address);
-Client *register_client(const SOCKADDR *address);
+NetworkClient *register_client(const SOCKADDR *address);
 bool unregister_client(const SOCKADDR *address);
-void enqueue_client(const Client *c);
+void enqueue_client(const NetworkClient *c);
 
 ViewerClient *find_viewer_by_address(const SOCKADDR *address);
-ViewerClient *register_viewer(const SOCKADDR *address);
+NetworkClient *register_viewer(const SOCKADDR *address);
 bool unregister_viewer(const SOCKADDR *address);
-void enqueue_viewer(const ViewerClient *c);
+void enqueue_viewer(const NetworkClient *c);
 
 void notify_viewers(NotViewerShellEvent *notification);
 void notify_shutdown(void);

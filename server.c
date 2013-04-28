@@ -138,14 +138,14 @@ static NetworkClient *__client_finder_by_address(const SOCKADDR *address, Dynami
     return NULL;
 }
 
-Client *register_client(const SOCKADDR *address)
+NetworkClient *register_client(const SOCKADDR *address)
 {
-    return (Client *) __client_registrator(address, clients, MAX_CLIENTS, sizeof(Client));
+    return __client_registrator(address, clients, MAX_CLIENTS, sizeof(Client));
 }
 
-ViewerClient *register_viewer(const SOCKADDR *address)
+NetworkClient *register_viewer(const SOCKADDR *address)
 {
-    return (ViewerClient *) __client_registrator(address, viewers, MAX_VIEWERS, sizeof(ViewerClient));
+    return __client_registrator(address, viewers, MAX_VIEWERS, sizeof(ViewerClient));
 }
 
 static NetworkClient *__client_registrator(const SOCKADDR *address,
@@ -223,14 +223,14 @@ static bool __client_unregistrator(const SOCKADDR *address, DynamicArray *a)
     return false;
 }
 
-void enqueue_client(const Client *c)
+void enqueue_client(const NetworkClient *c)
 {
-    __client_enqueuer((const NetworkClient *) c, client_requests);
+    __client_enqueuer(c, client_requests);
 }
 
-void enqueue_viewer(const ViewerClient *c)
+void enqueue_viewer(const NetworkClient *c)
 {
-    __client_enqueuer((const NetworkClient *) c, viewer_requests);
+    __client_enqueuer(c, viewer_requests);
 }
 
 static void __client_enqueuer(const NetworkClient *c, RingBuffer *rb)

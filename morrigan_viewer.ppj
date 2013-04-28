@@ -32,12 +32,12 @@ bin\morrigan_viewer.exe: \
 	build\landscape.obj \
 	build\main.obj \
 	build\matrix.obj \
+	build\protocol_utils.obj \
 	build\tank.obj \
 	build\vector.obj \
 	build\viewer_draw.obj \
 	build\viewer_events.obj \
-	build\viewer_net.obj \
-	build\protocol_utils.obj
+	build\viewer_net.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -46,13 +46,18 @@ bin\morrigan_viewer.exe: \
 build\main.obj: \
 	viewer_main.c \
 	bounding.h \
+	client_protocol.h \
 	debug.h \
+	dynamic_array.h \
 	landscape.h \
+	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	tank.h \
 	vector.h \
-	viewer.h
+	viewer.h \
+	viewer_net.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -67,6 +72,7 @@ build\client_protocol.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	tank.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
@@ -98,6 +104,7 @@ build\vector.obj: \
 build\matrix.obj: \
 	matrix.c \
 	matrix.h \
+	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -113,6 +120,7 @@ build\viewer_events.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	tank.h \
 	vector.h \
 	viewer.h \
@@ -131,6 +139,7 @@ build\viewer_draw.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	tank.h \
 	vector.h \
 	viewer.h \
@@ -163,6 +172,7 @@ build\viewer_net.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
+	protocol_utils.h \
 	tank.h \
 	vector.h \
 	viewer.h \

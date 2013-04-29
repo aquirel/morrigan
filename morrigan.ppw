@@ -5,7 +5,7 @@
 
 POC_WORKSPACE_VERSION = 1.00
 
-PROJECT = morrigan_client.ppj
 PROJECT = morrigan.ppj
 PROJECT = morrigan_viewer.ppj
+PROJECT = morrigan_client.ppj
 

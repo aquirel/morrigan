@@ -263,7 +263,10 @@ static bool __tank_move(Tank *tank, const Landscape *l)
             return false;
         }
 
-        tank->position.z = landscape_get_height_at(l, tank->position.x, tank->position.y);
+        if (composite_intersects_with_landscape(l, &tank->bounding))
+        {
+            tank->position.z = landscape_get_height_at(l, tank->position.x, tank->position.y);
+        }
 
         vector_sub(&tank->position, &tank->previous_position, &t);
         double new_speed = vector_length(&t);

@@ -6,8 +6,8 @@
 
 //#pragma message("__VIEWER_NET_H__")
 
-#include "protocol.h"
+#include "client_protocol.h"
 
-extern PacketDefinition viewer_protocol[6];
+extern ClientProtocol viewer_protocol;
 
 #endif /* __VIEWER_NET_H__ */

@@ -4,7 +4,7 @@
 
 #include "client_net.h"
 
-PacketDefinition client_protocol[25] = {
+PacketDefinition client_protocol_packets[] = {
     { .id = req_bye              },
     { .id = req_set_engine_power },
     { .id = req_turn             },
@@ -30,4 +30,11 @@ PacketDefinition client_protocol[25] = {
     { .id = not_explosion_damage },
     { .id = not_viewer_shoot     },
     { .id = not_viewer_explosion }
+};
+
+ClientProtocol client_protocol = {
+    .packets      = client_protocol_packets,
+    .packet_count = sizeof(client_protocol_packets) / sizeof(client_protocol_packets[0]),
+    .s            = INVALID_SOCKET,
+    .connected    = false
 };

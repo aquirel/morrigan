@@ -11,7 +11,7 @@ static bool __not_viewer_explosion_executor(const void *packet);
 #pragma warn(push)
 #pragma warn(disable: 2145)
 
-PacketDefinition viewer_protocol[6] = {
+PacketDefinition viewer_protocol_packets[] = {
     { .id = req_viewer_hello                                                                                                   },
     { .id = req_viewer_bye                                                                                                     },
     { .id = req_viewer_get_map                                                                                                 },
@@ -21,6 +21,13 @@ PacketDefinition viewer_protocol[6] = {
 };
 
 #pragma warn(pop)
+
+ClientProtocol viewer_protocol = {
+    .packets      = viewer_protocol_packets,
+    .packet_count = sizeof(viewer_protocol_packets) / sizeof(viewer_protocol_packets[0]),
+    .s            = INVALID_SOCKET,
+    .connected    = false
+};
 
 static bool __not_viewer_shell_event_validator(const void *packet, size_t packet_size)
 {

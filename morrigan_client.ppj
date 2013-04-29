@@ -32,8 +32,8 @@ bin\morrigan_client.exe: \
 	build\client_protocol.obj \
 	build\landscape.obj \
 	build\matrix.obj \
-	build\vector.obj \
-	build\protocol_utils.obj
+	build\protocol_utils.obj \
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -61,6 +61,7 @@ build\client_net.obj: \
 	client_net.c \
 	bounding.h \
 	client_net.h \
+	client_protocol.h \
 	landscape.h \
 	morrigan.h \
 	net.h \
@@ -132,6 +133,6 @@ build\protocol_utils.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

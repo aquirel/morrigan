@@ -29,9 +29,6 @@ typedef enum ClientCommand
 
 static volatile ClientCommand command = cmd_none;
 
-static SOCKET s = INVALID_SOCKET;
-static bool connected = false;
-
 static thrd_t network_thread = { 0 };
 
 static bstring input = NULL;
@@ -50,8 +47,7 @@ int main(int argc, char *argv[])
     }
 
     check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&s, argv[1], true, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0])), "Failed to connect.", "");
-    connected = true;
+    check(client_connect(&client_protocol, argv[1], true), "Failed to connect.", "");
 
     puts("Connected to server.");
 
@@ -151,16 +147,16 @@ static int __network_worker(void *unused)
             {
                 case cmd_power_inc:
                     current_power += 5;
-                    set_engine_power(&s, current_power, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    set_engine_power(&client_protocol, current_power);
                     break;
 
                 case cmd_power_dec:
                     current_power -= 5;
-                    set_engine_power(&s, current_power, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    set_engine_power(&client_protocol, current_power);
                     break;
 
                 case cmd_halt:
-                    set_engine_power(&s, current_power = 0, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    set_engine_power(&client_protocol, current_power = 0);
                     break;
 
                 case cmd_look_left:
@@ -180,15 +176,15 @@ static int __network_worker(void *unused)
                     break;
 
                 case cmd_turn_left:
-                    turn(&s, -2.5 / 180.0 * M_PI, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    turn(&client_protocol, -2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_turn_right:
-                    turn(&s, 2.5 / 180.0 * M_PI, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    turn(&client_protocol, 2.5 / 180.0 * M_PI);
                     break;
 
                 case cmd_shoot:
-                    shoot(&s, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+                    shoot(&client_protocol);
                     break;
 
                 default:
@@ -199,7 +195,7 @@ static int __network_worker(void *unused)
             command = cmd_none;
         }
 
-        while (client_protocol_process_event(&s, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0])));
+        while (client_protocol_process_event(&client_protocol));
 
         struct timespec t = { .tv_nsec = 100000000 };
         thrd_sleep(&t, NULL);
@@ -215,17 +211,16 @@ static void __look_executor(Vector *current_look, const Vector *axis, double ang
 
     VECTOR_ROTATE(current_look, axis, angle);
     VECTOR_NORMALIZE(current_look);
-    look_at(&s, current_look, client_protocol, sizeof(client_protocol) / sizeof(client_protocol[0]));
+    look_at(&client_protocol, current_look);
 }
 
 static void __cleanup(void)
 {
     thrd_detach(network_thread);
 
-    if (connected)
+    if (client_protocol.connected)
     {
-        check(client_disconnect(&s, true), "Failed to disconnect.", "");
-        connected = true;
+        check(client_disconnect(&client_protocol, true), "Failed to disconnect.", "");
     }
 
     static bool net_stopped = false;

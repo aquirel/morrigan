@@ -4,9 +4,6 @@
 #include "viewer.h"
 #include "tank.h"
 
-static SOCKET s = INVALID_SOCKET;
-static bool connected = false;
-
 static Landscape *l = NULL;
 static ResGetTanksTankRecord tanks[MAX_CLIENTS];
 static size_t tanks_count = 0;
@@ -39,12 +36,11 @@ int main(int argc, char *argv[])
     check_mem(explosions = DYNAMIC_ARRAY_CREATE(NotViewerShellEvent *, 16));
 
     check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&s, argv[1], false, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])), "Failed to connect.", "");
-    connected = true;
+    check(client_connect(&viewer_protocol, argv[1], false), "Failed to connect.", "");
 
     puts("Connected to server.");
 
-    l = client_get_landscape(&s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0]));
+    l = client_get_landscape(&viewer_protocol);
     check(l, "Failed to get landscape.", "");
     puts("Loaded landscape.");
 
@@ -77,7 +73,7 @@ int main(int argc, char *argv[])
     while (true)
     {
         bool need_redraw = false;
-        if (!process_events(&need_redraw, &camera, &s, tanks, &tanks_count))
+        if (!process_events(&need_redraw, &camera, tanks, &tanks_count, &viewer_protocol))
         {
             break;
         }
@@ -197,10 +193,9 @@ static void __cleanup(void)
         l = NULL;
     }
 
-    if (connected)
+    if (viewer_protocol.connected)
     {
-        check(client_disconnect(&s, false), "Failed to disconnect.", "");
-        connected = false;
+        check(client_disconnect(&viewer_protocol, false), "Failed to disconnect.", "");
     }
 
     if (shoots)
@@ -341,4 +336,3 @@ DynamicArray *viewer_get_explosions(void)
 {
     return explosions;
 }
-

@@ -4,13 +4,13 @@
 
 static double __range_angle(double a);
 
-bool process_events(bool *need_redraw, Camera *camera, SOCKET *s, ResGetTanksTankRecord *tanks, size_t *tanks_count)
+bool process_events(bool *need_redraw, Camera *camera, ResGetTanksTankRecord *tanks, size_t *tanks_count, ClientProtocol *viewer_protocol)
 {
     assert(need_redraw && "Bad redraw flag pointer.");
     assert(camera && "Bad camera pointer.");
-    assert(s && "Bad socket pointer.");
     assert(tanks && "Bad tanks pointer.");
     assert(tanks_count && "Bad tanks count pointer.");
+    assert(viewer_protocol && "Bad viewer protocol pointer.");
 
     static bool w_pressed = false,
                 s_pressed = false,
@@ -46,7 +46,7 @@ bool process_events(bool *need_redraw, Camera *camera, SOCKET *s, ResGetTanksTan
                         //move_tanks(l, tanks, tanks_count);
                         process_shells();
 
-                        while (client_protocol_process_event(s, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0])));
+                        while (client_protocol_process_event(viewer_protocol));
 
                         if (w_pressed ||
                             s_pressed ||
@@ -61,7 +61,7 @@ bool process_events(bool *need_redraw, Camera *camera, SOCKET *s, ResGetTanksTan
                        break;
 
                     case TANKS_TIMER_EVENT_ID:
-                        *tanks_count = client_get_tanks(false, s, tanks, viewer_protocol, sizeof(viewer_protocol) / sizeof(viewer_protocol[0]));
+                        *tanks_count = client_get_tanks(viewer_protocol, false, tanks);
                         //printf("Got %d tanks.\n", tanks_count);
                         *need_redraw = true;
                         break;

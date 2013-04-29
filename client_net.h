@@ -6,8 +6,8 @@
 
 //#pragma message("__CLIENT_NET_H__")
 
-#include "protocol.h"
+#include "client_protocol.h"
 
-extern PacketDefinition client_protocol[25];
+extern ClientProtocol client_protocol;
 
 #endif /* __CLIENT_NET_H__ */

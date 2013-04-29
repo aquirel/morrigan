@@ -2,10 +2,7 @@ rewrite bounding tests.
     polygon(s) - segment test.
 
 shell through the wall.
-
-move client protocol to struct (remove protocol and count in calls).
-    protocol, count, socket
-
+--
 fix shell-tank hit test.
 fix triangle location.
 --

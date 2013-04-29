@@ -37,7 +37,8 @@ bin\morrigan_viewer.exe: \
 	build\vector.obj \
 	build\viewer_draw.obj \
 	build\viewer_events.obj \
-	build\viewer_net.obj
+	build\viewer_net.obj \
+	build\bounding.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -201,6 +202,18 @@ build\protocol_utils.obj: \
 	protocol.h \
 	protocol_utils.h \
 	tank.h \
+	vector.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build bounding.obj.
+# 
+build\bounding.obj: \
+	bounding.c \
+	bounding.h \
+	debug.h \
+	landscape.h \
+	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

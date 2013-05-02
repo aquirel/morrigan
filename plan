@@ -4,6 +4,5 @@ rewrite bounding tests.
 shell through the wall.
 --
 fix shell-tank hit test.
-fix triangle location.
 --
 test client protocol.

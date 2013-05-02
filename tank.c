@@ -107,18 +107,13 @@ void tank_look_at(Tank *tank, const Vector *look)
     assert(tank && "Bad tank pointer.");
     assert(look && "Bad look pointer.");
 
-    tank->turret_direction_target = *look;
-    VECTOR_NORMALIZE(&tank->turret_direction_target);
+    Vector t = *look;
+    VECTOR_NORMALIZE(&t);
 
-    if (TANK_MIN_LOOK_Z > tank->turret_direction_target.z)
+    if (TANK_MIN_LOOK_Z <= t.z &&
+        TANK_MAX_LOOK_Z >= t.z)
     {
-        tank->turret_direction_target.z = TANK_MIN_LOOK_Z;
-        VECTOR_NORMALIZE(&tank->turret_direction_target);
-    }
-    else if (TANK_MAX_LOOK_Z < tank->turret_direction_target.z)
-    {
-        tank->turret_direction_target.z = TANK_MAX_LOOK_Z;
-        VECTOR_NORMALIZE(&tank->turret_direction_target);
+        tank->turret_direction_target = t;
     }
 }
 

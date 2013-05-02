@@ -1,6 +1,7 @@
 // shell.c - shell implementation.
 
 #include <assert.h>
+#include <math.h>
 
 #include "debug.h"
 #include "shell.h"
@@ -50,52 +51,20 @@ bool shell_tick(Shell *shell, const Landscape *l)
     t.z = -SHELL_G_ACCELERATION;
     VECTOR_ADD(&shell->position, &t);
 
-    if (__shell_position_tester(l, &shell->position))
+    double intersection = landscape_intersects_with_segment(l,
+                                                            &shell->previous_position,
+                                                            &shell->position);
+    if (isnan(intersection))
     {
-        return true;
+        return !(0.0 > shell->position.x ||
+                 0.0 > shell->position.y ||
+                 l->tile_size * l->landscape_size < shell->position.x ||
+                 l->tile_size * l->landscape_size < shell->position.y);
     }
 
-    assert(__shell_position_tester(l, &shell->previous_position) && "Bad previous position.");
-
-    vector_sub(&shell->position, &shell->previous_position, &t);
-    Vector d = t;
-    VECTOR_NORMALIZE(&d);
-    double length = vector_length(&t),
-           left_length  = 0.0,
-           right_length = 1.0;;
-
-    while (!vector_tolerance_eq(right_length, left_length))
-    {
-        double c = (left_length + right_length) / 2.0;
-        vector_scale(&d, c * length, &t);
-        vector_add(&shell->previous_position, &t, &t);
-
-        if (__shell_position_tester(l, &t))
-        {
-            left_length = c;
-        }
-        else
-        {
-            right_length = c;
-        }
-    }
-
-    double c = (left_length + right_length) / 2.0;
-    vector_scale(&d, c * length, &t);
-    vector_add(&shell->previous_position, &t, &shell->position);
+    Vector shell_direction;
+    vector_sub(&shell->position, &shell->previous_position, &shell_direction);
+    VECTOR_SCALE(&shell_direction, intersection);
+    vector_add(&shell->previous_position, &shell_direction, &shell->position);
     return false;
-}
-
-static bool __shell_position_tester(const Landscape *l, const Vector *position)
-{
-    if (0.0 > position->x ||
-        0.0 > position->y ||
-        l->tile_size * l->landscape_size < position->x ||
-        l->tile_size * l->landscape_size < position->y)
-    {
-        return false;
-    }
-
-    double h = landscape_get_height_at(l, position->x, position->y);
-    return h < position->z;
 }

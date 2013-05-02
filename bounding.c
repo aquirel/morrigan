@@ -344,7 +344,7 @@ int main(void)
     test_cond("Composite landscape test.", bounding_intersects_with_landscape(l, &b));
 
     test_cond("Test intersection 1.", intersection_test(&composite_members[0], &composite_members[1]));
-    composite_members[1].offset.z = 2;
+    composite_members[1].offset.z = 3;
     test_cond("Test intersection 2.", !intersection_test(&composite_members[0], &composite_members[1]));
 
     landscape_destroy(l);

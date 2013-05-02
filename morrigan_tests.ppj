@@ -98,8 +98,12 @@ build_tests\bounding_matrix.obj: matrix.c
 
 # matrix tests.
 bin_tests\matrix.exe: \
-    build_tests\matrix.obj
+    build_tests\matrix.obj \
+    build_tests\matrix_vector.obj
     $(LINK) $(LINKFLAGS) -out:"$@" $**
 
 build_tests\matrix.obj: matrix.c
+    $(CC) $(CCFLAGS) -DMATRIX_TESTS "$!" -Fo"$@"
+
+build_tests\matrix_vector.obj: vector.c
     $(CC) $(CCFLAGS) -DMATRIX_TESTS "$!" -Fo"$@"

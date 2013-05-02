@@ -5,6 +5,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "debug.h"
 #include "vector.h"
 #include "matrix.h"
 
@@ -186,6 +187,54 @@ double vector_angle(const Vector *v1, const Vector *v2)
            as = asin(s);
 
     return as < 0.0 ? 2.0 * M_PI - ac : ac;
+}
+
+double range_angle(double a)
+{
+    assert(!isnan(a));
+    const double _2_M_PI = 2.0 * M_PI;
+
+    while (a >= _2_M_PI) a -= _2_M_PI;
+    while (a <= -_2_M_PI) a += _2_M_PI;
+
+    if (M_PI >= a)
+    {
+        return a;
+    }
+
+    return -(_2_M_PI - a);
+}
+
+bool vector_look_same_side(const Vector *v1, const Vector *v2)
+{
+    assert(v1 && v2 && "Bad vector pointers.");
+    return 0.0 < vector_mul(v1, v2);
+}
+
+double get_vector_coord(const Vector *v, Axis axis)
+{
+    assert(v && "Bad vector pointer.");
+
+    switch(axis)
+    {
+        case axis_x:
+            return v->x;
+            break;
+
+        case axis_y:
+            return v->y;
+            break;
+
+        case axis_z:
+            return v->z;
+            break;
+
+        default:
+            sentinel("Bad axis value.", "");
+    }
+
+    error:
+    assert(false);
 }
 
 #if defined(VECTOR_TESTS)

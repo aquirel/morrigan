@@ -19,6 +19,13 @@ typedef struct Vector
     double x, y, z;
 } Vector;
 
+typedef enum Axis
+{
+    axis_x,
+    axis_y,
+    axis_z
+} Axis;
+
 #pragma pack(pop)
 
 bool vector_tolerance_eq(double v1, double v2);
@@ -48,5 +55,9 @@ Vector *vector_rotate(const Vector *v, const Vector *axis, double angle, Vector 
 Vector *vector_zero(Vector *v);
 Vector *vector_get_orthogonal(const Vector *v, Vector *result);
 double vector_angle(const Vector *v1, const Vector *v2);
+
+bool vector_look_same_side(const Vector *v1, const Vector *v2);
+double range_angle(double a);
+double get_vector_coord(const Vector *v, Axis axis);
 
 #endif /* __VECTOR_H__ */

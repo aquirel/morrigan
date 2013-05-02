@@ -76,7 +76,8 @@ static void __assert_client_protocol(ClientProtocol *cp)
     assert(cp && "Bad client protocol pointer.");
     assert(cp->packets && "Bad packets pointer.");
     assert(cp->packet_count && "Bad packet count.");
-    assert(INVALID_SOCKET != cp->s && cp->connected && "Bad protocol state.");
+    //assert(INVALID_SOCKET != cp->s && cp->connected && "Bad protocol state.");
+    assert(INVALID_SOCKET != cp->s && "Bad protocol state.");
 }
 
 static bool __process_packet(ClientProtocol *cp, void *buf, size_t length)

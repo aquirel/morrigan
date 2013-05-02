@@ -10,7 +10,6 @@
 #include "debug.h"
 
 static void __bounding_get_effective_position(const Bounding *b, Vector *result);
-static double __get_vector_coord(const Vector *v, Axis axis);
 static void __box_get_vertices(const Bounding *box, Vector *vertices);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
 
@@ -125,9 +124,9 @@ void project_box_on_axis(const Bounding *box, Axis axis, double *projection_star
 
     for (size_t v = 1; v < 8; v++)
     {
-        double current_min = __get_vector_coord(&vertices[min_index], axis),
-               current_max = __get_vector_coord(&vertices[max_index], axis),
-               new_value   = __get_vector_coord(&vertices[v], axis);
+        double current_min = get_vector_coord(&vertices[min_index], axis),
+               current_max = get_vector_coord(&vertices[max_index], axis),
+               new_value   = get_vector_coord(&vertices[v], axis);
 
         if (new_value < current_min)
         {
@@ -139,8 +138,8 @@ void project_box_on_axis(const Bounding *box, Axis axis, double *projection_star
         }
     }
 
-    *projection_start = __get_vector_coord(&vertices[min_index], axis);
-    *projection_end   = __get_vector_coord(&vertices[max_index], axis);
+    *projection_start = get_vector_coord(&vertices[min_index], axis);
+    *projection_end   = get_vector_coord(&vertices[max_index], axis);
 }
 
 void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projection_start, double *projection_end)
@@ -151,7 +150,7 @@ void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projectio
     Vector p;
     __bounding_get_effective_position(sphere, &p);
 
-    double c = __get_vector_coord(&p, axis);
+    double c = get_vector_coord(&p, axis);
 
     *projection_start = c - sphere->data.radius;
     *projection_end   = c + sphere->data.radius;
@@ -270,32 +269,6 @@ static void __box_get_vertices(const Bounding *box, Vector *vertices)
 
         vector_add(&p, &v, &vertices[i]);
     }
-}
-
-static double __get_vector_coord(const Vector *v, Axis axis)
-{
-    assert(v && "Bad vector pointer.");
-
-    switch(axis)
-    {
-        case axis_x:
-            return v->x;
-            break;
-
-        case axis_y:
-            return v->y;
-            break;
-
-        case axis_z:
-            return v->z;
-            break;
-
-        default:
-            sentinel("Bad axis value.", "");
-    }
-
-    error:
-    assert(false);
 }
 
 static void __assert_bounding(const Bounding *b, BoundingType bounding_type)

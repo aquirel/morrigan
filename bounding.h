@@ -20,13 +20,6 @@ typedef enum BoundingType
     bounding_composite
 } BoundingType;
 
-typedef enum Axis
-{
-    axis_x,
-    axis_y,
-    axis_z
-} Axis;
-
 #pragma pack(push, 4)
 
 typedef struct Bounding Bounding;

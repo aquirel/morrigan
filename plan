@@ -1,8 +1,4 @@
-rewrite bounding tests.
-    polygon(s) - segment test.
-
-shell through the wall.
---
-fix shell-tank hit test.
+fix bounding tests: use real SAT.
+    fix shell-tank hit test.
 --
 test client protocol.

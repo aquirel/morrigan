@@ -35,12 +35,12 @@ bin\morrigan.exe: \
 	build\matrix.obj \
 	build\net.obj \
 	build\protocol.obj \
+	build\protocol_utils.obj \
 	build\ring_buffer.obj \
 	build\server.obj \
 	build\shell.obj \
 	build\tank.obj \
-	build\vector.obj \
-	build\protocol_utils.obj
+	build\vector.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -150,6 +150,7 @@ build\game.obj: \
 # 
 build\vector.obj: \
 	vector.c \
+	debug.h \
 	matrix.h \
 	morrigan.h \
 	vector.h

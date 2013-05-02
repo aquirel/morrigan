@@ -39,4 +39,8 @@ Vector *landscape_get_normal_at(const Landscape *l, double x, double y, Vector *
 
 void landscape_get_tile(const Landscape *l, double x, double y, size_t *tile_x, size_t *tile_y);
 
+double landscape_intersects_with_segment(const Landscape *l,
+                                         const Vector *segment_start,
+                                         const Vector *segment_end);
+
 #endif /* __LANDSCAPE_H__ */

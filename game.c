@@ -476,7 +476,8 @@ static void __check_winner(void)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->network_client.state)
+        if (cs_in_game != c->network_client.state ||
+            0 == c->tank.hp)
         {
             continue;
         }

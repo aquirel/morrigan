@@ -59,11 +59,12 @@ typedef enum Notifications
     not_tank_collision        = 0x81,
     not_near_shoot            = 0x82,
     not_death                 = 0x83,
-    not_hit                   = 0x84,
-    not_near_explosion        = 0x85,
-    not_explosion_damage      = 0x86,
-    not_viewer_shoot          = 0x87,
-    not_viewer_explosion      = 0x88
+    not_win                   = 0x84,
+    not_hit                   = 0x85,
+    not_near_explosion        = 0x86,
+    not_explosion_damage      = 0x87,
+    not_viewer_shoot          = 0x88,
+    not_viewer_explosion      = 0x89
 } Notifications;
 
 typedef bool (*packet_validation_handler)(const void *packet, size_t packet_size);

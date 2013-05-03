@@ -32,6 +32,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
 static Client *__shell_collision_detection(const Shell *shell);
 static void __tank_hit(Client *c, int amount);
 static void __shell_explode(Shell *shell, Client *exclude);
+static void __check_winner(void);
 
 static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
 
@@ -442,6 +443,35 @@ static void __shell_explode(Shell *shell, Client *exclude)
         .z = shell->position.z
     };
     notify_viewers(&explosion_notification);
+
+    __check_winner();
+}
+
+static void __check_winner(void)
+{
+    size_t clients_count = dynamic_array_count(clients),
+           alive_count   = 0;
+    Client *last_alive = NULL;
+
+    for (size_t i = 0; i < clients_count; i++)
+    {
+        Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        if (cs_in_game != c->network_client.state)
+        {
+            continue;
+        }
+
+        alive_count++;
+        last_alive = c;
+    }
+
+    if (1 == alive_count)
+    {
+        uint8_t response = not_win;
+        respond((char *) &response, 1, &last_alive->network_client.address);
+        last_alive->tank.hp = 0;
+    }
 }
 
 static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2)

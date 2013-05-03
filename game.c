@@ -460,7 +460,10 @@ static void __shell_explode(Shell *shell, Client *exclude)
     };
     notify_viewers(&explosion_notification);
 
-    __check_winner();
+    if (0 != clients_count && 1 != clients_count)
+    {
+        __check_winner();
+    }
 }
 
 static void __check_winner(void)

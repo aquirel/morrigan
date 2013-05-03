@@ -1,6 +1,4 @@
 fix bounding tests: use real SAT.
     fix resolve.
-fix shell-tank hit test.
-    select closest tank.
 --
 test client protocol.

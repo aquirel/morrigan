@@ -342,23 +342,39 @@ static Client *__shell_collision_detection(const Shell *shell)
 {
     assert(shell && "Bad shell pointer.");
 
+    Client *result = NULL;
+    double distance;
+    Vector t;
+
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->network_client.state)
+        if (cs_in_game != c->network_client.state ||
+            !intersection_test(&shell->bounding, &c->tank.bounding))
         {
             continue;
         }
 
-        if (intersection_test(&shell->bounding, &c->tank.bounding))
+        if (NULL == result)
         {
-            return c;
+            result = c;
+            vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
+            distance = vector_length(&t);
+            continue;
+        }
+
+        vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
+        double new_distance = vector_length(&t);
+        if (new_distance < distance)
+        {
+            distance = new_distance;
+            result = c;
         }
     }
 
-    return NULL;
+    return result;
 }
 
 static void __tank_hit(Client *c, int amount)

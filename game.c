@@ -343,7 +343,7 @@ static Client *__shell_collision_detection(const Shell *shell)
     assert(shell && "Bad shell pointer.");
 
     Client *result = NULL;
-    double distance;
+    double distance = 0.0;
     Vector t;
 
     size_t clients_count = dynamic_array_count(clients);

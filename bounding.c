@@ -9,8 +9,8 @@
 #include "landscape.h"
 #include "debug.h"
 
-static void __bounding_get_effective_position(const Bounding *b, Vector *result);
-static void __box_get_vertices(const Bounding *box, Vector *vertices);
+static void __bounding_get_effective_position(const Bounding *b, Vector *result, bool use_new_origin);
+static void __box_get_vertices(const Bounding *box, Vector *vertices, bool use_new_origin);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
@@ -44,7 +44,7 @@ bool box_intersects_with_landscape(const Landscape *l, const Bounding *box)
     __assert_bounding(box, bounding_box);
 
     Vector p;
-    __bounding_get_effective_position(box, &p);
+    __bounding_get_effective_position(box, &p, true);
     // TODO: Here get 8 vertices of box.
 
     double h = landscape_get_height_at(l, p.x, p.y);
@@ -61,7 +61,7 @@ bool sphere_intersects_with_landscape(const Landscape *l, const Bounding *sphere
     __assert_bounding(sphere, bounding_sphere);
 
     Vector p;
-    __bounding_get_effective_position(sphere, &p);
+    __bounding_get_effective_position(sphere, &p, true);
     // TODO: Fix it.
 
     double h = landscape_get_height_at(l, p.x, p.y);
@@ -116,13 +116,14 @@ void project_box_on_axis(const Bounding *box, Axis axis, double *projection_star
     __assert_bounding(box, bounding_box);
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    Vector vertices[8];
-    __box_get_vertices(box, vertices);
+    Vector vertices[16];
+    __box_get_vertices(box, &vertices[0], false);
+    __box_get_vertices(box, &vertices[8], true);
 
     int min_index = 0,
         max_index = 0;
 
-    for (size_t v = 1; v < 8; v++)
+    for (size_t v = 1; v < 16; v++)
     {
         double current_min = get_vector_coord(&vertices[min_index], axis),
                current_max = get_vector_coord(&vertices[max_index], axis),
@@ -147,17 +148,22 @@ void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projectio
     __assert_bounding(sphere, bounding_sphere);
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    Vector p;
-    __bounding_get_effective_position(sphere, &p);
+    Vector p1, p2;
+    __bounding_get_effective_position(sphere, &p1, false);
+    __bounding_get_effective_position(sphere, &p2, true);
 
-    double c = get_vector_coord(&p, axis);
+    double c1 = get_vector_coord(&p1, axis),
+           c2 = get_vector_coord(&p2, axis);
 
-    *projection_start = c - sphere->data.radius;
-    *projection_end   = c + sphere->data.radius;
+    *projection_start = min(c1, c2) - sphere->data.radius;
+    *projection_end   = max(c1, c2) + sphere->data.radius;
 }
 
 bool projections_are_intersecting(double projection1_start, double projection1_end, double projection2_start, double projection2_end)
 {
+    assert(projection1_start <= projection1_end &&
+           projection2_start <= projection2_end &&
+           "Bad projections.");
     return !(projection1_end <= projection2_start || projection2_end <= projection1_start);
 }
 
@@ -208,16 +214,23 @@ void intersection_resolve(const Bounding *b1, const Bounding *b2)
     memcpy(b2->origin, b2->previous_origin, sizeof(Vector));
 }
 
-static void __bounding_get_effective_position(const Bounding *b, Vector *result)
+static void __bounding_get_effective_position(const Bounding *b, Vector *result, bool use_new_origin)
 {
     assert(b && "Bad bounding pointer.");
-    assert(b->origin && b->orientation && b->direction && "Bad bounding data.");
+    assert(b->origin && b->previous_origin && b->orientation && b->direction && "Bad bounding data.");
     assert(result && "Bad result pointer.");
 
-    Vector p = *b->origin,
+    Vector p = *(use_new_origin ? b->origin : b->previous_origin),
            t,
            side;
-    vector_vector_mul(b->orientation, b->direction, &side);
+    if (!vector_eq(b->orientation, b->direction))
+    {
+        vector_vector_mul(b->orientation, b->direction, &side);
+    }
+    else
+    {
+        vector_get_orthogonal(b->direction, &side);
+    }
     VECTOR_NORMALIZE(&side);
 
     double sx, sy, sz;
@@ -235,13 +248,13 @@ static void __bounding_get_effective_position(const Bounding *b, Vector *result)
     *result = p;
 }
 
-static void __box_get_vertices(const Bounding *box, Vector *vertices)
+static void __box_get_vertices(const Bounding *box, Vector *vertices, bool use_new_origin)
 {
     __assert_bounding(box, bounding_box);
     assert(vertices && "Bad vertices pointer.");
 
     Vector p;
-    __bounding_get_effective_position(box, &p);
+    __bounding_get_effective_position(box, &p, use_new_origin);
 
     Vector e[3];
 
@@ -275,7 +288,7 @@ static void __assert_bounding(const Bounding *b, BoundingType bounding_type)
 {
     assert(b && "Bad bounding pointer.");
     assert(bounding_type == b->bounding_type && "Bad bounding type.");
-    assert(b->origin && b->orientation && b->direction && "Bad bounding data.");
+    assert(b->origin && b->previous_origin && b->orientation && b->direction && "Bad bounding data.");
 }
 
 #if defined(BOUNDING_TESTS)

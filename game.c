@@ -29,7 +29,7 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
 static void __tank_collision_detection(size_t i, Client *c);
 static void __perform_shooting(Client *client);
 static void __notify_in_radius(const Vector *origin, double radius, uint8_t message, Client *exclude);
-static Client *__shell_collision_detection(const Shell *shell);
+static Client *__shell_collision_detection(Shell *shell);
 static void __tank_hit(Client *c, int amount);
 static void __shell_explode(Shell *shell, Client *exclude);
 static void __check_winner(void);
@@ -341,7 +341,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
     }
 }
 
-static Client *__shell_collision_detection(const Shell *shell)
+static Client *__shell_collision_detection(Shell *shell)
 {
     assert(shell && "Bad shell pointer.");
 

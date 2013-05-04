@@ -3,11 +3,12 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <minmax.h>
+#include <math.h>
 
 #include "morrigan.h"
+#include "debug.h"
 #include "bounding.h"
 #include "landscape.h"
-#include "debug.h"
 
 static void __bounding_get_effective_position(const Bounding *b, Vector *result);
 static void __box_get_vertices(const Bounding *box, Vector *vertices);
@@ -46,7 +47,7 @@ bool box_intersects_with_landscape(const Landscape *l, const Bounding *box)
     __assert_bounding(box, bounding_box);
 
     Vector p;
-    __bounding_get_effective_position(box, &p, true);
+    __bounding_get_effective_position(box, &p);
     // TODO: Here get 8 vertices of box.
 
     double h = landscape_get_height_at(l, p.x, p.y);
@@ -63,7 +64,7 @@ bool sphere_intersects_with_landscape(const Landscape *l, const Bounding *sphere
     __assert_bounding(sphere, bounding_sphere);
 
     Vector p;
-    __bounding_get_effective_position(sphere, &p, true);
+    __bounding_get_effective_position(sphere, &p);
     // TODO: Fix it.
 
     double h = landscape_get_height_at(l, p.x, p.y);
@@ -155,7 +156,7 @@ void project_sphere_on_axis(const Bounding *sphere, const Vector *axis, double *
     Vector p;
     __bounding_get_effective_position(sphere, &p);
 
-    double c = vector_mul(&p, axis),
+    double c = vector_mul(&p, axis);
 
     *projection_start = c - sphere->data.radius;
     *projection_end   = c + sphere->data.radius;
@@ -196,7 +197,7 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
     assert(b1 && b2 && "Bad bounding pointers.");
     assert(intersection_time && "Bad intersection time pointer.");
 
-    intersection_time = nan(NULL);
+    *intersection_time = nan(NULL);
 
     if (bounding_composite == b2->bounding_type &&
         bounding_composite != b1->bounding_type)
@@ -280,8 +281,8 @@ static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const V
     assert(intersection_time && "Bad intersection time pointer.");
 
     double p1s, p1e, p2s, p2e;
-    double b1_speed = vector_mul(b1->direction, axis) * b1->speed,
-           b2_speed = vector_mul(b2->direction, axis) * b2->speed;
+    double b1_speed = vector_mul(b1->direction, axis) * (*b1->speed),
+           b2_speed = vector_mul(b2->direction, axis) * (*b2->speed);
 
     project_bounding_on_axis(b1, axis, &p1s, &p1e);
     project_bounding_on_axis(b2, axis, &p2s, &p2e);

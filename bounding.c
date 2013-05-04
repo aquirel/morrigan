@@ -441,6 +441,7 @@ int main(void)
     b.data.radius = 1;
     test_cond("Sphere landscape test 2.", !bounding_intersects_with_landscape(l, &b));
 
+    double speed = 0;
     Bounding composite_members[] =
     {
         {
@@ -449,6 +450,7 @@ int main(void)
             .orientation = &orientation,
             .direction = &direction,
             .offset = { .x = 0, .y = 0, .z = 0 },
+            .speed = &speed,
             .bounding_type = bounding_box,
             .data = { .extent = { .x = 2, .y = 2, .z = 2 } }
         },
@@ -458,6 +460,7 @@ int main(void)
             .orientation = &orientation,
             .direction = &direction,
             .offset = { .x = 0, .y = 0, .z = 1 },
+            .speed = &speed,
             .bounding_type = bounding_sphere,
             .data = { .radius = 1 }
         }
@@ -469,9 +472,10 @@ int main(void)
 
     test_cond("Composite landscape test.", bounding_intersects_with_landscape(l, &b));
 
-    test_cond("Test intersection 1.", intersection_test(&composite_members[0], &composite_members[1]));
+    double t;
+    test_cond("Test intersection 1.", intersection_test(&composite_members[0], &composite_members[1], &t));
     composite_members[1].offset.z = 3;
-    test_cond("Test intersection 2.", !intersection_test(&composite_members[0], &composite_members[1]));
+    test_cond("Test intersection 2.", !intersection_test(&composite_members[0], &composite_members[1], &t));
 
     landscape_destroy(l);
     test_report();

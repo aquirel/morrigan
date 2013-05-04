@@ -362,15 +362,16 @@ static Client *__shell_collision_detection(Shell *shell)
         double intersection_time = nan(NULL);
         bool intersection = intersection_test(&shell->bounding, &c->tank.bounding, &intersection_time);
 
-        if (!intersection || isnan(intersection_time) || 1.0 < intersection_time)
+        if (!intersection && (isnan(intersection_time) || 1.0 < intersection_time))
         {
             continue;
         }
 
+        vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
+
         if (NULL == result)
         {
             result = c;
-            vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
             distance = vector_length(&t);
             if (!isnan(intersection_time) && 1.0 >= intersection_time)
             {
@@ -378,18 +379,15 @@ static Client *__shell_collision_detection(Shell *shell)
             }
             continue;
         }
-        else
+
+        double new_distance = vector_length(&t);
+        if (new_distance < distance)
         {
-            vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
-            double new_distance = vector_length(&t);
-            if (new_distance < distance)
+            result = c;
+            distance = new_distance;
+            if (!isnan(intersection_time) && 1.0 >= intersection_time)
             {
-                distance = new_distance;
-                result = c;
-                if (!isnan(intersection_time) && 1.0 >= intersection_time)
-                {
-                    result_intersection_time = intersection_time;
-                }
+                result_intersection_time = intersection_time;
             }
         }
     }
@@ -450,7 +448,7 @@ static void __shell_explode(Shell *shell, Client *exclude)
 
         if (r <= SHELL_EXPLOSION_RADIUS)
         {
-            int damage_amount = (int) (SHELL_EXPLOSION_DAMAGE / (r * r));
+            int damage_amount = (int) ((double) SHELL_EXPLOSION_DAMAGE / (r * r));
 
             if (!damage_amount)
             {

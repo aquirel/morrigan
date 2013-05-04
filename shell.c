@@ -44,13 +44,16 @@ bool shell_tick(Shell *shell, const Landscape *l)
 
     shell->previous_position = shell->position;
 
-    Vector t;
-    vector_scale(&shell->direction, shell->speed, &t);
-    VECTOR_ADD(&shell->position, &t);
+    Vector vector_speed;
+    vector_scale(&shell->direction, shell->speed, &vector_speed);
+    Vector g = { .x = 0, .y = 0, .z = -SHELL_G_ACCELERATION };
+    VECTOR_ADD(&vector_speed, &g);
 
-    t.x = t.y = 0.0;
-    t.z = -SHELL_G_ACCELERATION;
-    VECTOR_ADD(&shell->position, &t);
+    VECTOR_ADD(&shell->position, &vector_speed);
+
+    vector_sub(&shell->position, &shell->previous_position, &shell->direction);
+    VECTOR_NORMALIZE(&shell->direction);
+    shell->speed = vector_mul(&shell->direction, &vector_speed);
 
     double intersection = landscape_intersects_with_segment(l,
                                                             &shell->previous_position,

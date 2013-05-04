@@ -79,6 +79,7 @@ static void __stop(int unused)
     if (l)
     {
         landscape_destroy(l);
+        l = NULL;
     }
 }
 

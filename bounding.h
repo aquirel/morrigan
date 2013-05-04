@@ -37,6 +37,7 @@ typedef struct Bounding
     Vector *orientation;
     Vector *direction;
     Vector offset;
+    double *speed;
     BoundingType bounding_type;
     union
     {
@@ -53,12 +54,18 @@ bool box_intersects_with_landscape(const Landscape *l, const Bounding *box);
 bool sphere_intersects_with_landscape(const Landscape *l, const Bounding *sphere);
 bool composite_intersects_with_landscape(const Landscape *l, const Bounding *composite);
 
-void project_bounding_on_axis(const Bounding *b, Axis axis, double *projection_start, double *projection_end);
-void project_box_on_axis(const Bounding *box, Axis axis, double *projection_start, double *projection_end);
-void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projection_start, double *projection_end);
-bool projections_are_intersecting(double projection1_start, double projection1_end, double projection2_start, double projection2_end);
+void project_bounding_on_axis(const Bounding *b, const Vector *axis, double *projection_start, double *projection_end);
+void project_box_on_axis(const Bounding *box, const Vector *axis, double *projection_start, double *projection_end);
+void project_sphere_on_axis(const Bounding *sphere, const Vector *axis, double *projection_start, double *projection_end);
+bool projections_are_intersecting(double projection1_start,
+                                  double projection1_end,
+                                  double projection1_speed,
+                                  double projection2_start,
+                                  double projection2_end,
+                                  double projection2_speed,
+                                  double *intersection_time);
 
-bool intersection_test(const Bounding *b1, const Bounding *b2);
+bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersection_time);
 void intersection_resolve(const Bounding *b1, const Bounding *b2);
 
 #endif /* __BOUNDING_H__ */

@@ -1,4 +1,3 @@
-fix bounding tests: use real SAT.
-    fix resolve.
+shell: rewrite moving simulation.
 --
 test client protocol.

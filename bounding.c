@@ -1,4 +1,4 @@
-﻿// bounding.c - collision detection.
+// bounding.c - collision detection.
 
 #include <assert.h>
 #include <stdbool.h>
@@ -9,9 +9,11 @@
 #include "landscape.h"
 #include "debug.h"
 
-static void __bounding_get_effective_position(const Bounding *b, Vector *result, bool use_new_origin);
-static void __box_get_vertices(const Bounding *box, Vector *vertices, bool use_new_origin);
+static void __bounding_get_effective_position(const Bounding *b, Vector *result);
+static void __box_get_vertices(const Bounding *box, Vector *vertices);
+static void __bounding_get_intersection_axes(const Bounding *b, Vector *axes);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
+static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const Vector *axis, double *intersection_time);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
 {
@@ -85,9 +87,10 @@ bool composite_intersects_with_landscape(const Landscape *l, const Bounding *com
     return false;
 }
 
-void project_bounding_on_axis(const Bounding *b, Axis axis, double *projection_start, double *projection_end)
+void project_bounding_on_axis(const Bounding *b, const Vector *axis, double *projection_start, double *projection_end)
 {
     assert(b && "Bad bounding pointer.");
+    assert(axis && "Bad axis pointer.");
     assert(projection_start && projection_end && "Bad projection pointers.");
 
     switch (b->bounding_type)
@@ -111,23 +114,23 @@ void project_bounding_on_axis(const Bounding *b, Axis axis, double *projection_s
     assert(false);
 }
 
-void project_box_on_axis(const Bounding *box, Axis axis, double *projection_start, double *projection_end)
+void project_box_on_axis(const Bounding *box, const Vector *axis, double *projection_start, double *projection_end)
 {
     __assert_bounding(box, bounding_box);
+    assert(axis && "Bad axis pointer.");
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    Vector vertices[16];
-    __box_get_vertices(box, &vertices[0], false);
-    __box_get_vertices(box, &vertices[8], true);
+    Vector vertices[8];
+    __box_get_vertices(box, vertices);
 
     int min_index = 0,
         max_index = 0;
 
-    for (size_t v = 1; v < 16; v++)
+    for (size_t v = 1; v < sizeof(vertices) / sizeof(vertices[0]); v++)
     {
-        double current_min = get_vector_coord(&vertices[min_index], axis),
-               current_max = get_vector_coord(&vertices[max_index], axis),
-               new_value   = get_vector_coord(&vertices[v], axis);
+        double current_min = vector_mul(&vertices[min_index], axis),
+               current_max = vector_mul(&vertices[max_index], axis),
+               new_value   = vector_mul(&vertices[v], axis);
 
         if (new_value < current_min)
         {
@@ -139,37 +142,61 @@ void project_box_on_axis(const Bounding *box, Axis axis, double *projection_star
         }
     }
 
-    *projection_start = get_vector_coord(&vertices[min_index], axis);
-    *projection_end   = get_vector_coord(&vertices[max_index], axis);
+    *projection_start = vector_mul(&vertices[min_index], axis);
+    *projection_end   = vector_mul(&vertices[max_index], axis);
 }
 
-void project_sphere_on_axis(const Bounding *sphere, Axis axis, double *projection_start, double *projection_end)
+void project_sphere_on_axis(const Bounding *sphere, const Vector *axis, double *projection_start, double *projection_end)
 {
     __assert_bounding(sphere, bounding_sphere);
+    assert(axis && "Bad axis pointer.");
     assert(projection_start && projection_end && "Bad projection pointers.");
 
-    Vector p1, p2;
-    __bounding_get_effective_position(sphere, &p1, false);
-    __bounding_get_effective_position(sphere, &p2, true);
+    Vector p;
+    __bounding_get_effective_position(sphere, &p);
 
-    double c1 = get_vector_coord(&p1, axis),
-           c2 = get_vector_coord(&p2, axis);
+    double c = vector_mul(&p, axis),
 
-    *projection_start = min(c1, c2) - sphere->data.radius;
-    *projection_end   = max(c1, c2) + sphere->data.radius;
+    *projection_start = c - sphere->data.radius;
+    *projection_end   = c + sphere->data.radius;
 }
 
-bool projections_are_intersecting(double projection1_start, double projection1_end, double projection2_start, double projection2_end)
+bool projections_are_intersecting(double projection1_start,
+                                  double projection1_end,
+                                  double projection1_speed,
+                                  double projection2_start,
+                                  double projection2_end,
+                                  double projection2_speed,
+                                  double *intersection_time)
 {
     assert(projection1_start <= projection1_end &&
            projection2_start <= projection2_end &&
            "Bad projections.");
-    return !(projection1_end <= projection2_start || projection2_end <= projection1_start);
+    assert(intersection_time && "Bad intersection time pointer.");
+
+    bool intersection = !(projection1_end <= projection2_start || projection2_end <= projection1_start);
+    double relative_speed = projection1_speed - projection2_speed;
+
+    if (0.0 > relative_speed || intersection)
+    {
+        *intersection_time = nan(NULL);
+        return intersection;
+    }
+
+    double distance = projection1_end < projection2_start
+        ? projection2_start - projection1_end
+        : projection1_start - projection2_end;
+
+    *intersection_time = distance / relative_speed;
+    return false;
 }
 
-bool intersection_test(const Bounding *b1, const Bounding *b2)
+bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersection_time)
 {
     assert(b1 && b2 && "Bad bounding pointers.");
+    assert(intersection_time && "Bad intersection time pointer.");
+
+    intersection_time = nan(NULL);
 
     if (bounding_composite == b2->bounding_type &&
         bounding_composite != b1->bounding_type)
@@ -183,7 +210,18 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
     {
         for (size_t i = 0; i < b1->data.composite_data.children_count; i++)
         {
-            if (intersection_test(b2, &b1->data.composite_data.children[i]))
+            double t;
+            bool result = intersection_test(b2, &b1->data.composite_data.children[i], &t);
+
+            if (!isnan(t))
+            {
+                if (isnan(*intersection_time) || t < *intersection_time)
+                {
+                    *intersection_time = t;
+                }
+            }
+
+            if (result)
             {
                 return true;
             }
@@ -192,19 +230,93 @@ bool intersection_test(const Bounding *b1, const Bounding *b2)
         return false;
     }
 
-    for (Axis axis = axis_x; axis <= axis_z; axis++)
-    {
-        double p1s, p1e, p2s, p2e;
-        project_bounding_on_axis(b1, axis, &p1s, &p1e);
-        project_bounding_on_axis(b2, axis, &p2s, &p2e);
+    assert(bounding_composite != b1->bounding_type &&
+           bounding_composite != b2->bounding_type &&
+           "Can't test composite boundings.");
 
-        if (!projections_are_intersecting(p1s, p1e, p2s, p2e))
+    Vector axes[6];
+    __bounding_get_intersection_axes(b1, &axes[0]);
+    __bounding_get_intersection_axes(b2, &axes[3]);
+
+    for (size_t i = 0; i < 6; i++)
+    {
+        if (!__bounding_axis_test(b1, b2, &axes[i], intersection_time))
         {
             return false;
         }
     }
 
+    for (size_t i = 0; i < 3; i++)
+    {
+        for (size_t j = 3; j < 6; j++)
+        {
+            if (vector_eq(&axes[i], &axes[j]))
+            {
+                continue;
+            }
+
+            Vector t;
+            vector_vector_mul(&axes[i], &axes[j], &t);
+            VECTOR_NORMALIZE(&t);
+
+            if (!__bounding_axis_test(b1, b2, &axes[i], intersection_time))
+            {
+                return false;
+            }
+        }
+    }
+
     return true;
+}
+
+static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const Vector *axis, double *intersection_time)
+{
+    assert(b1 &&
+           bounding_composite != b1->bounding_type &&
+           b2 &&
+           bounding_composite != b2->bounding_type &&
+           "Bad boundings.");
+    assert(axis && "Bad axis pointer.");
+    assert(intersection_time && "Bad intersection time pointer.");
+
+    double p1s, p1e, p2s, p2e;
+    double b1_speed = vector_mul(b1->direction, axis) * b1->speed,
+           b2_speed = vector_mul(b2->direction, axis) * b2->speed;
+
+    project_bounding_on_axis(b1, axis, &p1s, &p1e);
+    project_bounding_on_axis(b2, axis, &p2s, &p2e);
+
+    double t;
+    bool result = projections_are_intersecting(p1s, p1e, b1_speed, p2s, p2e, b2_speed, &t);
+
+    if (!isnan(t))
+    {
+        if (isnan(*intersection_time) || t < *intersection_time)
+        {
+            *intersection_time = t;
+        }
+    }
+
+    return result;
+}
+
+static void __bounding_get_intersection_axes(const Bounding *b, Vector *axes)
+{
+    assert(b && "Bad bounding pointer.");
+    assert(bounding_composite != b->bounding_type && "Can't get axes of composite bounding.");
+    assert(axes && "Bad axes pointer.");
+
+    axes[0] = *b->direction;
+    axes[1] = *b->orientation;
+    if (!vector_eq(b->direction, b->orientation))
+    {
+        vector_vector_mul(b->direction, b->orientation, &axes[2]);
+    }
+    else
+    {
+        vector_get_orthogonal(b->direction, &axes[2]);
+    }
+    VECTOR_NORMALIZE(&axes[2]);
 }
 
 void intersection_resolve(const Bounding *b1, const Bounding *b2)
@@ -214,13 +326,13 @@ void intersection_resolve(const Bounding *b1, const Bounding *b2)
     memcpy(b2->origin, b2->previous_origin, sizeof(Vector));
 }
 
-static void __bounding_get_effective_position(const Bounding *b, Vector *result, bool use_new_origin)
+static void __bounding_get_effective_position(const Bounding *b, Vector *result)
 {
     assert(b && "Bad bounding pointer.");
     assert(b->origin && b->previous_origin && b->orientation && b->direction && "Bad bounding data.");
     assert(result && "Bad result pointer.");
 
-    Vector p = *(use_new_origin ? b->origin : b->previous_origin),
+    Vector p = *b->origin,
            t,
            side;
     if (!vector_eq(b->orientation, b->direction))
@@ -248,13 +360,13 @@ static void __bounding_get_effective_position(const Bounding *b, Vector *result,
     *result = p;
 }
 
-static void __box_get_vertices(const Bounding *box, Vector *vertices, bool use_new_origin)
+static void __box_get_vertices(const Bounding *box, Vector *vertices)
 {
     __assert_bounding(box, bounding_box);
     assert(vertices && "Bad vertices pointer.");
 
     Vector p;
-    __bounding_get_effective_position(box, &p, use_new_origin);
+    __bounding_get_effective_position(box, &p);
 
     Vector e[3];
 

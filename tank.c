@@ -30,6 +30,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
                 .orientation     = &tank->orientation,
                 .direction       = &tank->direction,
                 .offset          = { .x = 0, .y = 0, .z = 0 },
+                .speed           = &tank->speed,
                 .bounding_type   = bounding_box,
                 .data            = { .extent = TANK_BOUNDING_BOX_EXTENT }
             },
@@ -39,6 +40,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
                 .orientation     = &tank->orientation,
                 .direction       = &tank->direction,
                 .offset          = { .x = 0, .y = 0, .z = TANK_BOUNDING_SPHERE_RADIUS },
+                .speed           = &tank->speed,
                 .bounding_type   = bounding_sphere,
                 .data            = { .radius = TANK_BOUNDING_SPHERE_RADIUS }
             }
@@ -49,6 +51,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
             .orientation         = &tank->orientation,
             .direction           = &tank->direction,
             .offset              = { .x = 0, .y = 0, .z = 0 },
+            .speed               = &tank->speed,
             .bounding_type       = bounding_composite,
             .data.composite_data = {
                 .children       = tank->bounding_primitives,

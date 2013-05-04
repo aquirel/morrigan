@@ -205,9 +205,11 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
                 continue;
             }
 
+            double intersection_time = nan(NULL);
             Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
             if (cs_in_game == previous_c->network_client.state &&
-                              intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+                (intersection_test(&c->tank.bounding, &previous_c->tank.bounding, &intersection_time) ||
+                 !isnan(intersection_time) && 1.0 >= intersection_time))
             {
                 break;
             }
@@ -226,6 +228,7 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
 
 static void __tank_collision_detection(size_t i, Client *c)
 {
+    double unused;
     for (size_t j = 0; j < i; j++)
     {
         if (i == j)
@@ -235,7 +238,7 @@ static void __tank_collision_detection(size_t i, Client *c)
 
         Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
         if (cs_in_game == previous_c->network_client.state &&
-            intersection_test(&c->tank.bounding, &previous_c->tank.bounding))
+            intersection_test(&c->tank.bounding, &previous_c->tank.bounding, &unused))
         {
             intersection_resolve(&c->tank.bounding, &previous_c->tank.bounding);
 
@@ -343,7 +346,7 @@ static Client *__shell_collision_detection(const Shell *shell)
     assert(shell && "Bad shell pointer.");
 
     Client *result = NULL;
-    double distance = 0.0;
+    double distance = 0.0, result_intersection_time = nan(NULL);
     Vector t;
 
     size_t clients_count = dynamic_array_count(clients);
@@ -351,8 +354,15 @@ static Client *__shell_collision_detection(const Shell *shell)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-        if (cs_in_game != c->network_client.state ||
-            !intersection_test(&shell->bounding, &c->tank.bounding))
+        if (cs_in_game != c->network_client.state)
+        {
+            continue;
+        }
+
+        double intersection_time = nan(NULL);
+        bool intersection = intersection_test(&shell->bounding, &c->tank.bounding, &intersection_time);
+
+        if (!intersection || isnan(intersection_time) || 1.0 < intersection_time)
         {
             continue;
         }
@@ -362,16 +372,33 @@ static Client *__shell_collision_detection(const Shell *shell)
             result = c;
             vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
             distance = vector_length(&t);
+            if (!isnan(intersection_time) && 1.0 >= intersection_time)
+            {
+                result_intersection_time = intersection_time;
+            }
             continue;
         }
-
-        vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
-        double new_distance = vector_length(&t);
-        if (new_distance < distance)
+        else
         {
-            distance = new_distance;
-            result = c;
+            vector_sub(shell->bounding.previous_origin, c->tank.bounding.previous_origin, &t);
+            double new_distance = vector_length(&t);
+            if (new_distance < distance)
+            {
+                distance = new_distance;
+                result = c;
+                if (!isnan(intersection_time) && 1.0 >= intersection_time)
+                {
+                    result_intersection_time = intersection_time;
+                }
+            }
         }
+    }
+
+    if (!isnan(result_intersection_time))
+    {
+        Vector t = shell->direction;
+        VECTOR_SCALE(&t, shell->speed * result_intersection_time);
+        VECTOR_ADD(&shell->position, &t);
     }
 
     return result;

@@ -26,6 +26,7 @@ Shell *shell_create(const Vector *position, const Vector *direction)
             .direction       = &shell->direction,
             .orientation     = &shell->direction,
             .offset          = { .x = 0, .y = 0, .z = 0 },
+            .speed           = &shell->speed,
             .bounding_type   = bounding_sphere,
             .data            = { .radius = SHELL_RADIUS }
         }

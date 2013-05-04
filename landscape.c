@@ -291,7 +291,7 @@ static double __segment_intersects_triangle(const Vector *segment_start,
 
     double denominator = vector_mul(&n, &segment_direction);
 
-    if (0.0 <= denominator)
+    if (vector_tolerance_eq(0.0, denominator))
     {
         return nan(NULL);
     }

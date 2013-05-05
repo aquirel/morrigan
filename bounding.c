@@ -15,6 +15,7 @@ static void __box_get_vertices(const Bounding *box, Vector *vertices);
 static void __bounding_get_intersection_axes(const Bounding *b, Vector *axes);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
 static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const Vector *axis, double *intersection_time);
+static double __get_min_intersection_time(const double *intersection_times, size_t intersection_times_count);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
 {
@@ -209,26 +210,18 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
 
     if (bounding_composite == b1->bounding_type)
     {
-        for (size_t i = 0; i < b1->data.composite_data.children_count; i++)
+        size_t intersections_count = b1->data.composite_data.children_count;
+        double *intersection_times = _alloca(intersections_count * sizeof(double)); // compiler bug?
+        bool composite_intersection_result = false;
+
+        for (size_t i = 0; i < intersections_count; i++)
         {
-            double t;
-            bool result = intersection_test(b2, &b1->data.composite_data.children[i], &t);
-
-            if (!isnan(t))
-            {
-                if (isnan(*intersection_time) || t < *intersection_time)
-                {
-                    *intersection_time = t;
-                }
-            }
-
-            if (result)
-            {
-                return true;
-            }
+            intersection_times[i] = nan(NULL);
+            composite_intersection_result |= intersection_test(b2, &b1->data.composite_data.children[i], &intersection_times[i]);
         }
 
-        return false;
+        *intersection_time = __get_min_intersection_time(intersection_times, intersections_count);
+        return composite_intersection_result;
     }
 
     assert(bounding_composite != b1->bounding_type &&
@@ -236,17 +229,18 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
            "Can't test composite boundings.");
 
     Vector axes[6];
+    double intersection_times[15]; // 6 + 3 * 3.
     __bounding_get_intersection_axes(b1, &axes[0]);
     __bounding_get_intersection_axes(b2, &axes[3]);
 
+    bool intersection_result = true;
     for (size_t i = 0; i < 6; i++)
     {
-        if (!__bounding_axis_test(b1, b2, &axes[i], intersection_time))
-        {
-            return false;
-        }
+        intersection_times[i] = nan(NULL);
+        intersection_result &= __bounding_axis_test(b1, b2, &axes[i], &intersection_times[i]);
     }
 
+    size_t intersection_times_counter = 6;
     for (size_t i = 0; i < 3; i++)
     {
         for (size_t j = 3; j < 6; j++)
@@ -260,14 +254,40 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
             vector_vector_mul(&axes[i], &axes[j], &t);
             VECTOR_NORMALIZE(&t);
 
-            if (!__bounding_axis_test(b1, b2, &axes[i], intersection_time))
-            {
-                return false;
-            }
+            intersection_result &= __bounding_axis_test(b1, b2, &t, &intersection_times[intersection_times_counter++]);
         }
     }
 
-    return true;
+    *intersection_time = __get_min_intersection_time(intersection_times, intersection_times_counter);
+    return intersection_result;
+}
+
+static double __get_min_intersection_time(const double *intersection_times, size_t intersection_times_count)
+{
+    assert(intersection_times && "Bad intersection times pointer.");
+    assert(intersection_times_count && "Bad intersection count.");
+
+    int min_intersection_time = -1;
+    for (size_t i = 0; i < intersection_times_count; i++)
+    {
+        if (isnan(intersection_times[i]))
+        {
+            return nan(NULL);
+        }
+
+        if (-1 == min_intersection_time ||
+            intersection_times[i] < intersection_times[min_intersection_time])
+        {
+            min_intersection_time = i;
+        }
+    }
+
+    if (-1 != min_intersection_time)
+    {
+        return intersection_times[min_intersection_time];
+    }
+
+    return nan(NULL);
 }
 
 static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const Vector *axis, double *intersection_time)

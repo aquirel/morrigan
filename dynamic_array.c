@@ -113,7 +113,7 @@ void dynamic_array_delete_at(DynamicArray *a, size_t i)
         return;
     }
 
-    memmove(a->data + i * a->element_size, a->data + (i + 1) * a->element_size, a->element_count - i);
+    memmove(a->data + i * a->element_size, a->data + (i + 1) * a->element_size, (a->element_count - i) * a->element_size);
     memset(a->data + a->element_count * a->element_size, 0, a->element_size);
 }
 

@@ -28,15 +28,25 @@ int main(int argc, char *argv[])
 {
     if (2 > argc)
     {
-        fprintf(stderr, "Usage: %s server-address\n", argv[0]);
+        fprintf(stderr, "Usage: %s server-address [port]\n", argv[0]);
         return -1;
+    }
+
+    int port = 0;
+    if (2 < argc)
+    {
+        port = atoi(argv[2]);
+        if (!port)
+        {
+            port = PORT;
+        }
     }
 
     check_mem(shoots = DYNAMIC_ARRAY_CREATE(NotViewerShellEvent *, 16));
     check_mem(explosions = DYNAMIC_ARRAY_CREATE(NotViewerShellEvent *, 16));
 
     check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&viewer_protocol, argv[1], false), "Failed to connect.", "");
+    check(client_connect(&viewer_protocol, argv[1], port, false), "Failed to connect.", "");
 
     puts("Connected to server.");
 

@@ -169,12 +169,17 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
     return false;
 }
 
-bool client_connect(ClientProtocol *cp, const char *address, bool is_client)
+bool client_connect(ClientProtocol *cp, const char *address, int port, bool is_client)
 {
     assert(cp && "Bad client protocol pointer.");
     assert(cp->packets && "Bad packets pointer.");
     assert(cp->packet_count && "Bad packet count.");
     assert(address && "Bad address pointer.");
+
+    if (!port)
+    {
+        port = PORT;
+    }
 
     cp->s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     check(INVALID_SOCKET != cp->s, "Failed to create socket. Error: %d.", WSAGetLastError());
@@ -192,7 +197,7 @@ bool client_connect(ClientProtocol *cp, const char *address, bool is_client)
           "getaddrinfo() failed. Error: %d.",
           WSAGetLastError());
 
-    ((SOCKADDR_IN *) result->ai_addr)->sin_port = htons(PORT);
+    ((SOCKADDR_IN *) result->ai_addr)->sin_port = htons(port);
 
     check(SOCKET_ERROR != connect(cp->s, result->ai_addr, result->ai_addrlen),
           "connect() failed. Error: %d.",

@@ -17,8 +17,13 @@ static SOCKET s = INVALID_SOCKET;
 
 static int __net_worker(void *unused);
 
-bool net_start(void)
+bool net_start(int port)
 {
+    if (!port)
+    {
+        port = PORT;
+    }
+
     WSADATA winsockData;
     check(0 == WSAStartup(MAKEWORD(2, 2), &winsockData), "Failed to initialize winsock. Error: %d.", WSAGetLastError());
 
@@ -33,7 +38,7 @@ bool net_start(void)
           "Failed to socket set socket buffer. Error: %d.",
           WSAGetLastError());
 
-    SOCKADDR_IN s_address = { .sin_family = AF_INET, .sin_port = htons(PORT), .sin_addr.s_addr = htonl(INADDR_ANY) };
+    SOCKADDR_IN s_address = { .sin_family = AF_INET, .sin_port = htons(port), .sin_addr.s_addr = htonl(INADDR_ANY) };
     check(SOCKET_ERROR != bind(s, (const SOCKADDR *) &s_address, sizeof(s_address)), "Failed to bind socket. Error: %d.", WSAGetLastError());
 
     working = true;

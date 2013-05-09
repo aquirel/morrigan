@@ -26,9 +26,18 @@ static bstring input = NULL;
 //int main(int argc, char *argv[], char *envp[])
 int main(int argc, char *argv[])
 {
-    #pragma ref argv
-    #pragma ref argc
     puts("Starting morrigan.");
+
+    int port = 0;
+    if (1 < argc)
+    {
+        port = atoi(argv[1]);
+        if (!port)
+        {
+            port = PORT;
+        }
+        printf("Using port: %d.\n", port);
+    }
 
     check(SIG_ERR != signal(SIGINT, __stop), "Failed to set signal handler.", "");
     check(SIG_ERR != signal(SIGTERM, __stop), "Failed to set signal handler.", "");
@@ -37,7 +46,7 @@ int main(int argc, char *argv[])
 
     l = landscape_load("land.dat", 32, 1.0);
     check(l, "Failed to load landscape.", "");
-    check(net_start(), "Failed to start network interface.", "");
+    check(net_start(port), "Failed to start network interface.", "");
     check(server_start(), "Failed to start server.", "");
     check(game_start(l, server_get_clients()), "Failed to start game.", "");
 

@@ -42,12 +42,22 @@ int main(int argc, char *argv[])
 {
     if (2 > argc)
     {
-        fprintf(stderr, "Usage: %s server-address\n", argv[0]);
+        fprintf(stderr, "Usage: %s server-address [port]\n", argv[0]);
         return -1;
     }
 
+    int port = 0;
+    if (2 < argc)
+    {
+        port = atoi(argv[2]);
+        if (!port)
+        {
+            port = PORT;
+        }
+    }
+
     check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&client_protocol, argv[1], true), "Failed to connect.", "");
+    check(client_connect(&client_protocol, argv[1], port, true), "Failed to connect.", "");
 
     puts("Connected to server.");
 

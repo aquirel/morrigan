@@ -43,7 +43,7 @@ bool client_protocol_process_event(ClientProtocol *cp);
 uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, void *packet, size_t *length);
 
 // Connecting / disconnecting.
-bool client_connect(ClientProtocol *cp, const char *address, int port, bool is_client);
+bool client_connect(ClientProtocol *cp, const char *address, unsigned short port, bool is_client);
 bool client_disconnect(ClientProtocol *cp, bool is_client);
 
 // Viewer protocol.

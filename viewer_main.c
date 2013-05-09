@@ -32,10 +32,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    int port = 0;
+    unsigned short port = 0;
     if (2 < argc)
     {
-        port = atoi(argv[2]);
+        port = (unsigned short) atoi(argv[2]);
         if (!port)
         {
             port = PORT;

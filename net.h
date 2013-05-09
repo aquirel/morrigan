@@ -15,7 +15,7 @@
 #define PORT 9000
 #define PACKET_BUFFER 32768
 
-bool net_start(int port);
+bool net_start(unsigned short port);
 void net_stop(void);
 
 void respond(const char *data, size_t data_length, const SOCKADDR *to);

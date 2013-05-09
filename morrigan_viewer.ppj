@@ -27,6 +27,7 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\sdl#
 # Build morrigan_viewer.exe.
 # 
 bin\morrigan_viewer.exe: \
+	build\bounding.obj \
 	build\client_protocol.obj \
 	build\dynamic_array.obj \
 	build\landscape.obj \
@@ -37,8 +38,7 @@ bin\morrigan_viewer.exe: \
 	build\vector.obj \
 	build\viewer_draw.obj \
 	build\viewer_events.obj \
-	build\viewer_net.obj \
-	build\bounding.obj
+	build\viewer_net.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -94,6 +94,7 @@ build\landscape.obj: \
 # 
 build\vector.obj: \
 	vector.c \
+	debug.h \
 	matrix.h \
 	morrigan.h \
 	vector.h

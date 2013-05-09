@@ -9,7 +9,7 @@
 #include <time.h>
 #include <process.h>
 
-#include "lib/bstrlib.h"
+#include "bstrlib.h"
 
 #include "net.h"
 #include "protocol.h"
@@ -28,10 +28,10 @@ int main(int argc, char *argv[])
 {
     puts("Starting morrigan.");
 
-    int port = 0;
+    unsigned short port = 0;
     if (1 < argc)
     {
-        port = atoi(argv[1]);
+        port = (unsigned short) atoi(argv[1]);
         if (!port)
         {
             port = PORT;

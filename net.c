@@ -17,7 +17,7 @@ static SOCKET s = INVALID_SOCKET;
 
 static int __net_worker(void *unused);
 
-bool net_start(int port)
+bool net_start(unsigned short port)
 {
     if (!port)
     {

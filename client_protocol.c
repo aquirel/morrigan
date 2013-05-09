@@ -169,7 +169,7 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
     return false;
 }
 
-bool client_connect(ClientProtocol *cp, const char *address, int port, bool is_client)
+bool client_connect(ClientProtocol *cp, const char *address, unsigned short port, bool is_client)
 {
     assert(cp && "Bad client protocol pointer.");
     assert(cp->packets && "Bad packets pointer.");

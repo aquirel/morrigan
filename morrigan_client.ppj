@@ -20,8 +20,8 @@ ASFLAGS = -AIA32 -Gz #
 RCFLAGS = #
 LINKFLAGS = -debug -debugtype:cv -subsystem:console -machine:x86 -map -release WS2_32.LIB bstrlib.lib#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
-INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include#
-LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;lib#
+INCLUDE = $(PellesCDir)\Include\Win;$(PellesCDir)\Include;..\_libz\bstrlib\include#
+LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\bstrlib\lib#
 
 # 
 # Build morrigan_client.exe.
@@ -41,12 +41,12 @@ bin\morrigan_client.exe: \
 # 
 build\client_main.obj: \
 	client_main.c \
+	..\_libz\bstrlib\include\bstrlib.h \
 	bounding.h \
 	client_net.h \
 	client_protocol.h \
 	debug.h \
 	landscape.h \
-	lib\bstrlib.h \
 	morrigan.h \
 	net.h \
 	protocol.h \
@@ -92,6 +92,7 @@ build\client_protocol.obj: \
 # 
 build\vector.obj: \
 	vector.c \
+	debug.h \
 	matrix.h \
 	morrigan.h \
 	vector.h
@@ -133,6 +134,6 @@ build\protocol_utils.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
-
 .EXCLUDEDFILES:
+
+.SILENT:

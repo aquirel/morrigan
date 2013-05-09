@@ -439,7 +439,7 @@ static bool __req_get_map_executor(Client *c)
 
     for (int i = -TANK_OBSERVING_RANGE / 2; i < TANK_OBSERVING_RANGE / 2; i++)
     {
-        for (int j = -TANK_OBSERVING_RANGE / 2; j < TANK_OBSERVING_RANGE / TANK_OBSERVING_RANGE; j++)
+        for (int j = -TANK_OBSERVING_RANGE / 2; j < TANK_OBSERVING_RANGE / 2; j++)
         {
             int l_y = t_y + i, l_x = t_x + j;
             if (l_y < 0 || l_y >= landscape->landscape_size ||

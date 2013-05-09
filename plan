@@ -1,3 +1,4 @@
+set port for server and client.
 get statistics.
     robocode.
 test client protocol.

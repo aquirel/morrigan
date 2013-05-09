@@ -1,2 +1,10 @@
 get statistics.
     robocode.
+    protocol.h
+        packet id
+        struct
+    protocol.c
+        implementation
+    client_net.c
+        implementation
+

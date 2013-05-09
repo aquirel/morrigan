@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 {
     if (2 > argc)
     {
-        fprintf(stderr, "Usage: %s server-address [port]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <server-address> [<port>]\n", argv[0]);
         return -1;
     }
 

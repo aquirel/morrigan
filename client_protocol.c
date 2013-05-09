@@ -391,3 +391,136 @@ bool shoot(ClientProtocol *cp)
     error:
     return false;
 }
+
+double client_tank_get_heading(ClientProtocol *cp)
+{
+    __assert_client_protocol(cp);
+
+    uint8_t req = req_get_heading;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetHeading receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_heading == receive_buf.packet_id, "Bad get heading response.", "");
+
+    return receive_buf.heading;
+    error:
+    return 0.0;
+}
+
+double tank_get_speed(ClientProtocol *cp)
+{
+    __assert_client_protocol(cp);
+
+    uint8_t req = req_get_speed;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetSpeed receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_speed == receive_buf.packet_id, "Bad get speed response.", "");
+
+    return receive_buf.speed;
+    error:
+    return 0.0;
+}
+
+uint8_t tank_get_hp(ClientProtocol *cp)
+{
+    __assert_client_protocol(cp);
+
+    uint8_t req = req_get_hp;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetHP receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_hp == receive_buf.packet_id, "Bad get hp response.", "");
+
+    return receive_buf.hp;
+    error:
+    return 0.0;
+}
+
+bool tank_get_map(ClientProtocol *cp, double *m)
+{
+    __assert_client_protocol(cp);
+    assert(m && "Bad map pointer.");
+
+    uint8_t req = req_get_map;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char buf[CLIENT_PACKET_BUFFER];
+    size_t received = CLIENT_PACKET_BUFFER;
+
+    check(req == client_protocol_wait_for(cp, req, buf, &received), "Net timeout.", "");
+
+    check(sizeof(uint8_t) + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double) == received && req_get_map == buf[0], "Bad get hp response.", "");
+
+    memcpy(m, &buf[1], TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double));
+
+    return true;
+    error:
+    return false;
+}
+
+bool tank_get_normal(ClientProtocol *cp, Vector *normal)
+{
+    __assert_client_protocol(cp);
+    assert(normal && "Bad normal vector pointer.");
+
+    uint8_t req = req_get_normal;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetNormal receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_normal == receive_buf.packet_id, "Bad get hp response.", "");
+
+    normal->x = receive_buf.x;
+    normal->y = receive_buf.y;
+    normal->z = receive_buf.z;
+
+    return true;
+    error:
+    return false;
+}
+
+int tank_get_tanks(ClientProtocol *cp, ResGetTanksTankRecord *tanks, size_t tanks_count)
+{
+    __assert_client_protocol(cp);
+    assert(tanks && "Bad tanks buffer pointer.");
+    assert(tanks_count && "Bad tanks count.");
+
+    uint8_t req = req_get_tanks;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    char buf[CLIENT_PACKET_BUFFER];
+    size_t received = CLIENT_PACKET_BUFFER;
+
+    check(req == client_protocol_wait_for(cp, req, buf, &received), "Net timeout.", "");
+    check(req_get_tanks == buf[0], "Bad get hp response.", "");
+    if (received < sizeof(ResGetTanks))
+    {
+        return 0;
+    }
+
+    ResGetTanks *header = (ResGetTanks *) buf;
+    ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (buf + sizeof(ResGetTanks));
+
+    size_t tanks_count_to_copy = min(header->tanks_count, tanks_count);
+    memcpy(tanks, response_body, tanks_count_to_copy * sizeof(ResGetTanksTankRecord));
+
+    return tanks_count_to_copy;
+    error:
+    return 0;
+}

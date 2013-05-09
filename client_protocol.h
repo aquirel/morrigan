@@ -17,7 +17,6 @@
 #include "protocol.h"
 #include "landscape.h"
 
-#define PORT 9000
 #define CLIENT_PACKET_BUFFER 65535
 #define MAX_CLIENTS 16
 // In ms.
@@ -55,5 +54,15 @@ bool set_engine_power(ClientProtocol *cp, int engine_power);
 bool turn(ClientProtocol *cp, double turn_angle);
 bool look_at(ClientProtocol *cp, Vector *look_direction);
 bool shoot(ClientProtocol *cp);
+
+// Tank telemetry.
+double client_tank_get_heading(ClientProtocol *cp);
+double tank_get_speed(ClientProtocol *cp);
+uint8_t tank_get_hp(ClientProtocol *cp);
+
+// Observing.
+bool tank_get_map(ClientProtocol *cp, double *m);
+bool tank_get_normal(ClientProtocol *cp, Vector *normal);
+int tank_get_tanks(ClientProtocol *cp, ResGetTanksTankRecord *tanks, size_t tanks_count);
 
 #endif /* __CLIENT_PROTOCOL_H__ */

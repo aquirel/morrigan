@@ -42,7 +42,6 @@ bin\morrigan_client.exe: \
 build\client_main.obj: \
 	client_main.c \
 	..\_libz\bstrlib\include\bstrlib.h \
-	bounding.h \
 	client_net.h \
 	client_protocol.h \
 	debug.h \
@@ -50,7 +49,6 @@ build\client_main.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
-	tank.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -134,6 +132,6 @@ build\protocol_utils.obj: \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

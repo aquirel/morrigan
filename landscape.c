@@ -5,10 +5,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <minmax.h>
 
-#include "landscape.h"
 #include "debug.h"
+#include "minmax.h"
+#include "landscape.h"
 
 static void __validate_location(const Landscape *l, size_t x, size_t y);
 static void __get_location_triangle(const Landscape *l, double x, double y, Vector *a, Vector *b, Vector *c);
@@ -32,7 +32,7 @@ Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
     check(file_size == landscape_size * landscape_size, "Landscape isn't square.", "");
 
     Landscape *l = NULL;
-    check_mem(l = landscape_create(landscape_size, tile_size));
+    check_mem(l = landscape_create(landscape_size, tile_size, scale));
 
     rewind(landscape_file);
 
@@ -64,7 +64,7 @@ Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
     return NULL;
 }
 
-Landscape *landscape_create(size_t landscape_size, size_t tile_size)
+Landscape *landscape_create(size_t landscape_size, size_t tile_size, double scale)
 {
     assert(landscape_size && "Bad landscape size.");
     if (!tile_size)
@@ -80,6 +80,7 @@ Landscape *landscape_create(size_t landscape_size, size_t tile_size)
 
     l->landscape_size = landscape_size;
     l->tile_size = tile_size;
+    l->scale = scale;
 
     return l;
     error:
@@ -335,7 +336,7 @@ static double __segment_intersects_triangle(const Vector *segment_start,
 
 int main(void)
 {
-    Landscape *l = landscape_create(2, 256);
+    Landscape *l = landscape_create(2, 256, 1.0);
     test_cond("Create landscape.", l);
 
     landscape_set_height_at_node(l, 0, 0, 0.1);
@@ -350,7 +351,7 @@ int main(void)
     test_cond("Get height 5.", vector_tolerance_eq(0.15, landscape_get_height_at(l, 128 - VECTOR_EPS, 0)));
 
     landscape_destroy(l);
-    l = landscape_create(2, 128);
+    l = landscape_create(2, 128, 1.0);
     landscape_set_height_at_node(l, 0, 0, 0.0);
     landscape_set_height_at_node(l, 0, 1, 1.0);
     landscape_set_height_at_node(l, 1, 0, 0.0);

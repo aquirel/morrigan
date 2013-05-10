@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <process.h>
 #include <threads.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include "bstrlib.h"
 

@@ -11,12 +11,11 @@
 #include <threads.h>
 
 #include "morrigan.h"
+#include "tank_defines.h"
 #include "vector.h"
 #include "bounding.h"
 
 #define TANK_HP 100
-#define TANK_MIN_ENGINE_POWER -10
-#define TANK_MAX_ENGINE_POWER 100
 #define TANK_ENGINE_POWER_CHANGE_STEP 0.5
 #define TANK_ENGINE_POWER_TO_SPEED_COEFFICIENT 0.05
 #define TANK_MIN_LOOK_Z (-M_PI / 12)
@@ -28,7 +27,6 @@
 #define TANK_BOUNDING_SPHERE_RADIUS (3.75)
 #define TANK_GUN_LENGTH 15
 #define TANK_BOUNDING_PRIMITIVES 2
-#define TANK_OBSERVING_RANGE 128
 
 #pragma pack(push, 8)
 

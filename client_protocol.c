@@ -1,8 +1,10 @@
 ﻿// client_protocol.c - client network interface implementation.
 
 #include <assert.h>
+#include <time.h>
 
 #include "debug.h"
+#include "tank_defines.h"
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "client_protocol.h"
@@ -267,7 +269,7 @@ Landscape *client_get_landscape(ClientProtocol *cp)
     size_t landscape_size = *((size_t *) &buf[1]),
            tile_size = *((size_t *) &buf[1 + sizeof(size_t)]);
 
-    Landscape *l = landscape_create(landscape_size, tile_size);
+    Landscape *l = landscape_create(landscape_size, tile_size, 1.0);
     check_mem(l);
 
     memcpy(l->height_map, &buf[1 + 2 * sizeof(size_t)], landscape_size * landscape_size * sizeof(double));
@@ -462,9 +464,13 @@ bool tank_get_map(ClientProtocol *cp, double *m)
 
     check(req == client_protocol_wait_for(cp, req, buf, &received), "Net timeout.", "");
 
-    check(sizeof(uint8_t) + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double) == received && req_get_map == buf[0], "Bad get hp response.", "");
+    check(sizeof(uint8_t) + sizeof(double) * TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(uint8_t) == received && req_get_map == buf[0], "Bad get hp response.", "");
 
-    memcpy(m, &buf[1], TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double));
+    double scale = *((double *) &buf[1]);
+    for (size_t i = 0; i < TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE; i++)
+    {
+        m[i] = scale * (*((uint8_t *) &buf[1 + sizeof(double) + i]));
+    }
 
     return true;
     error:

@@ -31,6 +31,7 @@
 #include "morrigan.h"
 #include "dynamic_array.h"
 #include "landscape.h"
+#include "tank.h"
 #include "protocol.h"
 #include "protocol_utils.h"
 #include "client_protocol.h"

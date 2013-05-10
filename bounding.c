@@ -2,10 +2,10 @@
 
 #include <assert.h>
 #include <stdbool.h>
-#include <minmax.h>
 #include <math.h>
 
 #include "morrigan.h"
+#include "minmax.h"
 #include "debug.h"
 #include "bounding.h"
 #include "landscape.h"
@@ -431,7 +431,7 @@ static void __assert_bounding(const Bounding *b, BoundingType bounding_type)
 
 int main(void)
 {
-    Landscape *l = landscape_create(2, 1);
+    Landscape *l = landscape_create(2, 1, 1.0);
 
     landscape_set_height_at_node(l, 0, 0, 0.0);
     landscape_set_height_at_node(l, 0, 1, 0.0);

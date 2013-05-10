@@ -13,19 +13,20 @@
 
 #define TILE_SIZE 16
 
-#pragma pack(push, 4)
+#pragma pack(push, 8)
 
 typedef struct Landscape
 {
     size_t landscape_size;
     size_t tile_size;
     double *height_map;
+    double scale;
 } Landscape;
 
 #pragma pack(pop)
 
 Landscape *landscape_load(const char *filename, size_t tile_size, double scale);
-Landscape *landscape_create(size_t landscape_size, size_t tile_size);
+Landscape *landscape_create(size_t landscape_size, size_t tile_size, double scale);
 void landscape_destroy(Landscape *l);
 
 double landscape_get_height_at_node(const Landscape *l, size_t y, size_t x);

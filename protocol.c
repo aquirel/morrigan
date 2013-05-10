@@ -424,16 +424,19 @@ static bool __req_get_map_executor(Client *c)
         return true;
     }
 
-    char response[1 + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(double)];
+    char response[1 + sizeof(double) + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(uint8_t)];
     memset(response, 0, sizeof(response));
+
     response[0] = (uint8_t) req_get_map;
 
-    double (*response_height_map)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE] =
-        (double (*)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE]) (&response[1]);
+    const Landscape *landscape = game_get_landscape();
+    *((double *) &response[1]) = landscape->scale;
+
+    uint8_t (*response_height_map)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE] =
+        (uint8_t (*)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE]) (&response[1 + sizeof(double)]);
 
     size_t t_x, t_y;
     check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
-    const Landscape *landscape = game_get_landscape();
     landscape_get_tile(landscape, c->tank.position.x, c->tank.position.y, &t_x, &t_y);
     check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
 
@@ -448,7 +451,7 @@ static bool __req_get_map_executor(Client *c)
                 continue;
             }
 
-            (*response_height_map)[l_y][l_x] = landscape_get_height_at_node(landscape, l_y, l_x);
+            (*response_height_map)[l_y][l_x] = (uint8_t) (landscape_get_height_at_node(landscape, l_y, l_x) / landscape->scale);
         }
     }
 

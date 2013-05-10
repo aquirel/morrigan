@@ -13,7 +13,6 @@
 
 #include "morrigan.h"
 #include "net.h"
-#include "tank.h"
 
 typedef enum Requests
 {
@@ -79,37 +78,6 @@ typedef struct PacketDefinition
     packet_execution_handler executor;
     bool is_client_protocol;
 } PacketDefinition;
-
-#pragma pack(pop)
-
-typedef enum ClientState
-{
-    cs_connected,
-    cs_acknowledged,
-    cs_in_game
-} ClientState;
-
-#pragma pack(push, 8)
-
-typedef struct NetworkClient
-{
-    ClientState state;
-    SOCKADDR address;
-    char current_packet_buffer[PACKET_BUFFER];
-    size_t current_packet_size;
-    const PacketDefinition *current_packet_definition;
-} NetworkClient;
-
-typedef struct Client
-{
-    NetworkClient network_client;
-    Tank tank;
-} Client;
-
-typedef struct ViewerClient
-{
-    NetworkClient network_client;
-} ViewerClient;
 
 #pragma pack(pop)
 

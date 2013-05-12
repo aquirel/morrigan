@@ -63,76 +63,83 @@ int main(int argc, char *argv[])
     }
 
     // Prepare Slash/A.
-    puts(SlashA::getHeader().c_str());
-
-    std::vector<double> input, output;
-    SlashA::MemCore mem_core(256, 256, input, output);
-
-    SlashA::InstructionSet instruction_set(0xffff);
-    instruction_set.insert_DIS_full();
-    __insert_additional_instructions(instruction_set);
-
-    // Load program.
-    std::string source;
-    std::ifstream f(argv[1]);
-
-    if (!f)
+    try
     {
-        fprintf(stderr, "Failed to open file: %s.\n", argv[1]);
-        __cleanup();
-        return -1;
+        puts(SlashA::getHeader().c_str());
+
+        std::vector<double> input, output;
+        SlashA::MemCore mem_core(256, 256, input, output);
+
+        SlashA::InstructionSet instruction_set(0xffff);
+        instruction_set.insert_DIS_full();
+        __insert_additional_instructions(instruction_set);
+
+        // Load program.
+        std::string source;
+        std::ifstream f(argv[1]);
+
+        if (!f)
+        {
+            fprintf(stderr, "Failed to open file: %s.\n", argv[1]);
+            __cleanup();
+            return -1;
+        }
+
+        std::getline(f, source, std::char_traits<char>::to_char_type(std::char_traits<char>::eof()));
+        f.close();
+
+        // Compile program.
+        SlashA::ByteCode bytecode;
+        source2ByteCode(source, bytecode, instruction_set);
+
+        // Prepare networking.
+        check(client_net_start(), "Failed to initialize net.", "");
+        check(client_connect(&genetic_client_protocol, argv[2], port, true), "Failed to connect.", "");
+
+        puts("Connected to server.");
+
+        // Main loop.
+        struct timeval tick_start_time, tick_end_time;
+        do
+        {
+            gettimeofday(&tick_start_time, NULL);
+
+            while (client_protocol_process_event(&genetic_client_protocol));
+            // TODO: get landscape.
+            // TODO: get tanks.
+
+            // Run genetic program.
+            input.clear();
+            output.clear();
+            bool failed = SlashA::runByteCode(instruction_set,
+                                              mem_core,
+                                              bytecode,
+                                              time(NULL) ^ _getpid(),
+                                              0,
+                                              -1);
+
+            if (failed)
+            {
+                log_warning("Program failed.", "");
+            }
+
+            gettimeofday(&tick_end_time, NULL);
+
+            unsigned long tick_length = __timeval_sub(&tick_end_time, &tick_start_time); // Microseconds.
+            if (TICK_DURATION >= tick_length)
+            {
+                unsigned long long time_to_sleep = TICK_DURATION - tick_length;
+                usleep(time_to_sleep);
+            }
+        } while (working);
+
+        // TODO: ask for stat.
+        // TODO: write it.
     }
-
-    std::getline(f, source, std::char_traits<char>::to_char_type(std::char_traits<char>::eof()));
-    f.close();
-
-    // Compile program.
-    SlashA::ByteCode bytecode;
-    source2ByteCode(source, bytecode, instruction_set);
-
-    // Prepare networking.
-    check(client_net_start(), "Failed to initialize net.", "");
-    check(client_connect(&genetic_client_protocol, argv[2], port, true), "Failed to connect.", "");
-
-    puts("Connected to server.");
-
-    // Main loop.
-    struct timeval tick_start_time, tick_end_time;
-    do
+    catch (std::string &e)
     {
-        gettimeofday(&tick_start_time, NULL);
-
-        while (client_protocol_process_event(&genetic_client_protocol));
-        // TODO: get landscape.
-        // TODO: get tanks.
-
-        // Run genetic program.
-        input.clear();
-        output.clear();
-        bool failed = SlashA::runByteCode(instruction_set,
-                                          mem_core,
-                                          bytecode,
-                                          time(NULL) ^ _getpid(),
-                                          0,
-                                          -1);
-
-        if (failed)
-        {
-            log_warning("Program failed.", "");
-        }
-
-        gettimeofday(&tick_end_time, NULL);
-
-        unsigned long tick_length = __timeval_sub(&tick_end_time, &tick_start_time); // Microseconds.
-        if (TICK_DURATION >= tick_length)
-        {
-            unsigned long long time_to_sleep = TICK_DURATION - tick_length;
-            usleep(time_to_sleep);
-        }
-    } while (working);
-
-    // TODO: ask for stat.
-    // TODO: write it.
+        fprintf(stderr, "Exception: %s\n", e.c_str());
+    }
 
     __cleanup();
     return 0;

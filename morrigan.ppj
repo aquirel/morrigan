@@ -142,6 +142,7 @@ build\game.obj: \
 	server.h \
 	shell.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

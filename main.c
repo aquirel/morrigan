@@ -77,6 +77,14 @@ static void __stop(int unused)
 {
     #pragma ref unused
 
+    static bool stopped = false;
+
+    if (stopped)
+    {
+        return;
+    }
+
+    stopped = true;
     puts("Stopping morrigan.");
     if (input)
     {

@@ -70,8 +70,11 @@ void game_stop(void)
     log_info("wait for worker to stop.", "");
     thrd_join(worker_tid, NULL);
     thrd_detach(worker_tid);
-    dynamic_array_destroy(shells);
-    shells = NULL;
+    if (shells)
+    {
+        dynamic_array_destroy(shells);
+        shells = NULL;
+    }
     log_info("end.", "");
 }
 

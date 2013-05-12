@@ -62,11 +62,12 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // Prepare Slash/A.
     try
     {
+        // Prepare Slash/A.
         puts(SlashA::getHeader().c_str());
 
+        puts("Initializing Slash/A.");
         std::vector<double> input, output;
         SlashA::MemCore mem_core(256, 256, input, output);
 
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
         __insert_additional_instructions(instruction_set);
 
         // Load program.
+        puts("Loading program.");
         std::string source;
         std::ifstream f(argv[1]);
 
@@ -89,10 +91,12 @@ int main(int argc, char *argv[])
         f.close();
 
         // Compile program.
+        puts("Compilling program.");
         SlashA::ByteCode bytecode;
         source2ByteCode(source, bytecode, instruction_set);
 
         // Prepare networking.
+        puts("Connecting to server.");
         check(client_net_start(), "Failed to initialize net.", "");
         check(client_connect(&genetic_client_protocol, argv[2], port, true), "Failed to connect.", "");
 
@@ -102,6 +106,7 @@ int main(int argc, char *argv[])
         struct timeval tick_start_time, tick_end_time;
         do
         {
+            puts("Tick start.");
             gettimeofday(&tick_start_time, NULL);
 
             while (client_protocol_process_event(&genetic_client_protocol));
@@ -115,7 +120,7 @@ int main(int argc, char *argv[])
                                               mem_core,
                                               bytecode,
                                               time(NULL) ^ _getpid(),
-                                              0,
+                                              1,
                                               -1);
 
             if (failed)

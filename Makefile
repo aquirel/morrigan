@@ -1,11 +1,12 @@
 SLASHPATH="D:/dev/_libz/slash-a/lib"
 
+COMMONFLAGS=-g -O0 -Wall -Wextra -DWINVER=0x0501
 CC=gcc
-CFLAGS=-std=gnu11 -O3 -Wall -Wextra -DWINVER=0x0501
+CFLAGS=-std=gnu11 $(COMMONFLAGS)
 CXX=g++
-CXXFLAGS=-std=gnu++11 -O3 -Wall -Wextra -I$(SLASHPATH) -DWINVER=0x0501
+CXXFLAGS=-std=gnu++11 -I$(SLASHPATH) $(COMMONFLAGS)
 
-LDFLAGS=-L$(SLASHPATH) -static -static-libgcc -static-libstdc++
+LDFLAGS=-L$(SLASHPATH) -static -static-libgcc -static-libstdc++ -Xlinker --export-all-symbols
 LIBS=-lm -lslasha -lws2_32
 
 SOURCES=genetic_client_main.cpp genetic_client_net.cpp client_protocol.c protocol_utils.c landscape.c vector.c matrix.c

@@ -58,7 +58,14 @@ class LookAt : public SlashA::Instruction
 
     inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
-        Vector l = { .x = core.D[core.I + 0], .y = core.D[core.I + 1], .z = core.D[core.I + 2] };
+        if (core.D_size <= core.I + 2)
+        {
+            n_invops++;
+            return;
+        }
+
+        Vector l = { .x = core.D[core.I + 0], .y = core.D[core.I + 1], .z =  core.D[core.I + 2] };
+        VECTOR_NORMALIZE(&l);
         look_at(&genetic_client_protocol, &l);
     }
 };

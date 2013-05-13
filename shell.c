@@ -10,6 +10,7 @@ static bool __shell_position_tester(const Landscape *l, const Vector *position);
 
 Shell *shell_create(const Vector *position, const Vector *direction)
 {
+    static size_t shell_id_generator = 0;
     assert(position && direction && "Bad geometry pointers.");
 
     Shell *shell = NULL;
@@ -29,7 +30,8 @@ Shell *shell_create(const Vector *position, const Vector *direction)
             .speed           = &shell->speed,
             .bounding_type   = bounding_sphere,
             .data            = { .radius = SHELL_RADIUS }
-        }
+        },
+        .id = shell_id_generator++
     };
 
     return shell;

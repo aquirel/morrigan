@@ -65,7 +65,9 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
         .fire_delay              = 0,
         .turret_direction        = { .x = 1, .y = 0, .z = 0 },
         .turret_direction_target = { .x = 1, .y = 0, .z = 0 },
-        .turn_angle_target       = 0
+        .turn_angle_target       = 0,
+        .statistics              = { .ticks = 0, .hp = 0, .direct_hits = 0, .hits = 0, .got_direct_hits = 0, .got_hits = 0 },
+        .last_shell_id           = -1
     };
 
     tank_rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
@@ -81,6 +83,7 @@ bool tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
+    tank->statistics.ticks++;
     bool result = true;
     check(thrd_success == mtx_lock(&tank->mtx), "Failed to lock tank mutex.", "");
 

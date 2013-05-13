@@ -28,6 +28,7 @@ typedef struct Shell
     Vector direction;
     Bounding bounding;
     double speed;
+    size_t id;
 } Shell;
 
 #pragma pack(pop)

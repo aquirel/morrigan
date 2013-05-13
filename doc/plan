@@ -1,7 +1,6 @@
 client_protocol - fix return codes handling.
 
 get statistics.
-    robocode.
     protocol.h
         packet id
         struct

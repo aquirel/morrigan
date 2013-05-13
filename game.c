@@ -32,6 +32,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
 static Client *__shell_collision_detection(Shell *shell);
 static void __tank_hit(Client *c, int amount);
 static void __shell_explode(Shell *shell, Client *exclude);
+static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification);
 static void __check_winner(void);
 
 static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
@@ -112,10 +113,13 @@ static int __game_worker(void *unused)
                 __game_tank_initialize(i, c, landscape, clients_count);
             }
 
-            if (!tank_tick(&c->tank, landscape))
+            if (c->tank.hp)
             {
-                uint8_t data = not_tank_hit_bound;
-                respond((const char *) &data, 1, &c->network_client.address);
+                if (!tank_tick(&c->tank, landscape))
+                {
+                    uint8_t data = not_tank_hit_bound;
+                    respond((const char *) &data, 1, &c->network_client.address);
+                }
             }
 
             if (-1 == c->tank.fire_delay)
@@ -144,6 +148,16 @@ static int __game_worker(void *unused)
             if (hit_tank)
             {
                 __tank_hit(hit_tank, 0);
+
+                for (size_t i = 0; i < clients_count; i++)
+                {
+                    Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+                    if (c->tank.last_shell_id == shell->id)
+                    {
+                        c->tank.statistics.direct_hits++;
+                        break;
+                    }
+                }
             }
 
             if (hit_tank || !result)
@@ -296,6 +310,7 @@ static void __perform_shooting(Client *client)
 
     Shell *new_shell = NULL;
     new_shell = shell_create(&p, &turret_direction);
+    client->tank.last_shell_id = new_shell->id;
     check_mem(new_shell);
 
     check(dynamic_array_push(shells, &new_shell), "Failed to add new shell.", "");
@@ -409,24 +424,13 @@ static void __tank_hit(Client *c, int amount)
 {
     assert(c && "Bad client pointer.");
 
-    uint8_t response;
     if (!amount)
     {
         amount = SHELL_HIT_AMOUNT;
     }
 
-    c->tank.hp -= amount;
-    if (0 >= c->tank.hp)
-    {
-        c->tank.hp = 0;
-        response = not_death;
-    }
-    else
-    {
-        response = not_hit;
-    }
-
-    respond((const char *) &response, sizeof(response), &c->network_client.address);
+    c->tank.statistics.got_direct_hits++;
+    __tank_damage(c, amount, not_hit);
 }
 
 static void __shell_explode(Shell *shell, Client *exclude)
@@ -436,10 +440,16 @@ static void __shell_explode(Shell *shell, Client *exclude)
     uint8_t response;
     Vector t;
 
+    Client *shell_owner = NULL;
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
         Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+
+        if (c->tank.last_shell_id == shell->id)
+        {
+            shell_owner = c;
+        }
 
         if (cs_in_game != c->network_client.state || c == exclude)
         {
@@ -456,22 +466,16 @@ static void __shell_explode(Shell *shell, Client *exclude)
             if (!damage_amount)
             {
                 response = not_near_explosion;
-            }
-            else
-            {
-                c->tank.hp -= damage_amount;
-                if (0 >= c->tank.hp)
-                {
-                    c->tank.hp = 0;
-                    response = not_death;
-                }
-                else
-                {
-                    response = not_explosion_damage;
-                }
+                respond((const char *) &response, sizeof(response), &c->network_client.address);
+                continue;
             }
 
-            respond((const char *) &response, sizeof(response), &c->network_client.address);
+            c->tank.statistics.got_hits++;
+            if (shell_owner)
+            {
+                shell_owner->tank.statistics.hits++;
+            }
+            __tank_damage(c, damage_amount, not_explosion_damage);
         }
         else if (r <= NEAR_EXPLOSION_NOTIFICATION_RARIUS)
         {
@@ -492,6 +496,21 @@ static void __shell_explode(Shell *shell, Client *exclude)
     {
         __check_winner();
     }
+}
+
+static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification)
+{
+    assert(c && "Bad client pointer.");
+
+    uint8_t response = notification;
+    c->tank.hp -= damage_amount;
+    if (0 >= c->tank.hp)
+    {
+        c->tank.hp = 0;
+        response = not_death;
+    }
+
+    respond((const char *) &response, sizeof(response), &c->network_client.address);
 }
 
 static void __check_winner(void)

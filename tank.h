@@ -30,6 +30,16 @@
 
 #pragma pack(push, 8)
 
+typedef struct TankStatistics
+{
+    unsigned long long ticks;
+    size_t hp;
+    size_t direct_hits;
+    size_t hits;
+    size_t got_direct_hits;
+    size_t got_hits;
+} TankStatistics;
+
 typedef struct Tank
 {
     mtx_t mtx;
@@ -49,6 +59,9 @@ typedef struct Tank
     int fire_delay; // In ticks.
     Vector turret_direction, turret_direction_target;
     double turn_angle_target;
+
+    TankStatistics statistics;
+    int last_shell_id;
 } Tank;
 
 #pragma pack(pop)

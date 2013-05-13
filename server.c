@@ -292,10 +292,18 @@ static int __server_worker(void *unused)
 
     RingBuffer *buffers_to_monitor[] = { client_requests, viewer_requests };
     const size_t buffers_to_monitor_count = sizeof(buffers_to_monitor) / sizeof(buffers_to_monitor[0]);
+    struct timespec ts;
 
     while (working)
     {
-        check(thrd_success == cnd_wait(&have_new_request_signal, &have_new_request_mutex), "Failed to wait request signal.", "");
+        check(0 != timespec_get(&ts, TIME_UTC), "timespec_get() failed.", "");
+        ts.tv_nsec += 50 * 1000 * 1000; // 50 ms.
+        int result = cnd_timedwait(&have_new_request_signal, &have_new_request_mutex, &ts);
+        if (thrd_timedout == result)
+        {
+            check(thrd_success == mtx_lock(&have_new_request_mutex), "Failed to lock request mutex.", "");
+        }
+        check(thrd_error != result, "Failed to wait request signal.", "");
 
         size_t processed_requests;
         do

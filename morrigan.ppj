@@ -111,6 +111,7 @@ build\server.obj: \
 	ring_buffer.h \
 	server.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

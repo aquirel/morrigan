@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
         puts("Initializing Slash/A.");
         std::vector<double> input, output;
-        SlashA::MemCore mem_core(256, 256, input, output);
+        SlashA::MemCore mem_core(0, 0, input, output);
 
         SlashA::InstructionSet instruction_set(0xffff);
         instruction_set.insert_DIS_full();
@@ -114,14 +114,12 @@ int main(int argc, char *argv[])
             // TODO: get tanks.
 
             // Run genetic program.
-            input.clear();
-            output.clear();
             bool failed = SlashA::runByteCode(instruction_set,
                                               mem_core,
                                               bytecode,
                                               time(NULL) ^ _getpid(),
                                               1,
-                                              -1);
+                                              256);
 
             if (failed)
             {

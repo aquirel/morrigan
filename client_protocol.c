@@ -451,6 +451,27 @@ uint8_t tank_get_hp(ClientProtocol *cp)
     return 0.0;
 }
 
+bool tank_get_statistics(ClientProtocol *cp, ResGetStatistics *statistics)
+{
+    __assert_client_protocol(cp);
+    assert(statistics && "Bad statistics pointer.");
+
+    uint8_t req = req_get_statistics;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetStatistics receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_statistics == receive_buf.packet_id, "Bad get statistics response.", "");
+
+    *statistics = receive_buf;
+    return true;
+    error:
+    return false;
+}
+
 bool tank_get_map(ClientProtocol *cp, double *m)
 {
     __assert_client_protocol(cp);

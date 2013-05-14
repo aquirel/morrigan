@@ -1,10 +1,1 @@
 client_protocol - fix return codes handling.
-
-get statistics.
-    protocol.h
-        packet id
-        struct
-    protocol.c
-        implementation
-    client_net.c
-        implementation

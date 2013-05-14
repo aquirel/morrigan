@@ -93,6 +93,7 @@ build\protocol.obj: \
 	protocol_utils.h \
 	server.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 

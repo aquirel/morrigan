@@ -238,7 +238,7 @@ static void __client_enqueuer(const NetworkClient *c, RingBuffer *rb)
     assert(c && "Bad client pointer.");
     assert(rb && "Bad client request ring buffer pointer.");
 
-    ring_buffer_write(rb, &c);
+    check(ring_buffer_write(rb, &c), "Failed to register client request.", "");
     check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
     error:
     return;

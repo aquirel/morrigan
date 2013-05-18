@@ -137,7 +137,7 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
     __assert_client_protocol(cp);
 
     size_t retries = NET_RETRIES, received;
-    uint8_t buf[CLIENT_PACKET_BUFFER];
+    char buf[CLIENT_PACKET_BUFFER];
 
     do
     {

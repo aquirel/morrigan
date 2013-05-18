@@ -97,7 +97,7 @@ Matrix *matrix_invert(const Matrix *m, Matrix *result)
 
     for (int n = 1; n >= 0; n--)
     {
-        for (size_t row_to_substract = 2; row_to_substract > n; row_to_substract--)
+        for (int row_to_substract = 2; row_to_substract > n; row_to_substract--)
         {
             double factor = t.values[n][row_to_substract];
             __matrix_sub_row(&t, n, row_to_substract, factor);

@@ -11,6 +11,7 @@
 #include "morrigan.h"
 #include "dynamic_array.h"
 #include "landscape.h"
+#include "server.h"
 
 // 0.1 sec.
 #define GAME_TICK_DURATION 100000
@@ -22,5 +23,6 @@ bool game_start(const Landscape *l, DynamicArray *c);
 void game_stop(void);
 
 const Landscape *game_get_landscape(void);
+void game_tank_initialize(Client *c);
 
 #endif /* __GAME_H__ */

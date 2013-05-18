@@ -20,8 +20,8 @@
 #define CLIENT_PACKET_BUFFER 65535
 #define MAX_CLIENTS 16
 // In ms.
-#define NET_TIMEOUT 10000
-#define NET_RETRIES 32
+#define NET_TIMEOUT 1000
+#define NET_RETRIES 16
 
 bool client_net_start(void);
 void client_net_stop(void);

@@ -83,6 +83,48 @@ const Landscape *game_get_landscape(void)
     return landscape;
 }
 
+// TODO: Fix it.
+void game_tank_initialize(Client *c)
+{
+    assert(c && "Bad client pointer.");
+
+    log_info("initializing new tank.", "");
+
+    size_t clients_count = dynamic_array_count(clients), i;
+
+    do
+    {
+        Vector position, top;
+
+        position.x = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
+        position.y = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
+        position.z = landscape_get_height_at(landscape, position.x, position.y);
+
+        landscape_get_normal_at(landscape, position.x, position.y, &top);
+        tank_initialize(&c->tank, &position, &top, clients_count);
+
+        for (i = 0; i < clients_count; i++)
+        {
+            Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
+            if (c == previous_c)
+            {
+                continue;
+            }
+
+            double intersection_time = nan(NULL);
+            if (cs_in_game == previous_c->network_client.state &&
+                (intersection_test(&c->tank.bounding, &previous_c->tank.bounding, &intersection_time) ||
+                 !isnan(intersection_time) && 1.0 >= intersection_time))
+            {
+                break;
+            }
+        }
+    } while (i < clients_count);
+
+    c->network_client.state = cs_in_game;
+    log_info("initializing new tank finished.", "");
+}
+
 static int __game_worker(void *unused)
 {
     #pragma ref unused
@@ -102,14 +144,9 @@ static int __game_worker(void *unused)
         {
             Client *c = *DYNAMIC_ARRAY_GET(Client **, clients, i);
 
-            if (cs_connected == c->network_client.state)
+            if (cs_in_game != c->network_client.state)
             {
                 continue;
-            }
-
-            if (cs_acknowledged == c->network_client.state)
-            {
-                __game_tank_initialize(i, c, landscape, clients_count);
             }
 
             if (c->tank.hp)
@@ -193,49 +230,6 @@ static int __game_worker(void *unused)
     error:
     log_info("error.", "");
     return -1;
-}
-
-static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landscape, size_t clients_count)
-{
-    assert(c && "Bad client pointer.");
-
-    log_info("initializing new tank.", "");
-
-    size_t j;
-
-    do
-    {
-        Vector position, top;
-
-        position.x = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
-        position.y = (double) (rand() % (landscape->landscape_size * landscape->tile_size - 1));
-        position.z = landscape_get_height_at(landscape, position.x, position.y);
-
-        landscape_get_normal_at(landscape, position.x, position.y, &top);
-        tank_initialize(&c->tank, &position, &top, clients_count);
-
-        for (j = 0; j < clients_count; j++)
-        {
-            if (i == j)
-            {
-                continue;
-            }
-
-            double intersection_time = nan(NULL);
-            Client *previous_c = *DYNAMIC_ARRAY_GET(Client **, clients, j);
-            if (cs_in_game == previous_c->network_client.state &&
-                (intersection_test(&c->tank.bounding, &previous_c->tank.bounding, &intersection_time) ||
-                 !isnan(intersection_time) && 1.0 >= intersection_time))
-            {
-                break;
-            }
-        }
-    } while (j < clients_count);
-
-    c->network_client.state = cs_in_game;
-
-    log_info("initializing new tank finished.", "");
-    return true;
 }
 
 static void __tank_collision_detection(size_t i, Client *c)

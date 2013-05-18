@@ -191,6 +191,7 @@ static bool __req_hello_executor(Client *c)
     if (cs_connected == c->network_client.state)
     {
         c->network_client.state = cs_acknowledged;
+        game_tank_initialize(c);
     }
 
     uint8_t response = req_hello;

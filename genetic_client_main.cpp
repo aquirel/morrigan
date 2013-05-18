@@ -136,8 +136,22 @@ int main(int argc, char *argv[])
             }
         } while (working);
 
-        // TODO: ask for stat.
-        // TODO: write it.
+        ResGetStatistics statistics;
+        check(tank_get_statistics(&genetic_client_protocol, &statistics), "Failed to get tank statistics.", "");
+
+        std::string statistics_filename(argv[1]);
+        statistics_filename += ".log";
+        FILE *statistics_file = fopen(statistics_filename.c_str(), "w");
+        check(statistics_file, "Failed to open statistics file.", "");
+        fprintf(statistics_file,
+                "%llu\n%u\n%u\n%u\n%u\n%u\n",
+                statistics.ticks,
+                statistics.hp,
+                statistics.direct_hits,
+                statistics.hits,
+                statistics.got_direct_hits,
+                statistics.got_hits);
+        fclose(statistics_file);
     }
     catch (std::string &e)
     {

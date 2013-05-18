@@ -8,7 +8,7 @@ const PacketDefinition *find_packet_by_id(const PacketDefinition *protocol, size
 {
     assert(protocol && packet_count && "Bad protocol definition.");
 
-    for (int i = 0; i < packet_count; i++)
+    for (size_t i = 0; i < packet_count; i++)
     {
         if (id == protocol[i].id)
         {

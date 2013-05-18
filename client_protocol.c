@@ -137,7 +137,7 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
     __assert_client_protocol(cp);
 
     size_t retries = NET_RETRIES, received;
-    char buf[CLIENT_PACKET_BUFFER];
+    uint8_t buf[CLIENT_PACKET_BUFFER];
 
     do
     {
@@ -162,6 +162,12 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
                 *length = received;
             }
 
+            if (target_packet_id != packet_id)
+            {
+                log_warning("Unexpected packet. id: %u", packet_id);
+            }
+
+            __process_packet(cp, buf, received);
             return packet_id;
         }
 

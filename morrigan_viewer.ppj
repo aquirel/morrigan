@@ -84,6 +84,7 @@ build\landscape.obj: \
 	landscape.c \
 	debug.h \
 	landscape.h \
+	minmax.h \
 	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"

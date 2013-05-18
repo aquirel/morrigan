@@ -27,7 +27,7 @@ Landscape *landscape_load(const char *filename, size_t tile_size, double scale)
 
     size_t file_size = ftell(landscape_file);
     check(0 < file_size, "ftell() failed.", "");
-    size_t landscape_size = (int) sqrt((double) file_size);
+    size_t landscape_size = (size_t) sqrt((double) file_size);
     fprintf(stderr, "landscape_size = %d.\n", landscape_size);
     check(file_size == landscape_size * landscape_size, "Landscape isn't square.", "");
 

@@ -1,1 +1,2 @@
+client, genetic client, viewer - exit when received req_bye from server.
 client_protocol - fix return codes handling.

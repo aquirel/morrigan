@@ -95,7 +95,7 @@ Matrix *matrix_invert(const Matrix *m, Matrix *result)
         __matrix_divide_row(result, n, divisor);
     }
 
-    for (size_t n = 1; n >= 0; n--)
+    for (int n = 1; n >= 0; n--)
     {
         for (size_t row_to_substract = 2; row_to_substract > n; row_to_substract--)
         {

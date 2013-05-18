@@ -28,7 +28,7 @@ extern "C"
 // 1 sec.
 #define TICK_DURATION 1000000
 
-bool working = true;
+volatile bool working = true;
 
 static void __stop(int unused);
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set);

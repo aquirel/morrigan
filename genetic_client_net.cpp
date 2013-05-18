@@ -1,18 +1,20 @@
 // genetic_client_net.cpp - genetic client protocol implementation.
 
 #include <cassert>
+#include <cstdio>
 
 #include "genetic_client.hpp"
 #include "genetic_client_net.hpp"
 
 static bool __notification_executor(void *unused);
+static bool __generic_executor(void *p);
 
 // TODO: Set validators and executors.
 PacketDefinition genetic_client_protocol_packets[] = {
     { .id = req_hello,            .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
     { .id = req_bye,              .validator = NULL, .executor = __notification_executor, .is_client_protocol = true },
     { .id = req_set_engine_power, .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
-    { .id = req_turn,             .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
+    { .id = req_turn,             .validator = NULL, .executor = __generic_executor,      .is_client_protocol = true },
     { .id = req_look_at,          .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
     { .id = req_shoot,            .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
     { .id = req_get_heading,      .validator = NULL, .executor = NULL,                    .is_client_protocol = true },
@@ -45,6 +47,14 @@ ClientProtocol genetic_client_protocol = {
 
 static bool __notification_executor(void *unused)
 {
+    __generic_executor(unused);
     working = false;
     return false;
+}
+
+static bool __generic_executor(void *p)
+{
+    /*uint8_t packet_id = ((uint8_t *) p)[0];
+    printf("Got packet. id: %u\n", (unsigned) packet_id);*/
+    return true;
 }

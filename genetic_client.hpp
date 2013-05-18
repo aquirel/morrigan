@@ -4,6 +4,6 @@
 #ifndef __GENETIC_CLIENT_HPP__
 #define __GENETIC_CLIENT_HPP__
 
-extern bool working;
+extern volatile bool working;
 
 #endif /* __GENETIC_CLIENT_HPP__ */

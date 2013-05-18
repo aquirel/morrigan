@@ -106,6 +106,18 @@ void ring_buffer_wait_not_empty(RingBuffer *rb)
     cnd_wait(&rb->buffer_not_empty, &rb->buffer_not_empty_mutex);
 }
 
+void ring_buffer_lock(RingBuffer *rb)
+{
+    __ring_buffer_assert(rb);
+    dynamic_array_lock(rb->array);
+}
+
+void ring_buffer_unlock(RingBuffer *rb)
+{
+    __ring_buffer_assert(rb);
+    dynamic_array_unlock(rb->array);
+}
+
 static void __ring_buffer_assert(const RingBuffer *rb)
 {
     assert(rb && "Bad ring buffer.");

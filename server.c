@@ -311,20 +311,21 @@ static int __server_worker(void *unused)
             processed_requests = 0;
             for (size_t buffer_counter = 0; buffer_counter < buffers_to_monitor_count; buffer_counter++)
             {
+                ring_buffer_lock(buffers_to_monitor[buffer_counter]);
                 if (ring_buffer_is_empty(buffers_to_monitor[buffer_counter]))
                 {
+                    ring_buffer_unlock(buffers_to_monitor[buffer_counter]);
                     continue;
                 }
 
                 NetworkClient *c = *RING_BUFFER_READ(NetworkClient **, buffers_to_monitor[buffer_counter]);
+                ring_buffer_unlock(buffers_to_monitor[buffer_counter]);
                 assert(c && "Bad client pointer.");
                 assert(c->current_packet_definition && "Client doesn't have pending packet.");
                 assert(c->current_packet_definition->executor && "No executor in packet definition.");
 
-                if (c->current_packet_definition->executor(c))
-                {
-                    c->current_packet_definition = NULL;
-                }
+                c->current_packet_definition->executor(c);
+                c->current_packet_definition = NULL;
 
                 processed_requests++;
             }

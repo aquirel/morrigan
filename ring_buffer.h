@@ -35,4 +35,7 @@ bool ring_buffer_is_full(const RingBuffer *rb);
 bool ring_buffer_is_empty(const RingBuffer *rb);
 void ring_buffer_wait_not_empty(RingBuffer *rb);
 
+void ring_buffer_lock(RingBuffer *rb);
+void ring_buffer_unlock(RingBuffer *rb);
+
 #endif /* __RING_BUFFER_H__ */

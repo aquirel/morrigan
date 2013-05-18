@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
         statistics_filename += ".log";
         FILE *statistics_file = fopen(statistics_filename.c_str(), "w");
         check(statistics_file, "Failed to open statistics file.", "");
-        fprintf(statistics_file, "%q\n", statistics.ticks);
+        fprintf(statistics_file, "%lu\n", (unsigned long) statistics.ticks);
         fprintf(statistics_file, "%u\n", statistics.hp);
         fprintf(statistics_file, "%u\n", statistics.direct_hits);
         fprintf(statistics_file, "%u\n", statistics.hits);

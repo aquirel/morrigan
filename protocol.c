@@ -6,7 +6,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <threads.h>
-#include <stdatomic.h>
 
 #include "protocol.h"
 #include "protocol_utils.h"
@@ -21,7 +20,6 @@ static void __packet_processor(NetworkClient *c,
                                void *packet_buffer,
                                size_t packet_size,
                                const PacketDefinition *packet_definition,
-                               void (*enqueuer)(const NetworkClient *),
                                uint8_t hello_packet);
 static bool __check_double(double v, double min, double max);
 
@@ -125,7 +123,6 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
                            (void *) packet,
                            packet_size,
                            packet_definition,
-                           enqueue_client,
                            req_hello);
     }
     else
@@ -136,7 +133,6 @@ void handle_packet(const char *packet, size_t packet_size,  const SOCKADDR *send
                            (void *) packet,
                            packet_size,
                            packet_definition,
-                           enqueue_viewer,
                            req_viewer_hello);
     }
 
@@ -150,7 +146,6 @@ static void __packet_processor(NetworkClient *c,
                                void *packet_buffer,
                                size_t packet_size,
                                const PacketDefinition *packet_definition,
-                               void (*enqueuer)(const NetworkClient *),
                                uint8_t hello_packet)
 {
     assert(address && "Bad address pointer.");
@@ -158,7 +153,6 @@ static void __packet_processor(NetworkClient *c,
     assert(packet_buffer && "Bad packet buffer pointer.");
     assert(packet_size && "Bad packet size.");
     assert(packet_definition && "Bad packet definition pointer.");
-    assert(enqueuer && "Bad enqueuer callback.");
 
     if (NULL == c)
     {
@@ -185,7 +179,8 @@ static void __packet_processor(NetworkClient *c,
     memcpy(c->current_packet_buffer, packet_buffer, PACKET_BUFFER);
     c->current_packet_size = packet_size;
     c->current_packet_definition = packet_definition;
-    enqueuer(c);
+    c->current_packet_definition->executor(c);
+    c->current_packet_definition = NULL;
 }
 
 // Connecting.
@@ -251,13 +246,10 @@ static bool __req_set_engine_power_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_set_engine_power(&c->tank, ((ReqSetEnginePower *) (&c->network_client.current_packet_buffer[1]))->engine_power);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
 
     uint8_t response = req_set_engine_power;
     respond((char *) &response, 1, &c->network_client.address);
-    error:
     return true;
 }
 
@@ -278,13 +270,10 @@ static bool __req_turn_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_turn(&c->tank, ((ReqTurn *) (&c->network_client.current_packet_buffer[1]))->turn_angle);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
 
     uint8_t response = req_turn;
     respond((char *) &response, 1, &c->network_client.address);
-    error:
     return true;
 }
 
@@ -313,12 +302,9 @@ static bool __req_look_at_executor(Client *c)
     }
 
     ReqLookAt *p = ((ReqLookAt *) (&c->network_client.current_packet_buffer[1]));
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     tank_look_at(&c->tank, &(Vector) { .x = p->x, .y = p->y, .z = p->z });
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     uint8_t response = req_look_at;
     respond((char *) &response, 1, &c->network_client.address);
-    error:
     return true;
 }
 
@@ -348,11 +334,8 @@ static bool __req_shoot_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     uint8_t response = tank_shoot(&c->tank) ? req_shoot : res_wait_shoot;
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, 1, &c->network_client.address);
-    error:
     return true;
 }
 
@@ -368,11 +351,8 @@ static bool __req_get_heading_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHeading response = { .packet_id = req_get_heading, .heading = tank_get_heading(&c->tank) };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -387,11 +367,8 @@ static bool __req_get_speed_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetSpeed response = { .packet_id = req_get_speed, .speed = c->tank.speed };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -406,11 +383,8 @@ static bool __req_get_hp_executor(Client *c)
         return true;
     }
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetHP response = { .packet_id = req_get_hp, .hp = (uint8_t) c->tank.hp };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -418,7 +392,6 @@ static bool __req_get_statistics_executor(Client *c)
 {
     assert(c && "Bad client pointer.");
 
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     ResGetStatistics response = {
         .packet_id       = req_get_statistics,
         .ticks           = c->tank.statistics.ticks,
@@ -428,9 +401,7 @@ static bool __req_get_statistics_executor(Client *c)
         .got_direct_hits = c->tank.statistics.got_direct_hits,
         .got_hits        = c->tank.statistics.got_hits,
     };
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     respond((char *) &response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -458,9 +429,7 @@ static bool __req_get_map_executor(Client *c)
         (uint8_t (*)[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE]) (&response[1 + sizeof(double)]);
 
     size_t t_x, t_y;
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     landscape_get_tile(landscape, c->tank.position.x, c->tank.position.y, &t_x, &t_y);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
 
     for (int i = -TANK_OBSERVING_RANGE / 2; i < TANK_OBSERVING_RANGE / 2; i++)
     {
@@ -478,7 +447,6 @@ static bool __req_get_map_executor(Client *c)
     }
 
     respond(response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -495,15 +463,12 @@ static bool __req_get_normal_executor(Client *c)
 
     ResGetNormal response = { .packet_id = req_get_normal };
     Vector t;
-    check(thrd_success == mtx_lock(&c->tank.mtx), "Failed to lock tank mutex.", "");
     const Landscape *landscape = game_get_landscape();
     landscape_get_normal_at(landscape, c->tank.position.x, c->tank.position.y, &t);
-    check(thrd_success == mtx_unlock(&c->tank.mtx), "Failed to unlock tank mutex.", "");
     response.x = t.x;
     response.y = t.y;
     response.z = t.z;
     respond((char *) &response, sizeof(response), &c->network_client.address);
-    error:
     return true;
 }
 
@@ -529,7 +494,6 @@ static bool __req_get_tanks_executor(Client *c)
 
     const Landscape *landscape = game_get_landscape();
     DynamicArray *clients = server_get_clients();
-    dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++)
     {
@@ -561,7 +525,6 @@ static bool __req_get_tanks_executor(Client *c)
         response_body++;
         response_header->tanks_count++;
     }
-    dynamic_array_unlock(clients);
 
     respond((char *) &response,
             sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord),
@@ -599,7 +562,6 @@ static bool __req_viewer_get_tanks_executor(ViewerClient *c)
     ResGetTanksTankRecord *response_body = (ResGetTanksTankRecord *) (response + sizeof(ResGetTanks));
 
     DynamicArray *clients = server_get_clients();
-    dynamic_array_lock(clients);
     size_t clients_count = dynamic_array_count(clients);
     for (size_t i = 0; i < clients_count; i++, response_body++, response_header->tanks_count++)
     {
@@ -627,7 +589,6 @@ static bool __req_viewer_get_tanks_executor(ViewerClient *c)
             .hp              = (uint8_t) other_c->tank.hp
         };
     }
-    dynamic_array_unlock(clients);
 
     respond((char *) &response,
             sizeof(ResGetTanks) + response_header->tanks_count * sizeof(ResGetTanksTankRecord),

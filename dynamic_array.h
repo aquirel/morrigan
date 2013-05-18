@@ -8,7 +8,6 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include <threads.h>
 
 #include "morrigan.h"
 
@@ -19,7 +18,6 @@ typedef struct DynamicArray
     size_t element_size;
     size_t element_count;
     size_t array_capacity;
-    mtx_t guard_mutex;
     char *data;
 } DynamicArray;
 
@@ -36,8 +34,5 @@ void *dynamic_array_pop(DynamicArray *a);
 #define DYNAMIC_ARRAY_POP(element_type, a) ((element_type) dynamic_array_pop(a))
 void dynamic_array_delete_at(DynamicArray *a, size_t i);
 size_t dynamic_array_count(const DynamicArray *a);
-
-void dynamic_array_lock(DynamicArray *a);
-void dynamic_array_unlock(DynamicArray *a);
 
 #endif /* __DYNAMIC_ARRAY_H__ */

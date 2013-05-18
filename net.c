@@ -2,7 +2,6 @@
 
 #include <stdbool.h>
 #include <threads.h>
-#include <stdatomic.h>
 
 #include <winsock2.h>
 
@@ -12,7 +11,7 @@
 #include "server.h"
 
 static thrd_t worker_tid;
-static volatile atomic_bool working = false;
+static volatile bool working = false;
 static SOCKET s = INVALID_SOCKET;
 
 static int __net_worker(void *unused);
@@ -82,7 +81,9 @@ static int __net_worker(void *unused)
             continue;
         }
 
+        get_global_lock();
         handle_packet(buf, res, &sender_address);
+        release_global_lock();
     }
 
     return 0;

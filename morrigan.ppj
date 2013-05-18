@@ -36,7 +36,6 @@ bin\morrigan.exe: \
 	build\net.obj \
 	build\protocol.obj \
 	build\protocol_utils.obj \
-	build\ring_buffer.obj \
 	build\server.obj \
 	build\shell.obj \
 	build\tank.obj \
@@ -74,6 +73,7 @@ build\net.obj: \
 	protocol.h \
 	server.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -109,22 +109,10 @@ build\server.obj: \
 	morrigan.h \
 	net.h \
 	protocol.h \
-	ring_buffer.h \
 	server.h \
 	tank.h \
 	tank_defines.h \
 	vector.h
-	$(CC) $(CCFLAGS) "$!" -Fo"$@"
-
-# 
-# Build ring_buffer.obj.
-# 
-build\ring_buffer.obj: \
-	ring_buffer.c \
-	debug.h \
-	dynamic_array.h \
-	morrigan.h \
-	ring_buffer.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -176,6 +164,7 @@ build\landscape.obj: \
 	landscape.c \
 	debug.h \
 	landscape.h \
+	minmax.h \
 	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
@@ -188,6 +177,7 @@ build\bounding.obj: \
 	bounding.h \
 	debug.h \
 	landscape.h \
+	minmax.h \
 	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
@@ -202,6 +192,7 @@ build\tank.obj: \
 	landscape.h \
 	morrigan.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -223,14 +214,10 @@ build\shell.obj: \
 # 
 build\protocol_utils.obj: \
 	protocol_utils.c \
-	bounding.h \
-	landscape.h \
 	morrigan.h \
 	net.h \
 	protocol.h \
-	protocol_utils.h \
-	tank.h \
-	vector.h
+	protocol_utils.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:

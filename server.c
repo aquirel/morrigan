@@ -2,25 +2,16 @@
 
 #include <assert.h>
 #include <stdbool.h>
-#include <stdatomic.h>
+#include <threads.h>
 
 #include "debug.h"
 #include "server.h"
 #include "protocol.h"
 #include "dynamic_array.h"
-#include "ring_buffer.h"
 
-static thrd_t worker_tid;
-static volatile atomic_bool working = false;
+static mtx_t global_mutex;
 static DynamicArray *clients = NULL;
 static DynamicArray *viewers = NULL;
-static RingBuffer *client_requests = NULL;
-static RingBuffer *viewer_requests = NULL;
-static cnd_t have_new_request_signal;
-static mtx_t have_new_request_mutex;
-
-static int __server_worker(void *unused);
-static void __clean(void);
 
 static NetworkClient *__client_finder_by_address(const SOCKADDR *address, DynamicArray *a);
 static NetworkClient *__client_registrator(const SOCKADDR *address,
@@ -28,8 +19,8 @@ static NetworkClient *__client_registrator(const SOCKADDR *address,
                                            size_t max_count,
                                            size_t client_size);
 static bool __client_unregistrator(const SOCKADDR *address, DynamicArray *a);
-static void __client_enqueuer(const NetworkClient *c, RingBuffer *rb);
 static void __shutdown_notifier(DynamicArray *a);
+static void __clean(void);
 
 bool server_start(void)
 {
@@ -37,73 +28,25 @@ bool server_start(void)
     check_mem(clients);
     viewers = DYNAMIC_ARRAY_CREATE(ViewerClient *, MAX_VIEWERS);
     check_mem(viewers);
-    client_requests = RING_BUFFER_CREATE(Client *, MAX_CLIENTS);
-    check_mem(client_requests);
-    viewer_requests = RING_BUFFER_CREATE(ViewerClient *, MAX_VIEWERS);
-    check_mem(viewer_requests);
-    check(thrd_success == cnd_init(&have_new_request_signal), "Failed to initialize request signal.", "");
-    check(thrd_success == mtx_init(&have_new_request_mutex, mtx_plain), "Failed to initialize request mutex.", "");
 
-    working = true;
-    check(thrd_success == thrd_create(&worker_tid, __server_worker, NULL), "Failed to start server worker thread.", "");
+    check(thrd_success == mtx_init(&global_mutex, mtx_plain), "Failed to initialize global mutex.", "");
 
     return true;
     error:
-    thrd_detach(worker_tid);
     __clean();
-
     return false;
 }
 
 void server_stop(void)
 {
     fprintf(stderr, "server_stop start.\n");
-    if (working)
-    {
-        working = false;
-        check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
-    }
-    error:
-    thrd_join(worker_tid, NULL);
-    thrd_detach(worker_tid);
     __clean();
-
     fprintf(stderr, "server_stop end.\n");
 }
 
 DynamicArray *server_get_clients(void)
 {
     return clients;
-}
-
-static void __clean(void)
-{
-    if (clients)
-    {
-        dynamic_array_destroy(clients);
-        clients = NULL;
-    }
-
-    if (client_requests)
-    {
-        ring_buffer_destroy(client_requests);
-        client_requests = NULL;
-    }
-
-    if (viewers)
-    {
-        dynamic_array_destroy(viewers);
-        viewers = NULL;
-    }
-
-    if (viewer_requests)
-    {
-        ring_buffer_destroy(viewer_requests);
-        viewer_requests = NULL;
-    }
-
-    cnd_destroy(&have_new_request_signal);
-    mtx_destroy(&have_new_request_mutex);
 }
 
 Client *find_client_by_address(const SOCKADDR *address)
@@ -121,7 +64,6 @@ static NetworkClient *__client_finder_by_address(const SOCKADDR *address, Dynami
     assert(address && "Bad address pointer.");
     assert(a && "Bad collection pointer.");
 
-    dynamic_array_lock(a);
     size_t count = dynamic_array_count(a);
 
     for (size_t i = 0; i < count; i++)
@@ -129,11 +71,9 @@ static NetworkClient *__client_finder_by_address(const SOCKADDR *address, Dynami
         NetworkClient *c = *DYNAMIC_ARRAY_GET(NetworkClient **, a, i);
         if (0 == memcmp(address, &c->address, sizeof(SOCKADDR)))
         {
-            dynamic_array_unlock(a);
             return c;
         }
     }
-    dynamic_array_unlock(a);
 
     return NULL;
 }
@@ -175,13 +115,10 @@ static NetworkClient *__client_registrator(const SOCKADDR *address,
     c->state = cs_connected;
     memcpy(&c->address, address, sizeof(SOCKADDR));
 
-    dynamic_array_lock(a);
     check(dynamic_array_push(a, &c), "Failed to add new client.", "");
-    dynamic_array_unlock(a);
 
     return c;
     error:
-    dynamic_array_unlock(a);
     if (c)
     {
         free(c);
@@ -204,7 +141,6 @@ static bool __client_unregistrator(const SOCKADDR *address, DynamicArray *a)
     assert(address && "Bad address pointer.");
     assert(a && "Bad client array pointer.");
 
-    dynamic_array_lock(a);
     size_t count = dynamic_array_count(a);
 
     for (size_t i = 0; i < count; i++)
@@ -214,48 +150,23 @@ static bool __client_unregistrator(const SOCKADDR *address, DynamicArray *a)
         {
             dynamic_array_delete_at(a, i);
             free(c);
-            dynamic_array_unlock(a);
             return true;
         }
     }
-    dynamic_array_unlock(a);
 
     return false;
-}
-
-void enqueue_client(const NetworkClient *c)
-{
-    __client_enqueuer(c, client_requests);
-}
-
-void enqueue_viewer(const NetworkClient *c)
-{
-    __client_enqueuer(c, viewer_requests);
-}
-
-static void __client_enqueuer(const NetworkClient *c, RingBuffer *rb)
-{
-    assert(c && "Bad client pointer.");
-    assert(rb && "Bad client request ring buffer pointer.");
-
-    check(ring_buffer_write(rb, &c), "Failed to register client request.", "");
-    check(thrd_success == cnd_signal(&have_new_request_signal), "Failed to signal request condition variable.", "");
-    error:
-    return;
 }
 
 void notify_viewers(NotViewerShellEvent *notification)
 {
     assert(notification && "Bad notification pointer.");
 
-    dynamic_array_lock(viewers);
     size_t viewer_count = dynamic_array_count(viewers);
     for (size_t i = 0; i < viewer_count; i++)
     {
         ViewerClient *c = *DYNAMIC_ARRAY_GET(ViewerClient **, viewers, i);
         respond((void *) notification, sizeof(NotViewerShellEvent), &c->network_client.address);
     }
-    dynamic_array_unlock(viewers);
 }
 
 void notify_shutdown(void)
@@ -271,7 +182,6 @@ static void __shutdown_notifier(DynamicArray *a)
         return;
     }
 
-    dynamic_array_lock(a);
     while (dynamic_array_count(a))
     {
         NetworkClient *c = *DYNAMIC_ARRAY_GET(NetworkClient **, a, 0);
@@ -280,59 +190,35 @@ static void __shutdown_notifier(DynamicArray *a)
         respond((char *) &response, 1, &c->address);
         free(c);
     }
-    dynamic_array_unlock(a);
 }
 
-static int __server_worker(void *unused)
+void get_global_lock(void)
 {
-    #pragma ref unused
+    check(thrd_success == mtx_lock(&global_mutex), "Failed to lock global mutex.", "");
+    error:
+    return;
+}
 
-    log_info("start. tid: %u", GetCurrentThreadId());
-    check(thrd_success == mtx_lock(&have_new_request_mutex), "Failed to lock request mutex.", "");
+void release_global_lock(void)
+{
+    check(thrd_success == mtx_unlock(&global_mutex), "Failed to unlock global mutex.", "");
+    error:
+    return;
+}
 
-    RingBuffer *buffers_to_monitor[] = { client_requests, viewer_requests };
-    const size_t buffers_to_monitor_count = sizeof(buffers_to_monitor) / sizeof(buffers_to_monitor[0]);
-    struct timespec ts;
-
-    while (working)
+static void __clean(void)
+{
+    if (clients)
     {
-        check(0 != timespec_get(&ts, TIME_UTC), "timespec_get() failed.", "");
-        ts.tv_nsec += 50 * 1000 * 1000; // 50 ms.
-        int result = cnd_timedwait(&have_new_request_signal, &have_new_request_mutex, &ts);
-        if (thrd_timedout == result)
-        {
-            check(thrd_success == mtx_lock(&have_new_request_mutex), "Failed to lock request mutex.", "");
-        }
-        check(thrd_error != result, "Failed to wait request signal.", "");
-
-        size_t processed_requests;
-        do
-        {
-            processed_requests = 0;
-            for (size_t buffer_counter = 0; buffer_counter < buffers_to_monitor_count; buffer_counter++)
-            {
-                ring_buffer_lock(buffers_to_monitor[buffer_counter]);
-                if (ring_buffer_is_empty(buffers_to_monitor[buffer_counter]))
-                {
-                    ring_buffer_unlock(buffers_to_monitor[buffer_counter]);
-                    continue;
-                }
-
-                NetworkClient *c = *RING_BUFFER_READ(NetworkClient **, buffers_to_monitor[buffer_counter]);
-                ring_buffer_unlock(buffers_to_monitor[buffer_counter]);
-                assert(c && "Bad client pointer.");
-                assert(c->current_packet_definition && "Client doesn't have pending packet.");
-                assert(c->current_packet_definition->executor && "No executor in packet definition.");
-
-                c->current_packet_definition->executor(c);
-                c->current_packet_definition = NULL;
-
-                processed_requests++;
-            }
-        } while (processed_requests);
+        dynamic_array_destroy(clients);
+        clients = NULL;
     }
 
-    return 0;
-    error:
-    return -1;
+    if (viewers)
+    {
+        dynamic_array_destroy(viewers);
+        viewers = NULL;
+    }
+
+    mtx_destroy(&global_mutex);
 }

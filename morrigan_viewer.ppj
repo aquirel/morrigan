@@ -56,6 +56,7 @@ build\main.obj: \
 	protocol.h \
 	protocol_utils.h \
 	tank.h \
+	tank_defines.h \
 	vector.h \
 	viewer.h \
 	viewer_net.h
@@ -124,6 +125,7 @@ build\viewer_events.obj: \
 	protocol.h \
 	protocol_utils.h \
 	tank.h \
+	tank_defines.h \
 	vector.h \
 	viewer.h \
 	viewer_net.h
@@ -143,6 +145,7 @@ build\viewer_draw.obj: \
 	protocol.h \
 	protocol_utils.h \
 	tank.h \
+	tank_defines.h \
 	vector.h \
 	viewer.h \
 	viewer_net.h
@@ -158,6 +161,7 @@ build\tank.obj: \
 	landscape.h \
 	morrigan.h \
 	tank.h \
+	tank_defines.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -176,6 +180,7 @@ build\viewer_net.obj: \
 	protocol.h \
 	protocol_utils.h \
 	tank.h \
+	tank_defines.h \
 	vector.h \
 	viewer.h \
 	viewer_net.h
@@ -196,14 +201,10 @@ build\dynamic_array.obj: \
 # 
 build\protocol_utils.obj: \
 	protocol_utils.c \
-	bounding.h \
-	landscape.h \
 	morrigan.h \
 	net.h \
 	protocol.h \
-	protocol_utils.h \
-	tank.h \
-	vector.h
+	protocol_utils.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -214,6 +215,7 @@ build\bounding.obj: \
 	bounding.h \
 	debug.h \
 	landscape.h \
+	minmax.h \
 	morrigan.h \
 	vector.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"

@@ -1,11 +1,10 @@
 ﻿// game.c - game main loop.
 
 #include <assert.h>
-#include <threads.h>
-#include <stdatomic.h>
 #include <sys/time.h>
 #include <time.h>
 #include <process.h>
+#include <threads.h>
 
 #include "debug.h"
 #include "matrix.h"
@@ -17,7 +16,7 @@
 #include "shell.h"
 
 static thrd_t worker_tid;
-static volatile atomic_bool working = false;
+static volatile bool working = false;
 
 static const Landscape *landscape = NULL;
 static DynamicArray *clients = NULL;
@@ -95,9 +94,9 @@ static int __game_worker(void *unused)
     while (working)
     {
         //log_info("tick start.", "");
+        get_global_lock();
         _gettimeofday(&tick_start_time, NULL);
 
-        dynamic_array_lock(clients);
         size_t clients_count = dynamic_array_count(clients);
         for (size_t i = 0; i < clients_count; i++)
         {
@@ -171,9 +170,9 @@ static int __game_worker(void *unused)
                 i++;
             }
         }
-        dynamic_array_unlock(clients);
 
         _gettimeofday(&tick_end_time, NULL);
+        release_global_lock();
 
         unsigned long tick_length = __timeval_sub(&tick_end_time, &tick_start_time); // Microseconds.
         if (GAME_TICK_DURATION >= tick_length)
@@ -233,19 +232,16 @@ static bool __game_tank_initialize(size_t i, Client *c, const Landscape *landsca
         }
     } while (j < clients_count);
 
-    check(thrd_success == mtx_init(&c->tank.mtx, mtx_plain | mtx_recursive), "Failed to initialize tank mutex.", "");
     c->network_client.state = cs_in_game;
 
     log_info("initializing new tank finished.", "");
     return true;
-    error:
-    log_info("initializing new tank error!", "");
-    return false;
 }
 
 static void __tank_collision_detection(size_t i, Client *c)
 {
     double unused;
+
     for (size_t j = 0; j < i; j++)
     {
         if (i == j)
@@ -312,8 +308,6 @@ static void __perform_shooting(Client *client)
     new_shell = shell_create(&p, &turret_direction);
     client->tank.last_shell_id = new_shell->id;
     check_mem(new_shell);
-
-    check(dynamic_array_push(shells, &new_shell), "Failed to add new shell.", "");
 
     client->tank.fire_delay = TANK_FIRE_DELAY;
 

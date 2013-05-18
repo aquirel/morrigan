@@ -5,6 +5,7 @@
 #include "client_net.h"
 
 PacketDefinition client_protocol_packets[] = {
+    { .id = req_hello            },
     { .id = req_bye              },
     { .id = req_set_engine_power },
     { .id = req_turn             },

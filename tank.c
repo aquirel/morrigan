@@ -73,19 +73,12 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
     tank_rotate_direction(&tank->direction, &(Vector) { .x = 0, .y = 0, .z = 1}, &tank->orientation);
 }
 
-void tank_destroy(Tank *tank)
-{
-    assert(tank && "Bad tank pointer.");
-    mtx_destroy(&tank->mtx);
-}
-
 bool tank_tick(Tank *tank, const Landscape *l)
 {
     assert(tank && "Bad tank pointer.");
 
     tank->statistics.ticks++;
     bool result = true;
-    check(thrd_success == mtx_lock(&tank->mtx), "Failed to lock tank mutex.", "");
 
     if (0 != tank->fire_delay && -1 != tank->fire_delay)
     {
@@ -96,8 +89,7 @@ bool tank_tick(Tank *tank, const Landscape *l)
     result = __tank_move(tank, l);
     __tank_change_turn(tank);
     __tank_rotate_turret(tank);
-    check(thrd_success == mtx_unlock(&tank->mtx), "Failed to lock tank mutex.", "");
-    error:
+
     return result;
 }
 

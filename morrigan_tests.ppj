@@ -6,15 +6,12 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
 tests: \
     dirs \
     bin_tests\dynamic_array.exe \
-    bin_tests\ring_buffer.exe \
     bin_tests\vector.exe \
     bin_tests\landscape.exe \
     bin_tests\bounding.exe \
     bin_tests\matrix.exe
     echo "Running tests."
     bin_tests\dynamic_array.exe 2>&1 | tee bin_tests\dynamic_array.log
-    pause
-    bin_tests\ring_buffer.exe 2>&1 | tee bin_tests\ring_buffer.log
     pause
     bin_tests\vector.exe 2>&1 | tee bin_tests\vector.log
     pause
@@ -35,18 +32,6 @@ bin_tests\dynamic_array.exe: build_tests\dynamic_array.obj
 
 build_tests\dynamic_array.obj: dynamic_array.c
     $(CC) $(CCFLAGS) -DDYNAMIC_ARRAY_TESTS "$!" -Fo"$@"
-
-# ring_buffer tests.
-bin_tests\ring_buffer.exe: \
-    build_tests\ring_buffer_dynamic_array.obj \
-    build_tests\ring_buffer.obj
-    $(LINK) $(LINKFLAGS) -out:"$@" $**
-
-build_tests\ring_buffer_dynamic_array.obj: dynamic_array.c
-    $(CC) $(CCFLAGS) -DRING_BUFFER_TESTS "$!" -Fo"$@"
-
-build_tests\ring_buffer.obj: ring_buffer.c
-    $(CC) $(CCFLAGS) -DRING_BUFFER_TESTS "$!" -Fo"$@"
 
 # vector tests.
 bin_tests\vector.exe: \

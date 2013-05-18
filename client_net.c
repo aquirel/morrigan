@@ -26,6 +26,7 @@ PacketDefinition client_protocol_packets[] = {
     { .id = not_tank_collision   },
     { .id = not_near_shoot       },
     { .id = not_death            },
+    { .id = not_win              },
     { .id = not_hit              },
     { .id = not_near_explosion   },
     { .id = not_explosion_damage },

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <process.h>
+#include <signal.h>
 #include <threads.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -10,7 +11,6 @@
 
 #include "debug.h"
 #include "client_protocol.h"
-#include "client_net.h"
 #include "vector.h"
 
 typedef enum ClientCommand
@@ -29,6 +29,45 @@ typedef enum ClientCommand
     cmd_shoot
 } ClientCommand;
 
+static bool __bye_executor(void *unused);
+
+PacketDefinition client_protocol_packets[] = {
+    { .id = req_hello            },
+    { .id = req_bye,              .executor = __bye_executor },
+    { .id = req_set_engine_power },
+    { .id = req_turn             },
+    { .id = req_look_at          },
+    { .id = req_shoot            },
+    { .id = req_get_heading      },
+    { .id = req_get_speed        },
+    { .id = req_get_hp           },
+    { .id = req_get_map          },
+    { .id = req_get_normal       },
+    { .id = req_get_tanks        },
+    { .id = res_bad_request      },
+    { .id = res_too_many_clients },
+    { .id = res_wait             },
+    { .id = res_wait_shoot       },
+    { .id = res_dead,             .executor = __bye_executor },
+    { .id = not_tank_hit_bound   },
+    { .id = not_tank_collision   },
+    { .id = not_near_shoot       },
+    { .id = not_death,            .executor = __bye_executor },
+    { .id = not_win,              .executor = __bye_executor },
+    { .id = not_hit              },
+    { .id = not_near_explosion   },
+    { .id = not_explosion_damage },
+    { .id = not_viewer_shoot     },
+    { .id = not_viewer_explosion }
+};
+
+ClientProtocol client_protocol = {
+    .packets      = client_protocol_packets,
+    .packet_count = sizeof(client_protocol_packets) / sizeof(client_protocol_packets[0]),
+    .s            = INVALID_SOCKET,
+    .connected    = false
+};
+
 static volatile ClientCommand command = cmd_none;
 
 static thrd_t network_thread = { 0 };
@@ -36,9 +75,8 @@ static thrd_t network_thread = { 0 };
 static bstring input = NULL;
 
 static int __network_worker(void *unused);
-static void __cleanup(void);
-
 static void __look_executor(Vector *current_look, const Vector *axis, double angle);
+static void __cleanup(void);
 
 int main(int argc, char *argv[])
 {
@@ -134,8 +172,6 @@ int main(int argc, char *argv[])
         input = NULL;
     } while(cmd_quit != command);
 
-    thrd_join(network_thread, NULL);
-
     __cleanup();
     return 0;
 
@@ -226,8 +262,19 @@ static void __look_executor(Vector *current_look, const Vector *axis, double ang
     look_at(&client_protocol, current_look);
 }
 
+static bool __bye_executor(void *unused)
+{
+    #pragma ref unused
+    command = cmd_quit;
+    printf("Client end (dead, win or server disconnected).");
+    raise(SIGINT);
+    __cleanup();
+    return true;
+}
+
 static void __cleanup(void)
 {
+    thrd_join(network_thread, NULL);
     thrd_detach(network_thread);
 
     if (client_protocol.connected)
@@ -246,5 +293,6 @@ static void __cleanup(void)
     if (input)
     {
         bdestroy(input);
+        input = NULL;
     }
 }

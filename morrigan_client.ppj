@@ -28,7 +28,6 @@ LIB = $(PellesCDir)\Lib\Win;$(PellesCDir)\Lib;..\_libz\bstrlib\lib#
 # 
 bin\morrigan_client.exe: \
 	build\client_main.obj \
-	build\client_net.obj \
 	build\client_protocol.obj \
 	build\landscape.obj \
 	build\matrix.obj \
@@ -42,23 +41,8 @@ bin\morrigan_client.exe: \
 build\client_main.obj: \
 	client_main.c \
 	..\_libz\bstrlib\include\bstrlib.h \
-	client_net.h \
 	client_protocol.h \
 	debug.h \
-	landscape.h \
-	morrigan.h \
-	net.h \
-	protocol.h \
-	vector.h
-	$(CC) $(CCFLAGS) "$!" -Fo"$@"
-
-# 
-# Build client_net.obj.
-# 
-build\client_net.obj: \
-	client_net.c \
-	client_net.h \
-	client_protocol.h \
 	landscape.h \
 	morrigan.h \
 	net.h \
@@ -126,6 +110,6 @@ build\protocol_utils.obj: \
 	protocol_utils.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

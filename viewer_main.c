@@ -4,6 +4,8 @@
 #include "viewer.h"
 #include "tank.h"
 
+bool working = true;
+
 static Landscape *l = NULL;
 static ResGetTanksTankRecord tanks[MAX_CLIENTS];
 static size_t tanks_count = 0;
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     draw_tank_gun();
     glEndList();
 
-    while (true)
+    while (working)
     {
         bool need_redraw = false;
         if (!process_events(&need_redraw, &camera, tanks, &tanks_count, &viewer_protocol))

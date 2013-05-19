@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "viewer.h"
 
+static bool __bye_executor(const void *packet);
 static bool __not_viewer_shell_event_validator(const void *packet, size_t packet_size);
 static void __shell_event_executor(const void *packet, DynamicArray *notification_collection);
 static bool __not_viewer_shoot_executor(const void *packet);
@@ -13,11 +14,11 @@ static bool __not_viewer_explosion_executor(const void *packet);
 
 PacketDefinition viewer_protocol_packets[] = {
     { .id = req_viewer_hello                                                                                                   },
-    { .id = req_viewer_bye                                                                                                     },
+    { .id = req_viewer_bye,                                                        .executor = __bye_executor                  },
     { .id = req_viewer_get_map                                                                                                 },
     { .id = req_viewer_get_tanks                                                                                               },
     { .id = not_viewer_shoot,     .validator = __not_viewer_shell_event_validator, .executor = __not_viewer_shoot_executor     },
-    { .id = not_viewer_explosion, .validator = __not_viewer_shell_event_validator, .executor = __not_viewer_explosion_executor }
+    { .id = not_viewer_explosion, .validator = __not_viewer_shell_event_validator, .executor = __not_viewer_explosion_executor },
 };
 
 #pragma warn(pop)
@@ -28,6 +29,13 @@ ClientProtocol viewer_protocol = {
     .s            = INVALID_SOCKET,
     .connected    = false
 };
+
+static bool __bye_executor(const void *packet)
+{
+    #pragma ref unused
+    working = false;
+    return true;
+}
 
 static bool __not_viewer_shell_event_validator(const void *packet, size_t packet_size)
 {

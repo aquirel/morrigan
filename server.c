@@ -19,7 +19,7 @@ static NetworkClient *__client_registrator(const SOCKADDR *address,
                                            size_t max_count,
                                            size_t client_size);
 static bool __client_unregistrator(const SOCKADDR *address, DynamicArray *a);
-static void __shutdown_notifier(DynamicArray *a);
+static void __shutdown_notifier(DynamicArray *a, uint8_t message);
 static void __clean(void);
 
 bool server_start(void)
@@ -171,11 +171,11 @@ void notify_viewers(NotViewerShellEvent *notification)
 
 void notify_shutdown(void)
 {
-    __shutdown_notifier(clients);
-    __shutdown_notifier(viewers);
+    __shutdown_notifier(clients, req_bye);
+    __shutdown_notifier(viewers, req_viewer_bye);
 }
 
-static void __shutdown_notifier(DynamicArray *a)
+static void __shutdown_notifier(DynamicArray *a, uint8_t message)
 {
     if (!a)
     {
@@ -186,7 +186,7 @@ static void __shutdown_notifier(DynamicArray *a)
     {
         NetworkClient *c = *DYNAMIC_ARRAY_GET(NetworkClient **, a, 0);
         dynamic_array_delete_at(a, 0);
-        uint8_t response = req_bye;
+        uint8_t response = message;
         respond((char *) &response, 1, &c->address);
         free(c);
     }

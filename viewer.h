@@ -51,6 +51,8 @@ typedef struct Camera
 
 #pragma pack(pop)
 
+extern bool working;
+
 // viewer_events.c
 bool process_events(bool *need_redraw, Camera *camera, ResGetTanksTankRecord *tanks, size_t *tanks_count, ClientProtocol *viewer_protocol);
 //void move_tanks(const Landscape *l, ResGetTanksTankRecord *tanks, const size_t tanks_count);

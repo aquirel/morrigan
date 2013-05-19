@@ -83,7 +83,6 @@ const Landscape *game_get_landscape(void)
     return landscape;
 }
 
-// TODO: Fix it.
 void game_tank_initialize(Client *c)
 {
     assert(c && "Bad client pointer.");
@@ -303,6 +302,7 @@ static void __perform_shooting(Client *client)
     client->tank.last_shell_id = new_shell->id;
     check_mem(new_shell);
 
+    check(dynamic_array_push(shells, &new_shell), "Failed to add new shell.", "");
     client->tank.fire_delay = TANK_FIRE_DELAY;
 
     __notify_in_radius(&client->tank.position, NEAR_SHOOT_NOTIFICATION_RARIUS, not_near_shoot, client);

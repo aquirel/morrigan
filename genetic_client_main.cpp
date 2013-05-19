@@ -186,6 +186,7 @@ int main(int argc, char *argv[])
 
 static void __stop(int unused)
 {
+    puts("Termination requested.");
     working = false;
 }
 

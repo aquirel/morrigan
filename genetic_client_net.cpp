@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <string>
 
 #include "genetic_client.hpp"
 #include "genetic_client_net.hpp"
@@ -50,6 +51,7 @@ static bool __notification_executor(void *unused)
 {
     __generic_executor(unused);
     working = false;
+    throw std::string("Execution terminated.");
     return false;
 }
 

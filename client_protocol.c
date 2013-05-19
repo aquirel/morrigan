@@ -154,7 +154,9 @@ uint8_t client_protocol_wait_for(ClientProtocol *cp, uint8_t target_packet_id, v
             res_too_many_clients == packet_id ||
             res_wait == packet_id ||
             res_wait_shoot == packet_id ||
-            res_dead == packet_id)
+            res_dead == packet_id ||
+            req_bye == packet_id ||
+            req_viewer_bye == packet_id)
         {
             if (packet && length && *length)
             {

@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    bool clean_exit = true;
     try
     {
         // Prepare Slash/A.
@@ -97,9 +98,19 @@ int main(int argc, char *argv[])
 
         // Prepare networking.
         puts("Connecting to server.");
-        check(client_net_start(), "Failed to initialize net.", "");
-        check(client_connect(&genetic_client_protocol, argv[2], port, true), "Failed to connect.", "");
+        if (!client_net_start())
+        {
+            fprintf(stderr, "Failed to initialize net.");
+            __cleanup();
+            return -1;
+        }
 
+        if (!client_connect(&genetic_client_protocol, argv[2], port, true))
+        {
+            fprintf(stderr, "Failed to connect..");
+            __cleanup();
+            return -1;
+        }
         puts("Connected to server.");
 
         // Main loop.
@@ -135,12 +146,21 @@ int main(int argc, char *argv[])
                 usleep(time_to_sleep);
             }
         } while (working);
+    }
+    catch (std::string &e)
+    {
+        fprintf(stderr, "Exception: %s\n", e.c_str());
+        clean_exit = false;
+    }
 
+    std::string statistics_filename(argv[1]);
+    statistics_filename += ".log";
+
+    if (clean_exit)
+    {
         ResGetStatistics statistics;
         check(tank_get_statistics(&genetic_client_protocol, &statistics), "Failed to get tank statistics.", "");
 
-        std::string statistics_filename(argv[1]);
-        statistics_filename += ".log";
         FILE *statistics_file = fopen(statistics_filename.c_str(), "w");
         check(statistics_file, "Failed to open statistics file.", "");
         fprintf(statistics_file, "%lu\n", (unsigned long) statistics.ticks);
@@ -151,9 +171,9 @@ int main(int argc, char *argv[])
         fprintf(statistics_file, "%u\n", statistics.got_hits);
         fclose(statistics_file);
     }
-    catch (std::string &e)
+    else
     {
-        fprintf(stderr, "Exception: %s\n", e.c_str());
+        remove(statistics_filename.c_str());
     }
 
     __cleanup();

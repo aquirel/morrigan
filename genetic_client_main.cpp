@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
                                               mem_core,
                                               bytecode,
                                               time(NULL) ^ _getpid(),
-                                              1,
+                                              10,
                                               256);
 
             if (failed)

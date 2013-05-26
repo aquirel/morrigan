@@ -32,7 +32,7 @@ ClientProtocol viewer_protocol = {
 
 static bool __bye_executor(const void *packet)
 {
-    #pragma ref unused
+    #pragma ref packet
     working = false;
     return true;
 }

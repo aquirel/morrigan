@@ -1,5 +1,5 @@
-Additional parameters
-=====================
+Additional parameters.
+======================
 State variables:
 Fire delay
 req_get_heading
@@ -16,4 +16,3 @@ not_near_shoot
 not_hit
 not_near_explosion
 not_explosion_damage
-

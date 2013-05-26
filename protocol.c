@@ -597,7 +597,7 @@ static bool __req_viewer_get_tanks_executor(ViewerClient *c)
     return true;
 }
 
-static bool __check_double(double v, double min, double max)
+static bool __check_double(double v, double min_value, double max_value)
 {
-    return isfinite(v) && min <= v && v <= max;
+    return isfinite(v) && min_value <= v && v <= max_value;
 }

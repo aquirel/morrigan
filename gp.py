@@ -10,13 +10,40 @@ Operations:
 """
 
 import sys
-import os
 import os.path
+import subprocess
 import random
 import re
 import glob
 import signal
 import time
+
+class ProgramLog:
+    def __init__(self, program_file):
+        self.program_file = program_file
+
+        self.ticks = 0
+        self.hp = 0
+        self.direct_hits = 0
+        self.hits = 0
+        self.got_direct_hits = 0
+        self.got_hits = 0
+
+        with open(program_file + ".log", mode="r") as f:
+            self.ticks = int(readline(f))
+            self.hp = int(readline(f))
+            self.direct_hits = int(readline(f))
+            self.hits = int(readline(f))
+            self.got_direct_hits = int(readline(f))
+            self.got_hits = int(readline(f))
+
+    def get_fitness(self):
+        return self.ticks + \
+               self.hp + \
+               self.direct_hits + \
+               self.hits + \
+               self.got_direct_hits + \
+               self.got_hits
 
 instructions = [
     "itof", "ftoi", "inc", "dec", "load", "save", "swap", "cmp", "label",
@@ -34,7 +61,7 @@ populations_path = "bin/populations"
 min_program_length = 256
 max_program_length = 2048
 
-morrigan_server = "bin/morrigan"
+morrigan_server = "bin/morrigan.exe"
 morrigan_client = "bin/morrigan_genetic_client"
 
 def main():
@@ -56,7 +83,7 @@ def main():
 
 def genetic_step():
     subdirectories = [ subdir for subdir in os.listdir(populations_path) if os.path.isdir(os.path.join(populations_path, subdir)) ]
-    subdirectories = filter(lambda subdir: None != re.match(r"^\d+$", subdir), subdirectories)
+    subdirectories = list(filter(lambda subdir: None != re.match(r"^\d+$", subdir), subdirectories))
 
     if 0 == len(subdirectories):
         print("No populations found. Nothing to do here.")
@@ -78,9 +105,16 @@ def genetic_step():
 
     print("Waiting for clients to terminate.")
     for pid in program_pids:
-        os.waitpid(pid, 0)
+        pid.wait()
 
-    os.kill(server_pid, signal.SIGINT)
+    server_pid.send_signal(signal.SIGINT)
+    server_pid.wait()
+
+    fitnesses = list(map(lambda p: ProgramLog(p), programs))
+
+    # TODO: Perform selection.
+    # TODO: Perform crossover.
+    # TODO: Perform mutation.
 
 def initialize_population():
     population_path = os.path.realpath(os.path.join(populations_path, "0"))
@@ -108,18 +142,18 @@ def write_program(f):
         if i != program_length - 1:
             f.write("/")
 
-    f.write(".")
+    f.write(".\n")
 
 def start_morrigan_server():
     print("Starting {0}".format(morrigan_server))
-    return os.spawnl(os.P_NOWAIT, morrigan_server)
+    return subprocess.Popen(morrigan_server, cwd=os.path.dirname(morrigan_server))
 
 def start_morrigan_client(program):
     client_command = "{0} {1} {2}".format(morrigan_client,
                                           program,
                                           "localhost")
     print("Starting {0}".format(client_command))
-    return os.spawnl(os.P_NOWAIT, client_command)
+    return subprocess.Popen(client_command)
 
 if "__main__" == __name__:
     main()

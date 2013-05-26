@@ -44,8 +44,8 @@ class Turn : public SlashA::Instruction
     {
         double angle = core.getF();
 
-        while (angle >= +2.0 * M_PI) angle -= 2.0 * M_PI;
-        while (angle <= -2.0 * M_PI) angle += 2.0 * M_PI;
+        while (angle >= +M_PI) angle -= M_PI;
+        while (angle <= -M_PI) angle += M_PI;
 
         turn(&genetic_client_protocol, angle);
     }

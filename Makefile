@@ -1,4 +1,4 @@
-SLASHPATH="C:/home/dev/_libz/slash-a/lib"
+SLASHPATH="D:/dev/_libz/slash-a/lib"
 
 COMMONFLAGS=-g -O0 -Wall -Wextra -DWINVER=0x0501
 CC=gcc

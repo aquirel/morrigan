@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <threads.h>
+#include <process.h>
 
 #include <winsock2.h>
 
@@ -57,6 +58,8 @@ static int __net_worker(void *unused)
     #pragma ref unused
 
     log_info("start. tid: %u", GetCurrentThreadId());
+
+    srand((unsigned) (time(NULL) ^ _getpid()));
 
     char buf[PACKET_BUFFER];
     SOCKADDR sender_address;

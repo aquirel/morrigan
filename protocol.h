@@ -47,10 +47,10 @@ typedef enum Requests
 typedef enum Responses
 {
     res_bad_request      = 0xf0,
-    res_too_many_clients = 0xf3,
-    res_wait             = 0xf4,
-    res_wait_shoot       = 0xf5,
-    res_dead             = 0xf6
+    res_too_many_clients = 0xf1,
+    res_wait             = 0xf2,
+    res_wait_shoot       = 0xf3,
+    res_dead             = 0xf4
 } Responses;
 
 typedef enum Notifications

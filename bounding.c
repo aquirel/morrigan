@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "morrigan.h"
@@ -14,8 +15,9 @@ static void __bounding_get_effective_position(const Bounding *b, Vector *result)
 static void __box_get_vertices(const Bounding *box, Vector *vertices);
 static void __bounding_get_intersection_axes(const Bounding *b, Vector *axes);
 static void __assert_bounding(const Bounding *box, BoundingType bounding_type);
+static void __swap(double *a, double *b);
 static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const Vector *axis, double *intersection_time);
-static double __get_min_intersection_time(const double *intersection_times, size_t intersection_times_count);
+static double __get_min_intersection_time(const double *intersection_times, const bool *intersection_facts, size_t intersection_times_count);
 
 bool bounding_intersects_with_landscape(const Landscape *l, const Bounding *b)
 {
@@ -176,19 +178,51 @@ bool projections_are_intersecting(double projection1_start,
            "Bad projections.");
     assert(intersection_time && "Bad intersection time pointer.");
 
-    bool intersection = !(projection1_end <= projection2_start || projection2_end <= projection1_start);
-    double relative_speed = projection1_speed - projection2_speed;
-
-    if (0.0 > relative_speed || intersection)
+    bool intersection = !(projection1_end < projection2_start || projection2_end < projection1_start);
+    if (intersection)
     {
         *intersection_time = nan(NULL);
-        return intersection;
+        return true;
     }
 
-    double distance = projection1_end < projection2_start
-        ? projection2_start - projection1_end
-        : projection1_start - projection2_end;
+    if (projection2_end < projection1_start)
+    {
+        __swap(&projection1_start, &projection2_start);
+        __swap(&projection1_end, &projection2_end);
+        __swap(&projection1_speed, &projection2_speed);
+    }
 
+    assert(projection1_end < projection2_start);
+
+    if (projection1_speed <= 0.0 && projection2_speed >= 0.0)
+    {
+        *intersection_time = nan(NULL);
+        return false;
+    }
+
+    double relative_speed;
+
+    if (projection1_speed >= 0.0 && projection2_speed <= 0.0)
+    {
+        relative_speed = projection1_speed + projection2_speed;
+    }
+    else
+    {
+        relative_speed = projection1_speed - projection2_speed;
+    }
+
+    if (0.0 > relative_speed)
+    {
+        *intersection_time = nan(NULL);
+        return false;
+    }
+    else if (0.0 == relative_speed)
+    {
+        *intersection_time = nan(NULL);
+        return false;
+    }
+
+    double distance = projection2_start - projection1_end;
     *intersection_time = distance / relative_speed;
     return false;
 }
@@ -212,15 +246,17 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
     {
         size_t intersections_count = b1->data.composite_data.children_count;
         double *intersection_times = _alloca(intersections_count * sizeof(double)); // compiler bug?
+        bool *intersection_facts = _alloca(intersections_count * sizeof(bool)); // compiler bug?
         bool composite_intersection_result = false;
 
         for (size_t i = 0; i < intersections_count; i++)
         {
             intersection_times[i] = nan(NULL);
-            composite_intersection_result |= intersection_test(b2, &b1->data.composite_data.children[i], &intersection_times[i]);
+            intersection_facts[i] = intersection_test(b2, &b1->data.composite_data.children[i], &intersection_times[i]);
+            composite_intersection_result |= intersection_facts[i];
         }
 
-        *intersection_time = __get_min_intersection_time(intersection_times, intersections_count);
+        *intersection_time = __get_min_intersection_time(intersection_times, intersection_facts, intersections_count);
         return composite_intersection_result;
     }
 
@@ -230,6 +266,8 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
 
     Vector axes[6];
     double intersection_times[15]; // 6 + 3 * 3.
+    bool intersection_facts[15];
+
     __bounding_get_intersection_axes(b1, &axes[0]);
     __bounding_get_intersection_axes(b2, &axes[3]);
 
@@ -237,7 +275,8 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
     for (size_t i = 0; i < 6; i++)
     {
         intersection_times[i] = nan(NULL);
-        intersection_result &= __bounding_axis_test(b1, b2, &axes[i], &intersection_times[i]);
+        intersection_facts[i] = __bounding_axis_test(b1, b2, &axes[i], &intersection_times[i]);
+        intersection_result &= intersection_facts[i];
     }
 
     size_t intersection_times_counter = 6;
@@ -251,18 +290,28 @@ bool intersection_test(const Bounding *b1, const Bounding *b2, double *intersect
             }
 
             Vector t;
-            vector_vector_mul(&axes[i], &axes[j], &t);
+            if (!(vector_tolerance_eq(0.0, vector_angle(&axes[i], &axes[j])) ||
+                  vector_tolerance_eq(M_PI, vector_angle(&axes[i], &axes[j]))))
+            {
+                vector_vector_mul(&axes[i], &axes[j], &t);
+            }
+            else
+            {
+                vector_get_orthogonal(&axes[i], &t);
+            }
             VECTOR_NORMALIZE(&t);
 
-            intersection_result &= __bounding_axis_test(b1, b2, &t, &intersection_times[intersection_times_counter++]);
+            intersection_facts[intersection_times_counter] = __bounding_axis_test(b1, b2, &t, &intersection_times[intersection_times_counter]);
+            intersection_result &= intersection_facts[intersection_times_counter];
+            intersection_times_counter++;
         }
     }
 
-    *intersection_time = __get_min_intersection_time(intersection_times, intersection_times_counter);
+    *intersection_time = __get_min_intersection_time(intersection_times, intersection_facts, intersection_times_counter);
     return intersection_result;
 }
 
-static double __get_min_intersection_time(const double *intersection_times, size_t intersection_times_count)
+static double __get_min_intersection_time(const double *intersection_times, const bool *intersection_facts, size_t intersection_times_count)
 {
     assert(intersection_times && "Bad intersection times pointer.");
     assert(intersection_times_count && "Bad intersection count.");
@@ -270,9 +319,9 @@ static double __get_min_intersection_time(const double *intersection_times, size
     int min_intersection_time = -1;
     for (size_t i = 0; i < intersection_times_count; i++)
     {
-        if (isnan(intersection_times[i]))
+        if (isnan(intersection_times[i]) || intersection_facts[i])
         {
-            return nan(NULL);
+            continue;
         }
 
         if (-1 == min_intersection_time ||
@@ -307,18 +356,7 @@ static bool __bounding_axis_test(const Bounding *b1, const Bounding *b2, const V
     project_bounding_on_axis(b1, axis, &p1s, &p1e);
     project_bounding_on_axis(b2, axis, &p2s, &p2e);
 
-    double t;
-    bool result = projections_are_intersecting(p1s, p1e, b1_speed, p2s, p2e, b2_speed, &t);
-
-    if (!isnan(t))
-    {
-        if (isnan(*intersection_time) || t < *intersection_time)
-        {
-            *intersection_time = t;
-        }
-    }
-
-    return result;
+    return projections_are_intersecting(p1s, p1e, b1_speed, p2s, p2e, b2_speed, intersection_time);
 }
 
 static void __bounding_get_intersection_axes(const Bounding *b, Vector *axes)
@@ -424,8 +462,18 @@ static void __assert_bounding(const Bounding *b, BoundingType bounding_type)
     assert(b->origin && b->previous_origin && b->orientation && b->direction && "Bad bounding data.");
 }
 
+static void __swap(double *a, double *b)
+{
+    double t = *a;
+    *a = *b;
+    *b = t;
+}
+
 #if defined(BOUNDING_TESTS)
 #include <stdio.h>
+
+#include "tank.h"
+#include "shell.h"
 
 #include "testhelp.h"
 
@@ -494,10 +542,30 @@ int main(void)
 
     double t;
     test_cond("Test intersection 1.", intersection_test(&composite_members[0], &composite_members[1], &t));
-    composite_members[1].offset.z = 3;
+    composite_members[1].offset.z = 3.5;
     test_cond("Test intersection 2.", !intersection_test(&composite_members[0], &composite_members[1], &t));
 
     landscape_destroy(l);
+
+    Tank tank;
+    tank_initialize(&tank, &(Vector) { .x = 0, .y = 0, .z = 0 }, &(Vector) { .x = 0, .y = 0, .z = 1 }, 0);
+    Shell *s = shell_create(&(Vector) { .x = 20, .y = 0, .z = 0.5 }, &(Vector) { .x = -1, .y = 0, .z = 0 });
+
+    bool result = intersection_test(&tank.bounding, &s->bounding, &t);
+    test_cond("Test intersection 3.", !result && !isnan(t));
+
+    s->direction.x = 1.0;
+    result = intersection_test(&tank.bounding, &s->bounding, &t);
+    test_cond("Test intersection 4.", !result && isnan(t));
+
+    s->position.x = -20;
+    s->position.y = -20;
+    s->direction.x = 1;
+    s->direction.y = 1;
+    VECTOR_NORMALIZE(&s->direction);
+    result = intersection_test(&tank.bounding, &s->bounding, &t);
+    test_cond("Test intersection 5.", !result && !isnan(t));
+
     test_report();
     return EXIT_SUCCESS;
 }

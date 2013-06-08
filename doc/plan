@@ -1,3 +1,2 @@
 Move packet processing to game thread?
 Global lock guards only lists of clients and viewers.
-notifications with position.

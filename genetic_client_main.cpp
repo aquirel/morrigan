@@ -125,12 +125,26 @@ int main(int argc, char *argv[])
             // TODO: get tanks.
 
             // Run genetic program.
-            bool failed = SlashA::runByteCode(instruction_set,
-                                              mem_core,
-                                              bytecode,
-                                              time(NULL) ^ _getpid(),
-                                              10,
-                                              256);
+            bool failed;
+            try
+            {
+                failed = SlashA::runByteCode(instruction_set,
+                                             mem_core,
+                                             bytecode,
+                                             time(NULL) ^ _getpid(),
+                                             10,
+                                             256);
+            }
+            catch (std::string &e)
+            {
+                if (e != "Exception: Execution terminated.")
+                {
+                    failed = true;
+                    throw;
+                }
+
+                failed = false;
+            }
 
             if (failed)
             {

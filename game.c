@@ -1,4 +1,4 @@
-﻿// game.c - game main loop.
+// game.c - game main loop.
 
 #include <assert.h>
 #include <sys/time.h>
@@ -31,7 +31,7 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
 static Client *__shell_collision_detection(Shell *shell);
 static void __tank_hit(Client *c, int amount);
 static void __shell_explode(Shell *shell, Client *exclude);
-static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification);
+static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification, const Vector *offset);
 static void __check_winner(void);
 
 static unsigned long __timeval_sub(struct _timeval *t1, struct _timeval *t2);
@@ -343,7 +343,14 @@ static void __notify_in_radius(const Vector *origin, double radius, uint8_t mess
             continue;
         }
 
-        respond((const char *) &message, sizeof(message), &c->network_client.address);
+        NotViewerShellEvent response = {
+            .type = message,
+            .x    = t.x,
+            .y    = t.y,
+            .z    = t.z
+        };
+
+        respond((const char *) &response, sizeof(response), &c->network_client.address);
     }
 }
 
@@ -418,14 +425,13 @@ static void __tank_hit(Client *c, int amount)
     }
 
     c->tank.statistics.got_direct_hits++;
-    __tank_damage(c, amount, not_hit);
+    __tank_damage(c, amount, not_hit, &(Vector) { .x = 0, .y = 0, .z = 0});
 }
 
 static void __shell_explode(Shell *shell, Client *exclude)
 {
     assert(shell && "Bad shell pointer.");
 
-    uint8_t response;
     Vector t;
 
     Client *shell_owner = NULL;
@@ -453,7 +459,12 @@ static void __shell_explode(Shell *shell, Client *exclude)
 
             if (!damage_amount)
             {
-                response = not_near_explosion;
+                NotViewerShellEvent response = {
+                    .type = not_near_explosion,
+                    .x    = t.x,
+                    .y    = t.y,
+                    .z    = t.z
+                };
                 respond((const char *) &response, sizeof(response), &c->network_client.address);
                 continue;
             }
@@ -463,11 +474,16 @@ static void __shell_explode(Shell *shell, Client *exclude)
             {
                 shell_owner->tank.statistics.hits++;
             }
-            __tank_damage(c, damage_amount, not_explosion_damage);
+            __tank_damage(c, damage_amount, not_explosion_damage, &t);
         }
         else if (r <= NEAR_EXPLOSION_NOTIFICATION_RARIUS)
         {
-            response = not_near_explosion;
+            NotViewerShellEvent response = {
+                .type = not_near_explosion,
+                .x    = t.x,
+                .y    = t.y,
+                .z    = t.z
+            };
             respond((const char *) &response, sizeof(response), &c->network_client.address);
         }
     }
@@ -486,17 +502,24 @@ static void __shell_explode(Shell *shell, Client *exclude)
     }
 }
 
-static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification)
+static void __tank_damage(Client *c, size_t damage_amount, uint8_t notification, const Vector *offset)
 {
     assert(c && "Bad client pointer.");
 
-    uint8_t response = notification;
+    uint8_t response_code = notification;
     c->tank.hp -= damage_amount;
     if (0 >= c->tank.hp)
     {
         c->tank.hp = 0;
-        response = not_death;
+        response_code = not_death;
     }
+
+    NotViewerShellEvent response = {
+        .type = response_code,
+        .x = offset->x,
+        .y = offset->y,
+        .z = offset->z
+    };
 
     respond((const char *) &response, sizeof(response), &c->network_client.address);
 }

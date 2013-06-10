@@ -227,16 +227,44 @@ static void __stop(int unused)
 
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set)
 {
-    // TODO: Add them here.
     SetEnginePower *set_engine_power_instruction = new SetEnginePower();
     Turn *turn_instruction = new Turn();
     LookAt *look_at_instruction = new LookAt();
     Shoot *shoot_instruction = new Shoot();
+    GetFireDelay *get_fire_delay_instruction = new ();
+    GetHeading *get_heading_instruction = new GetHeading();
+    GetSpeed *get_speed_instruction = new GetSpeed();
+    GetHP *get_hp_instruction = new GetHP();
+    GetHeight *get_height_instruction = new GetHeight();
+    GetNormal *get_normal_instruction = new GetNormal();
+    Tanks *get_tanks_instruction = new Tanks();
+    Tank *get_tank_instruction = new Tank();
+    HitBound *hit_bound_instruction = new HitBound();
+    TankCollision *tank_collision_instruction = new TankCollision();
+    Hit *hit_instruction = new Hit();
+    NearShoot *near_shoot_instruction = new NearShoot();
+    NearExplosion *near_explosion_instruction = new NearExplosion();
+    NearExplosionDamage *explosion_damage_instruction = new NearExplosionDamage();
+
 
     check(set_engine_power_instruction &&
           turn_instruction &&
           look_at_instruction &&
-          shoot_instruction,
+          shoot_instruction &&
+          get_fire_delay_instruction &&
+          get_heading_instruction &&
+          get_speed_instruction &&
+          get_hp_instruction &&
+          get_height_instruction &&
+          get_normal_instruction &&
+          get_tanks_instruction &&
+          get_tank_instruction &&
+          hit_bound_instruction &&
+          tank_collision_instruction &&
+          hit_instruction &&
+          near_shoot_instruction &&
+          near_explosion_instruction &&
+          explosion_damage_instruction,
           "Failed to create instructions.",
           "");
 
@@ -244,6 +272,20 @@ static void __insert_additional_instructions(SlashA::InstructionSet &instruction
     instruction_set.insert(turn_instruction);
     instruction_set.insert(look_at_instruction);
     instruction_set.insert(shoot_instruction);
+    instruction_set.insert(get_fire_delay_instruction);
+    instruction_set.insert(get_heading_instruction);
+    instruction_set.insert(get_speed_instruction);
+    instruction_set.insert(get_hp_instruction);
+    instruction_set.insert(get_height_instruction);
+    instruction_set.insert(get_normal_instruction);
+    instruction_set.insert(get_tanks_instruction);
+    instruction_set.insert(get_tank_instruction);
+    instruction_set.insert(hit_bound_instruction);
+    instruction_set.insert(tank_collision_instruction);
+    instruction_set.insert(hit_instruction);
+    instruction_set.insert(near_shoot_instruction);
+    instruction_set.insert(near_explosion_instruction);
+    instruction_set.insert(explosion_damage_instruction);
 
     error:
     return;

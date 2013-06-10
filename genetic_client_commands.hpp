@@ -8,10 +8,18 @@
 
 #include "SlashA.hpp"
 
+extern "C"
+{
+    #include "landscape.h"
+    #include "tank_defines.h"
+}
+
 #include "genetic_client_net.hpp"
 
 #define TANK_MIN_ENGINE_POWER -10
 #define TANK_MAX_ENGINE_POWER 100
+
+extern double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
 
 class SetEnginePower : public SlashA::Instruction
 {
@@ -126,6 +134,31 @@ class GetHP : public SlashA::Instruction
     {
         int hp = tank_get_hp(&genetic_client_protocol);
         core.setF(hp);
+    }
+};
+
+class GetHeight : public SlashA::Instruction
+{
+    public:
+    GetHeight() { name = "GetHeight"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        double height = 0.0;
+
+        if (core.I < core.D_size - 1)
+        {
+            double x = core.D[core.I + 0] / TILE_SIZE - TANK_OBSERVING_RANGE / 2.0,
+                   y = core.D[core.I + 1] / TILE_SIZE - TANK_OBSERVING_RANGE / 2.0;
+
+            if (-TANK_OBSERVING_RANGE / 2.0 <= x && x <= TANK_OBSERVING_RANGE / 2.0 &&
+                -TANK_OBSERVING_RANGE / 2.0 <= y && y <= TANK_OBSERVING_RANGE / 2.0)
+            {
+                height = landscape[((int) x) + TANK_OBSERVING_RANGE / 2][((int) y) + TANK_OBSERVING_RANGE / 2];
+            }
+        }
+
+        core.setF(height);
     }
 };
 

@@ -20,6 +20,7 @@ extern "C"
 {
     #include "debug.h"
     #include "client_protocol.h"
+    #include "tank_defines.h"
 }
 
 #include "genetic_client_net.hpp"
@@ -29,6 +30,7 @@ extern "C"
 #define TICK_DURATION 1000000
 
 volatile bool working = true;
+double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
 
 static void __stop(int unused);
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set);
@@ -121,7 +123,7 @@ int main(int argc, char *argv[])
             gettimeofday(&tick_start_time, NULL);
 
             while (client_protocol_process_event(&genetic_client_protocol));
-            // TODO: get landscape.
+            tank_get_map(&genetic_client_protocol, (double *) landscape);
             // TODO: get tanks.
 
             // Run genetic program.
@@ -206,6 +208,7 @@ static void __stop(int unused)
 
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set)
 {
+    // TODO: Add them here.
     SetEnginePower *set_engine_power_instruction = new SetEnginePower();
     Turn *turn_instruction = new Turn();
     LookAt *look_at_instruction = new LookAt();

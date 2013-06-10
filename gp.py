@@ -103,7 +103,7 @@ instructions = [
     "gotoifp", "jumpifn", "jumphere", "loop", "endloop", #"input", "output",
     "add", "sub", "mul", "div", "abs", "sign", "exp", "log", "sin", "cos",
     "pow", "ran", "SetEnginePower", "Shoot", "Turn", "LookAt", "GetFireDelay",
-    "GetHeading", "GetSpeed", "GetHP"
+    "GetHeading", "GetSpeed", "GetHP", "GetHeight"
 ]
 instruction_count = len(instructions)
 

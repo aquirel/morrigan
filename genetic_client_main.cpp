@@ -34,6 +34,16 @@ double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
 ResGetTanksTankRecord tanks[MAX_CLIENTS];
 size_t tanks_count;
 
+bool not_hit_bound_flag;
+bool not_tank_collision_flag;
+bool not_near_shoot_flag;
+Vector not_near_shoot_position;
+bool not_hit_flag;
+bool not_near_explosion_flag;
+Vector not_near_explosion_position;
+bool not_explosion_damage_flag;
+Vector not_explosion_damage_position;
+
 static void __stop(int unused);
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set);
 static void __cleanup(void);
@@ -127,6 +137,13 @@ int main(int argc, char *argv[])
             while (client_protocol_process_event(&genetic_client_protocol));
             tank_get_map(&genetic_client_protocol, (double *) landscape);
             tanks_count = tank_get_tanks(&genetic_client_protocol, tanks, MAX_CLIENTS);
+
+            not_hit_bound_flag =
+            not_tank_collision_flag =
+            not_near_shoot_flag =
+            not_hit_flag =
+            not_near_explosion_flag =
+            not_explosion_damage_flag = false;
 
             // Run genetic program.
             bool failed;

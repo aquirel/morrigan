@@ -11,18 +11,10 @@
 extern "C"
 {
     #include "landscape.h"
-    #include "tank_defines.h"
-    #include "client_protocol.h"
 }
 
+#include "genetic_client.hpp"
 #include "genetic_client_net.hpp"
-
-#define TANK_MIN_ENGINE_POWER -10
-#define TANK_MAX_ENGINE_POWER 100
-
-extern double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
-extern ResGetTanksTankRecord tanks[MAX_CLIENTS];
-extern size_t tanks_count;
 
 class SetEnginePower : public SlashA::Instruction
 {
@@ -238,6 +230,111 @@ class Tank : public SlashA::Instruction
         core.D[destination + 12] = tanks[tank_index].speed;
         core.D[destination + 13] = tanks[tank_index].team;
         core.D[destination + 14] = tanks[tank_index].hp;
+    }
+};
+
+class HitBound : public SlashA::Instruction
+{
+    public:
+    HitBound() { name = "HitBound"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        core.setF(not_hit_bound_flag ? 1.0 : 0.0);
+    }
+};
+
+class TankCollision : public SlashA::Instruction
+{
+    public:
+    TankCollision() { name = "TankCollision"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        core.setF(not_tank_collision_flag ? 1.0 : 0.0);
+    }
+};
+
+class Hit : public SlashA::Instruction
+{
+    public:
+    Hit() { name = "Hit"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        core.setF(not_hit_flag ? 1.0 : 0.0);
+    }
+};
+
+class NearShoot : public SlashA::Instruction
+{
+    public:
+    NearShoot() { name = "NearShoot"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        if (not_near_shoot_flag)
+        {
+            core.setF(1.0);
+            if (core.I < core.D_size - 2)
+            {
+                core.D[core.I + 0] = not_near_shoot_position.x;
+                core.D[core.I + 1] = not_near_shoot_position.y;
+                core.D[core.I + 2] = not_near_shoot_position.z;
+            }
+        }
+        else
+        {
+            core.setF(0.0);
+        }
+    }
+};
+
+class NearExplosion : public SlashA::Instruction
+{
+    public:
+    NearExplosion() { name = "NearExplosion"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        if (not_near_explosion_flag)
+        {
+            core.setF(1.0);
+            if (core.I < core.D_size - 2)
+            {
+                core.D[core.I + 0] = not_near_explosion_position.x;
+                core.D[core.I + 1] = not_near_explosion_position.y;
+                core.D[core.I + 2] = not_near_explosion_position.z;
+            }
+        }
+        else
+        {
+            core.setF(0.0);
+        }
+    }
+};
+
+class NearExplosionDamage : public SlashA::Instruction
+{
+    public:
+    NearExplosionDamage() { name = "NearExplosionDamage"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        if (not_explosion_damage_flag)
+        {
+            core.setF(1.0);
+            if (core.I < core.D_size - 2)
+            {
+                core.D[core.I + 0] = not_explosion_damage_position.x;
+                core.D[core.I + 1] = not_explosion_damage_position.y;
+                core.D[core.I + 2] = not_explosion_damage_position.z;
+            }
+        }
+        else
+        {
+            core.setF(0.0);
+        }
     }
 };
 

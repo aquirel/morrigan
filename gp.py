@@ -104,7 +104,8 @@ instructions = [
     "add", "sub", "mul", "div", "abs", "sign", "exp", "log", "sin", "cos",
     "pow", "ran", "SetEnginePower", "Shoot", "Turn", "LookAt", "GetFireDelay",
     "GetHeading", "GetSpeed", "GetHP", "GetHeight", "GetNormal", "Tanks",
-    "Tank"
+    "Tank", "HitBound", "TankCollision", "Hit", "NearShoot", "NearExplosion",
+    "NearExplosionDamage"
 ]
 instruction_count = len(instructions)
 

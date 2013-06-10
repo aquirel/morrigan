@@ -231,7 +231,7 @@ static void __insert_additional_instructions(SlashA::InstructionSet &instruction
     Turn *turn_instruction = new Turn();
     LookAt *look_at_instruction = new LookAt();
     Shoot *shoot_instruction = new Shoot();
-    GetFireDelay *get_fire_delay_instruction = new ();
+    GetFireDelay *get_fire_delay_instruction = new GetFireDelay();
     GetHeading *get_heading_instruction = new GetHeading();
     GetSpeed *get_speed_instruction = new GetSpeed();
     GetHP *get_hp_instruction = new GetHP();

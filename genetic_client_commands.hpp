@@ -100,8 +100,8 @@ class GetHeading : public SlashA::Instruction
 
     inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
-        int heading = client_tank_get_heading(&genetic_client_protocol);
-        core.setF(delay);
+        double heading = client_tank_get_heading(&genetic_client_protocol);
+        core.setF(heading);
     }
 };
 

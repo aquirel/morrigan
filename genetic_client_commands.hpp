@@ -93,4 +93,16 @@ class GetFireDelay : public SlashA::Instruction
     }
 };
 
+class GetHeading : public SlashA::Instruction
+{
+    public:
+    GetHeading() { name = "GetHeading"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        int heading = client_tank_get_heading(&genetic_client_protocol);
+        core.setF(delay);
+    }
+};
+
 #endif __GENETIC_CLIENT_COMMANDS_HPP__ /* __GENETIC_CLIENT_COMMANDS_HPP__ */

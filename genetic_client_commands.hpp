@@ -105,4 +105,16 @@ class GetHeading : public SlashA::Instruction
     }
 };
 
+class GetSpeed : public SlashA::Instruction
+{
+    public:
+    GetSpeed() { name = "GetSpeed"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        double speed = tank_get_speed(&genetic_client_protocol);
+        core.setF(speed);
+    }
+};
+
 #endif __GENETIC_CLIENT_COMMANDS_HPP__ /* __GENETIC_CLIENT_COMMANDS_HPP__ */

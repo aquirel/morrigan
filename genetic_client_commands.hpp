@@ -117,4 +117,16 @@ class GetSpeed : public SlashA::Instruction
     }
 };
 
+class GetHP : public SlashA::Instruction
+{
+    public:
+    GetHP() { name = "GetHP"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        int hp = tank_get_hp(&genetic_client_protocol);
+        core.setF(hp);
+    }
+};
+
 #endif __GENETIC_CLIENT_COMMANDS_HPP__ /* __GENETIC_CLIENT_COMMANDS_HPP__ */

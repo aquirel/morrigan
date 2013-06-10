@@ -60,6 +60,7 @@ double client_tank_get_heading(ClientProtocol *cp);
 double tank_get_speed(ClientProtocol *cp);
 uint8_t tank_get_hp(ClientProtocol *cp);
 bool tank_get_statistics(ClientProtocol *cp, ResGetStatistics *statistics);
+int tank_get_fire_delay(ClientProtocol *cp);
 
 // Observing.
 bool tank_get_map(ClientProtocol *cp, double *m);

@@ -33,6 +33,7 @@ typedef enum Requests
     req_get_speed        = 0x21,
     req_get_hp           = 0x22,
     req_get_statistics   = 0x23,
+    req_get_fire_delay   = 0x24,
 
     // Observing.
     req_get_map          = 0x30,
@@ -132,6 +133,12 @@ typedef struct ResGetStatistics
     size_t got_direct_hits;
     size_t got_hits;
 } ResGetStatistics;
+
+typedef struct ResGetFireDelay
+{
+    uint8_t packet_id;
+    int fire_delay;
+} ResGetFireDelay;
 
 typedef struct ResGetNormal
 {

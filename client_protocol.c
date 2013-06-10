@@ -480,6 +480,24 @@ bool tank_get_statistics(ClientProtocol *cp, ResGetStatistics *statistics)
     return false;
 }
 
+int tank_get_fire_delay(ClientProtocol *cp)
+{
+    __assert_client_protocol(cp);
+    uint8_t req = req_get_fire_delay;
+    check(SOCKET_ERROR != send(cp->s, (char *) &req, sizeof(req), 0), "send() failed. Error: %d.", WSAGetLastError());
+
+    ResGetFireDelay receive_buf;
+    size_t received = sizeof(receive_buf);
+
+    check(req == client_protocol_wait_for(cp, req, &receive_buf, &received), "Net timeout.", "");
+
+    check(sizeof(receive_buf) == received && req_get_fire_delay == receive_buf.packet_id, "Bad get fire delay response.", "");
+
+    return receive_buf.fire_delay;
+    error:
+    return 0;
+}
+
 bool tank_get_map(ClientProtocol *cp, double *m)
 {
     __assert_client_protocol(cp);

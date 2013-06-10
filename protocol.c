@@ -43,6 +43,7 @@ static bool __req_get_heading_executor(Client *c);
 static bool __req_get_speed_executor(Client *c);
 static bool __req_get_hp_executor(Client *c);
 static bool __req_get_statistics_executor(Client *c);
+static bool __req_get_fire_delay_executor(Client *c);
 
 // Observing.
 static bool __req_get_map_executor(Client *c);
@@ -75,6 +76,7 @@ static PacketDefinition RequestDefinitions[] =
     { .id = req_get_speed,        .validator = NULL,                             .executor = __req_get_speed_executor,        .is_client_protocol = true  },
     { .id = req_get_hp,           .validator = NULL,                             .executor = __req_get_hp_executor,           .is_client_protocol = true  },
     { .id = req_get_statistics,   .validator = NULL,                             .executor = __req_get_statistics_executor,   .is_client_protocol = true  },
+    { .id = req_get_fire_delay,   .validator = NULL,                             .executor = __req_get_fire_delay_executor,   .is_client_protocol = true  },
 
     // Observing.
     { .id = req_get_map,          .validator = NULL,                             .executor = __req_get_map_executor,          .is_client_protocol = true  },
@@ -401,6 +403,18 @@ static bool __req_get_statistics_executor(Client *c)
         .hits            = c->tank.statistics.hits,
         .got_direct_hits = c->tank.statistics.got_direct_hits,
         .got_hits        = c->tank.statistics.got_hits,
+    };
+    respond((char *) &response, sizeof(response), &c->network_client.address);
+    return true;
+}
+
+static bool __req_get_fire_delay_executor(Client *c)
+{
+    assert(c && "Bad client pointer.");
+
+    ResGetFireDelay response = {
+        .packet_id  = req_get_fire_delay,
+        .fire_delay = c->tank.fire_delay
     };
     respond((char *) &response, sizeof(response), &c->network_client.address);
     return true;

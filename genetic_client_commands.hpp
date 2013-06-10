@@ -162,4 +162,28 @@ class GetHeight : public SlashA::Instruction
     }
 };
 
+class GetNormal : public SlashA::Instruction
+{
+    public:
+    GetNormal() { name = "GetNormal"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        Vector normal;
+        if (!tank_get_normal(&genetic_client_protocol, &normal))
+        {
+            return;
+        }
+
+        if (core.I >= core.D_size - 2)
+        {
+            return;
+        }
+
+        core.D[core.I + 0] = normal.x;
+        core.D[core.I + 1] = normal.y;
+        core.D[core.I + 2] = normal.z;
+    }
+};
+
 #endif __GENETIC_CLIENT_COMMANDS_HPP__ /* __GENETIC_CLIENT_COMMANDS_HPP__ */

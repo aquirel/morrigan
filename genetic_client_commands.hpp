@@ -200,4 +200,45 @@ class Tanks : public SlashA::Instruction
     }
 };
 
+class Tank : public SlashA::Instruction
+{
+    public:
+    Tank() { name = "Tank"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        if (0 == tanks_count)
+        {
+            return;
+        }
+
+        unsigned destination = core.getF();
+        if (destination >= core.D_size - (3 + 3 + 3 + 3 + 3))
+        {
+            return;
+        }
+
+        unsigned tank_index = core.I % tanks_count;
+        core.D[destination +  0] = tanks[tank_index].x;
+        core.D[destination +  1] = tanks[tank_index].y;
+        core.D[destination +  2] = tanks[tank_index].z;
+
+        core.D[destination +  3] = tanks[tank_index].direction_x;
+        core.D[destination +  4] = tanks[tank_index].direction_y;
+        core.D[destination +  5] = tanks[tank_index].direction_z;
+
+        core.D[destination +  6] = tanks[tank_index].orientation_x;
+        core.D[destination +  7] = tanks[tank_index].orientation_y;
+        core.D[destination +  8] = tanks[tank_index].orientation_z;
+
+        core.D[destination +  9] = tanks[tank_index].turret_x;
+        core.D[destination + 10] = tanks[tank_index].turret_y;
+        core.D[destination + 11] = tanks[tank_index].turret_z;
+
+        core.D[destination + 12] = tanks[tank_index].speed;
+        core.D[destination + 13] = tanks[tank_index].team;
+        core.D[destination + 14] = tanks[tank_index].hp;
+    }
+};
+
 #endif __GENETIC_CLIENT_COMMANDS_HPP__ /* __GENETIC_CLIENT_COMMANDS_HPP__ */

@@ -146,15 +146,15 @@ int main(int argc, char *argv[])
             not_explosion_damage_flag = false;
 
             // Run genetic program.
-            bool failed;
+            bool failed = false;
             try
             {
-                failed = SlashA::runByteCode(instruction_set,
-                                             mem_core,
-                                             bytecode,
-                                             time(NULL) ^ _getpid(),
-                                             10,
-                                             256);
+                failed = !SlashA::runByteCode(instruction_set,
+                                              mem_core,
+                                              bytecode,
+                                              time(NULL) ^ _getpid(),
+                                              128,
+                                              256);
             }
             catch (std::string &e)
             {

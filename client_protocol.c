@@ -511,7 +511,7 @@ bool tank_get_map(ClientProtocol *cp, double *m)
 
     check(req == client_protocol_wait_for(cp, req, buf, &received), "Net timeout.", "");
 
-    check(sizeof(uint8_t) + sizeof(double) * TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(uint8_t) == received && req_get_map == buf[0], "Bad get hp response.", "");
+    check(sizeof(uint8_t) + sizeof(double) + TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE * sizeof(uint8_t) == received && req_get_map == buf[0], "Bad get map response.", "");
 
     double scale = *((double *) &buf[1]);
     for (size_t i = 0; i < TANK_OBSERVING_RANGE * TANK_OBSERVING_RANGE; i++)

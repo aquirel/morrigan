@@ -12,6 +12,7 @@ extern "C"
 {
     #include "landscape.h"
     #include "tank_defines.h"
+    #include "client_protocol.h"
 }
 
 #include "genetic_client_net.hpp"
@@ -20,6 +21,8 @@ extern "C"
 #define TANK_MAX_ENGINE_POWER 100
 
 extern double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
+extern ResGetTanksTankRecord tanks[MAX_CLIENTS];
+extern size_t tanks_count;
 
 class SetEnginePower : public SlashA::Instruction
 {
@@ -183,6 +186,17 @@ class GetNormal : public SlashA::Instruction
         core.D[core.I + 0] = normal.x;
         core.D[core.I + 1] = normal.y;
         core.D[core.I + 2] = normal.z;
+    }
+};
+
+class Tanks : public SlashA::Instruction
+{
+    public:
+    Tanks() { name = "Tanks"; }
+
+    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        core.setF(tanks_count);
     }
 };
 

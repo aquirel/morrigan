@@ -31,6 +31,8 @@ extern "C"
 
 volatile bool working = true;
 double landscape[TANK_OBSERVING_RANGE][TANK_OBSERVING_RANGE];
+ResGetTanksTankRecord tanks[MAX_CLIENTS];
+size_t tanks_count;
 
 static void __stop(int unused);
 static void __insert_additional_instructions(SlashA::InstructionSet &instruction_set);
@@ -124,7 +126,7 @@ int main(int argc, char *argv[])
 
             while (client_protocol_process_event(&genetic_client_protocol));
             tank_get_map(&genetic_client_protocol, (double *) landscape);
-            // TODO: get tanks.
+            tanks_count = tank_get_tanks(&genetic_client_protocol, tanks, MAX_CLIENTS);
 
             // Run genetic program.
             bool failed;

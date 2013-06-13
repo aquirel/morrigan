@@ -4,6 +4,7 @@
 #ifndef __GENETIC_CLIENT_COMMANDS_HPP__
 #define __GENETIC_CLIENT_COMMANDS_HPP__
 
+#include <iostream>
 #include <cmath>
 
 #include "SlashA.hpp"
@@ -16,13 +17,24 @@ extern "C"
 #include "genetic_client.hpp"
 #include "genetic_client_net.hpp"
 
-class SetEnginePower : public SlashA::Instruction
+class ExtensionInstruction : public SlashA::Instruction
+{
+    public:
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    {
+        std::cout << "Running: " << name << std::endl;
+    }
+};
+
+class SetEnginePower : public ExtensionInstruction
 {
     public:
     SetEnginePower() { name = "SetEnginePower"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         double power = core.getF();
 
         if (TANK_MIN_ENGINE_POWER > power)
@@ -38,13 +50,15 @@ class SetEnginePower : public SlashA::Instruction
     }
 };
 
-class Turn : public SlashA::Instruction
+class Turn : public ExtensionInstruction
 {
     public:
     Turn() { name = "Turn"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         double angle = core.getF();
 
         while (angle >= +M_PI) angle -= M_PI;
@@ -54,13 +68,15 @@ class Turn : public SlashA::Instruction
     }
 };
 
-class LookAt : public SlashA::Instruction
+class LookAt : public ExtensionInstruction
 {
     public:
     LookAt() { name = "LookAt"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         if (core.D_size <= core.I + 2)
         {
             n_invops++;
@@ -73,72 +89,79 @@ class LookAt : public SlashA::Instruction
     }
 };
 
-class Shoot : public SlashA::Instruction
+class Shoot : public ExtensionInstruction
 {
     public:
     Shoot() { name = "Shoot"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         shoot(&genetic_client_protocol);
     }
 };
 
-class GetFireDelay : public SlashA::Instruction
+class GetFireDelay : public ExtensionInstruction
 {
     public:
     GetFireDelay() { name = "GetFireDelay"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         int delay = tank_get_fire_delay(&genetic_client_protocol);
         core.setF(delay);
     }
 };
 
-class GetHeading : public SlashA::Instruction
+class GetHeading : public ExtensionInstruction
 {
     public:
     GetHeading() { name = "GetHeading"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         double heading = client_tank_get_heading(&genetic_client_protocol);
         core.setF(heading);
     }
 };
 
-class GetSpeed : public SlashA::Instruction
+class GetSpeed : public ExtensionInstruction
 {
     public:
     GetSpeed() { name = "GetSpeed"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         double speed = tank_get_speed(&genetic_client_protocol);
         core.setF(speed);
     }
 };
 
-class GetHP : public SlashA::Instruction
+class GetHP : public ExtensionInstruction
 {
     public:
     GetHP() { name = "GetHP"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         int hp = tank_get_hp(&genetic_client_protocol);
         core.setF(hp);
     }
 };
 
-class GetHeight : public SlashA::Instruction
+class GetHeight : public ExtensionInstruction
 {
     public:
     GetHeight() { name = "GetHeight"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         double height = 0.0;
 
         if (core.I < core.D_size - 1)
@@ -157,13 +180,15 @@ class GetHeight : public SlashA::Instruction
     }
 };
 
-class GetNormal : public SlashA::Instruction
+class GetNormal : public ExtensionInstruction
 {
     public:
     GetNormal() { name = "GetNormal"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         Vector normal;
         if (!tank_get_normal(&genetic_client_protocol, &normal))
         {
@@ -181,24 +206,27 @@ class GetNormal : public SlashA::Instruction
     }
 };
 
-class Tanks : public SlashA::Instruction
+class Tanks : public ExtensionInstruction
 {
     public:
     Tanks() { name = "Tanks"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         core.setF(tanks_count);
     }
 };
 
-class Tank : public SlashA::Instruction
+class Tank : public ExtensionInstruction
 {
     public:
     Tank() { name = "Tank"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         if (0 == tanks_count)
         {
             return;
@@ -233,46 +261,51 @@ class Tank : public SlashA::Instruction
     }
 };
 
-class HitBound : public SlashA::Instruction
+class HitBound : public ExtensionInstruction
 {
     public:
     HitBound() { name = "HitBound"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         core.setF(not_hit_bound_flag ? 1.0 : 0.0);
     }
 };
 
-class TankCollision : public SlashA::Instruction
+class TankCollision : public ExtensionInstruction
 {
     public:
     TankCollision() { name = "TankCollision"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         core.setF(not_tank_collision_flag ? 1.0 : 0.0);
     }
 };
 
-class Hit : public SlashA::Instruction
+class Hit : public ExtensionInstruction
 {
     public:
     Hit() { name = "Hit"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
         core.setF(not_hit_flag ? 1.0 : 0.0);
     }
 };
 
-class NearShoot : public SlashA::Instruction
+class NearShoot : public ExtensionInstruction
 {
     public:
     NearShoot() { name = "NearShoot"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         if (not_near_shoot_flag)
         {
             core.setF(1.0);
@@ -290,13 +323,15 @@ class NearShoot : public SlashA::Instruction
     }
 };
 
-class NearExplosion : public SlashA::Instruction
+class NearExplosion : public ExtensionInstruction
 {
     public:
     NearExplosion() { name = "NearExplosion"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         if (not_near_explosion_flag)
         {
             core.setF(1.0);
@@ -314,13 +349,15 @@ class NearExplosion : public SlashA::Instruction
     }
 };
 
-class NearExplosionDamage : public SlashA::Instruction
+class NearExplosionDamage : public ExtensionInstruction
 {
     public:
     NearExplosionDamage() { name = "NearExplosionDamage"; }
 
-    inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
+    virtual inline void code(SlashA::MemCore& core, SlashA::InstructionSet& iset)
     {
+        ExtensionInstruction::code(core, iset);
+
         if (not_explosion_damage_flag)
         {
             core.setF(1.0);

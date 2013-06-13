@@ -165,7 +165,6 @@ int main(int argc, char *argv[])
                 }
 
                 failed = false;
-                throw;
             }
 
             if (failed)

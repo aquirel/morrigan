@@ -246,7 +246,6 @@ static void __insert_additional_instructions(SlashA::InstructionSet &instruction
     NearExplosion *near_explosion_instruction = new NearExplosion();
     NearExplosionDamage *explosion_damage_instruction = new NearExplosionDamage();
 
-
     check(set_engine_power_instruction &&
           turn_instruction &&
           look_at_instruction &&

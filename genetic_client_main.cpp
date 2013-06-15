@@ -149,12 +149,14 @@ int main(int argc, char *argv[])
             bool failed = false;
             try
             {
+                puts("Run program.");
                 failed = !SlashA::runByteCode(instruction_set,
                                               mem_core,
                                               bytecode,
                                               time(NULL) ^ _getpid(),
                                               128,
                                               256);
+                puts("Program stop.");
             }
             catch (std::string &e)
             {

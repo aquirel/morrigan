@@ -157,7 +157,7 @@ void draw_tank_turret(void)
     assert(q && "Failed to create quadric.");
     gluQuadricNormals(q, GLU_SMOOTH);
     gluQuadricOrientation(q, GLU_OUTSIDE);
-    glTranslated(0, 0, extent.z);
+    glTranslated(2, 0, extent.z);
     gluSphere(q, TANK_BOUNDING_SPHERE_RADIUS, 32, 32);
     gluDeleteQuadric(q);
 }

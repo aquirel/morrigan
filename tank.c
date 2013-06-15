@@ -39,7 +39,7 @@ void tank_initialize(Tank *tank, const Vector *position, const Vector *top, int 
                 .previous_origin = &tank->previous_position,
                 .orientation     = &tank->orientation,
                 .direction       = &tank->direction,
-                .offset          = { .x = 0, .y = 0, .z = TANK_BOUNDING_SPHERE_RADIUS },
+                .offset          = { .x = 2, .y = 0, .z = TANK_BOUNDING_SPHERE_RADIUS },
                 .speed           = &tank->speed,
                 .bounding_type   = bounding_sphere,
                 .data            = { .radius = TANK_BOUNDING_SPHERE_RADIUS }

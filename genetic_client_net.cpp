@@ -29,6 +29,7 @@ PacketDefinition genetic_client_protocol_packets[] = {
     { .id = req_get_speed,        .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
     { .id = req_get_hp,           .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
     { .id = req_get_statistics,   .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
+    { .id = req_get_fire_delay,   .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
     { .id = req_get_map,          .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
     { .id = req_get_normal,       .validator = NULL, .executor = NULL,                        .is_client_protocol = true },
     { .id = req_get_tanks,        .validator = NULL, .executor = NULL,                        .is_client_protocol = true },

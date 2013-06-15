@@ -118,7 +118,7 @@ crossover_rate = 0.8
 mutation_rate = 0.1
 
 min_program_length = 256
-max_program_length = 2048
+max_program_length = 1024
 
 morrigan_server = "bin/morrigan.exe"
 morrigan_client = "bin/morrigan_genetic_client"

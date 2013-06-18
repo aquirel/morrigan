@@ -2,6 +2,8 @@
 
 #include <assert.h>
 #include <time.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include "debug.h"
 #include "tank_defines.h"
@@ -369,6 +371,16 @@ bool look_at(ClientProtocol *cp, Vector *look_direction)
     req_body->x = look_direction->x;
     req_body->y = look_direction->y;
     req_body->z = look_direction->z;
+
+    if (req_body->z < TANK_MIN_LOOK_Z)
+    {
+        req_body->z = TANK_MIN_LOOK_Z;
+    }
+    else if (req_body->z > TANK_MAX_LOOK_Z)
+    {
+        req_body->z = TANK_MAX_LOOK_Z;
+    }
+
     check(SOCKET_ERROR != send(cp->s, req_buf, sizeof(req_buf), 0), "send() failed. Error: %d.", WSAGetLastError());
 
     char receive_buf[1];

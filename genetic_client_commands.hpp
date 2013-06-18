@@ -85,7 +85,7 @@ class LookAt : public ExtensionInstruction
             return;
         }
 
-        Vector l = { .x = core.D[core.I + 0], .y = core.D[core.I + 1], .z =  core.D[core.I + 2] };
+        Vector l = { .x = core.D[core.I + 0], .y = core.D[core.I + 1], .z = core.D[core.I + 2] };
         VECTOR_NORMALIZE(&l);
         look_at(&genetic_client_protocol, &l);
     }

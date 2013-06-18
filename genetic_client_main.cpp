@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
         puts("Initializing Slash/A.");
         std::vector<double> input, output;
-        SlashA::MemCore mem_core(0, 0, input, output);
+        SlashA::MemCore mem_core(0xffff, 0xffff, input, output);
 
         SlashA::InstructionSet instruction_set(0xffff);
         instruction_set.insert_DIS_full();

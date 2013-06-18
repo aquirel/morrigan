@@ -295,6 +295,11 @@ static void __perform_shooting(Client *client)
     VECTOR_NORMALIZE(&turret_direction);
     VECTOR_SCALE(&turret_direction, TANK_GUN_LENGTH);
     VECTOR_ADD(&p, &turret_direction);
+
+    VECTOR_NORMALIZE(&turret_direction);
+    VECTOR_SCALE(&turret_direction, 2.0);
+    VECTOR_ADD(&p, &turret_direction);
+
     VECTOR_NORMALIZE(&turret_direction);
 
     Shell *new_shell = NULL;

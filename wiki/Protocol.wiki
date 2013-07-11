@@ -1,0 +1,52 @@
+#labels Featured,Phase-Design
+Morrigan protocol specification.
+================================
+
+  * Firt byte - packet id.
+  * Packets have fixed sizes.
+
+Processing stages.
+------------------
+
+  # Find packet by id.
+  # Validate packet.
+  # Enqueue packet.
+  # Execute packet handler.
+  # Send response.
+
+Client states.
+--------------
+
+  # Connected (initial state).
+  # Acknowledged.
+  # In game.
+
+Client state transitions.
+-------------------------
+
+{{{
+  Connected -> Acknowledged: client have responded "Hello" packet.
+  Acknowledged -> In game: client responded game notification packet.
+  In game -> Acknowledged: client responded game notification packet.
+}}}
+
+Activity diagram.
+-----------------
+
+{{{
+Client.       Server.
+"Hello" ->
+              Register new client. If client exists - ignore.
+           <- "Hello"
+"Hello" ->
+              Acknowledge client.
+           <- "Hello"
+
+Game-related exchanges.
+         <->
+
+"Bye"   -> (Sent if client leaves first).
+              Unregister client.
+           <- "Bye" (Sent if server leaves first).
+              Unregister client.
+}}}
